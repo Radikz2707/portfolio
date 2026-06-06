@@ -1,0 +1,53 @@
+.footer {
+  padding: 40px 0;
+  background-color: #0b0f19; // Тёмный цвет для контраста
+  border-top: 1px solid rgb(51 65 85 / 40%);
+
+  &__wrapper {
+    // Адаптив для экранов смартфонов
+    @media (width <= 576px) {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__copy {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #f1f5f9;
+  }
+
+  &__subtitle {
+    font-size: 13px;
+    color: #475569;
+  }
+}
+
+.social-links {
+  &__list {
+    display: flex;
+    gap: 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__link {
+    font-size: 15px;
+    font-weight: 500;
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #a855f7; // Плавный пурпурный ховер
+    }
+  }
+}

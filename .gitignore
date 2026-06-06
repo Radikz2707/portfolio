@@ -1,0 +1,26 @@
+# Зависимости
+node_modules/
+
+# Результаты сборки (используем вашу константу buildFolder)
+"#dist/"}
+archives/
+*.zip
+
+# Временные файлы ресурсов (то, что генерирует Gulp внутри src)
+src/images/dest/
+src/fonts/dest/
+
+# Логи и временные файлы
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+.cache/
+
+# Конфиги редактора
+.vscode/
+.idea/
+
+# Секретные данные
+.env

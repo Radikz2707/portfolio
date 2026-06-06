@@ -1,0 +1,30 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  width: 100%;
+  padding: 20px 0;
+  background-color: rgb(15 23 42 / 90%);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgb(51 65 85 / 50%);
+
+  &__container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    /* Все отступы и ограничения теперь делает глобальный класс .container в style.scss */
+  }
+
+  &__logo {
+    position: relative;
+    z-index: 5; // Логотип должен быть выше выезжающей мобильной плашки
+    font-size: 22px;
+    font-weight: 800;
+    color: transparent;
+    text-decoration: none;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    background-clip: text;
+  }
+}
