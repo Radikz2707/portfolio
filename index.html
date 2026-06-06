@@ -75,10 +75,11 @@
           <!-- Внутренний БЭМ-оболочка (wrapper) вместо глобального container -->
           <div class="menu__body">
             <ul class="menu__list">
-              <li class="menu__item"><a href="/" class="menu__link">Главная</a></li>
-              <li class="menu__item"><a href="/#projects" class="menu__link">Проекты</a></li>
-              <li class="menu__item"><a href="/#about" class="menu__link">Обо мне</a></li>
-              <li class="menu__item"><a href="/blog/why-gulp-ts.html" class="menu__link">Блог</a></li>
+              <!-- 🔥 ИСПРАВЛЕНО: Ссылки ведут относительно текущей папки проекта /portfolio/ -->
+              <li class="menu__item"><a href="./" class="menu__link">Главная</a></li>
+              <li class="menu__item"><a href="./#projects" class="menu__link">Проекты</a></li>
+              <li class="menu__item"><a href="./#about" class="menu__link">Обо мне</a></li>
+              <li class="menu__item"><a href="blog/why-gulp-ts.html" class="menu__link">Блог</a></li>
             </ul>
           </div>
         </nav>
@@ -97,7 +98,7 @@
         <div class="hero__container container">
           <h1 class="hero__title">Привет! Я Радик, Frontend Разработчик</h1>
           <p class="hero__subtitle">Создаю сверхбыстрые модульные сайты на Gulp 5, TypeScript и БЭМ-архитектуре.</p>
-          <a href="/blog/why-gulp-ts.html" class="hero__btn">Читать мой блог</a>
+          <a href="blog/why-gulp-ts.html" class="hero__btn">Читать мой блог</a>
         </div>
       </section>
 

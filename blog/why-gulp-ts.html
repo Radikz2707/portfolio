@@ -75,10 +75,11 @@
         <!-- Внутренний БЭМ-оболочка (wrapper) вместо глобального container -->
         <div class="menu__body">
           <ul class="menu__list">
-            <li class="menu__item"><a href="/" class="menu__link">Главная</a></li>
-            <li class="menu__item"><a href="/#projects" class="menu__link">Проекты</a></li>
-            <li class="menu__item"><a href="/#about" class="menu__link">Обо мне</a></li>
-            <li class="menu__item"><a href="/blog/why-gulp-ts.html" class="menu__link">Блог</a></li>
+            <!-- 🔥 ИСПРАВЛЕНО: Ссылки ведут относительно текущей папки проекта /portfolio/ -->
+            <li class="menu__item"><a href="./" class="menu__link">Главная</a></li>
+            <li class="menu__item"><a href="./#projects" class="menu__link">Проекты</a></li>
+            <li class="menu__item"><a href="./#about" class="menu__link">Обо мне</a></li>
+            <li class="menu__item"><a href="blog/why-gulp-ts.html" class="menu__link">Блог</a></li>
           </ul>
         </div>
       </nav>
@@ -97,7 +98,7 @@
       <div class="blog-article__layout">
         <!-- Левая колонка: Текст текущей статьи -->
         <div class="blog-article__main-content">
-          <a href="/blog/index.html" class="blog-article__back-link">&larr; Ко всем статьям</a>
+          <a href="../index.html" class="blog-article__back-link">&larr; Ко всем статьям</a>
           <h1>Почему Gulp + TypeScript — это идеальный стек для статических сайтов в 2026 году</h1>
           <p>В 2026 году статические сайты переживают второе рождение: быстрее, безопаснее и надёжнее, чем когда-либо. И хотя JAMstack и фреймворки вроде Next.js доминируют в массах, <strong>многие разработчики возвращаются к лёгким, предсказуемым сборкам на Gulp + TypeScript</strong> — особенно когда речь идёт о собственных проектах, корпоративных лендингах и документации. Почему?</p>
           <h2>✅ Простота, скорость и контроль</h2>
