@@ -1,0 +1,40 @@
+<section class="contacts" id="contacts">
+  <div class="contacts__container container element-reveal">
+    <h2 class="contacts__title">Связаться со мной</h2>
+    
+    <form class="contacts__form form" id="contact-form" novalidate>
+      <!-- Поле: Имя -->
+      <div class="form__group">
+        <label for="form-name" class="form__label">Ваше имя</label>
+        <input type="text" id="form-name" class="form__input" placeholder="Иван" autocomplete="name" />
+        <span class="form__error">Имя должно содержать не менее 2 символов</span>
+      </div>
+
+      <!-- Поле: Выбор способа связи (Трендовая фича в РФ) -->
+      <div class="form__group">
+        <label for="form-method" class="form__label">Удобный способ связи</label>
+        <select id="form-method" class="form__input form__select">
+          <option value="telegram">Telegram (@username или ссылка)</option>
+          <option value="phone">Телефон (Звонок / WhatsApp / Viber)</option>
+          <option value="email">Электронная почта (Email)</option>
+        </select>
+      </div>
+
+      <!-- Поле: Контактные данные (динамическое) -->
+      <div class="form__group">
+        <label id="contact-label" for="form-contact" class="form__label">Ваш Telegram</label>
+        <input type="text" id="form-contact" class="form__input" placeholder="@username" />
+        <span class="form__error" id="contact-error">Введите корректный никнейм Telegram (начиная с @)</span>
+      </div>
+
+      <!-- Поле: Сообщение -->
+      <div class="form__group">
+        <label for="form-message" class="form__label">Суть проекта или предложение</label>
+        <textarea id="form-message" class="form__input form__input--textarea" placeholder="Привет! Нужен адаптивный лендинг..."></textarea>
+        <span class="form__error">Сообщение должно быть длиннее 10 символов</span>
+      </div>
+
+      <button type="submit" class="form__button">Отправить сообщение</button>
+    </form>
+  </div>
+</section>

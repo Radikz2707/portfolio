@@ -1,0 +1,108 @@
+.about-me {
+  padding: 100px 0;
+  background-color: #0f172a;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 60px;
+    align-items: start;
+    max-width: 1100px;
+    margin: 0 auto;
+
+    @media (width <= 768px) {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+  }
+
+  &__title {
+    margin-bottom: 24px;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  &__text {
+    margin-bottom: 16px;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #94a3b8;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.skills-list {
+  &__title {
+    margin-bottom: 24px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  &__items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__badge {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #e2e8f0;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    transition:
+      transform 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      opacity 0.7s ease;
+
+    &._active:hover {
+      color: #fff;
+      background-color: #334155;
+      border-color: #6366f1;
+      transform: scale(1.05);
+    }
+  }
+}
+
+.element-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1),
+    transform 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity, transform;
+
+  &._active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @for $i from 1 through 16 {
+    &:nth-child(#{$i}) {
+      transition-delay: ($i - 1) * 0.05s;
+    }
+  }
+}
+
+.element-reveal-left {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition:
+    opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1),
+    transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity, transform;
+
+  &._active {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

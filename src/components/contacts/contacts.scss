@@ -1,0 +1,112 @@
+.contacts {
+  padding: 100px 0;
+  background-color: #0b0f19;
+
+  // 🔥 ИСПРАВЛЕНО: Центрируем форму и заголовок внутри контейнера
+  &__container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+  }
+
+  // 🔥 ИСПРАВЛЕНО: Делаем заголовок белым, крупным и центрированным
+  &__title {
+    margin-bottom: 40px;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 700;
+    color: #f8fafc;
+    text-align: center;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+
+  &__group {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #94a3b8;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 15px;
+    color: #f8fafc;
+    outline: none;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &::placeholder {
+      color: #64748b;
+    }
+
+    &:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgb(99 102 241 / 20%);
+    }
+
+    &--textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    &._error {
+      border-color: #f43f5e !important;
+      box-shadow: 0 0 0 2px rgb(244 63 94 / 20%) !important;
+    }
+  }
+
+  &__error {
+    display: block;
+    max-height: 0;
+    overflow: hidden;
+    font-size: 13px;
+    color: #f43f5e;
+    opacity: 0;
+    transition: max-height 0.2s ease, opacity 0.2s ease, margin-top 0.2s ease;
+
+    ._has-error & {
+      max-height: 20px;
+      margin-top: 4px;
+      opacity: 1;
+    }
+  }
+
+  &__button {
+    align-self: flex-start;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    outline: none;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    border: none;
+    border-radius: 8px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}

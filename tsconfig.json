@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "noEmit": false, // ИСПРАВЛЕНО: возвращаем false, чтобы ts-loader мог отдавать код в Webpack
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "ignoreDeprecations": "6.0",
+    "strict": true,
+    "isolatedModules": true,
+    "sourceMap": true,
+    "allowJs": false,
+    "checkJs": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/js/*"],
+      "@comp/*": ["./src/components/*"],
+      "@modules/*": ["./src/js/modules/*"],
+      "@plugins/*": ["./src/js/plugins/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "archives"]
+}

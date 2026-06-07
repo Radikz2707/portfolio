@@ -1,0 +1,38 @@
+// Файл стилей для обнуления
+@use "base/zero";
+
+// КОМПОНЕНТЫ СТРУКТУРЫ САЙТА
+@use "../components/header/header";
+@use "../components/hero/hero";
+@use "../components/projects-grid/projects-grid";
+@use "../components/about-me/about-me";
+@use "../components/blog-article/blog-article";
+@use "../components/footer/footer";
+@use "../components/menu/menu";
+@use "../components/blog-sidebar/blog-sidebar";
+@use "../components/contacts/contacts";
+
+// ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
+@use "../js/modules/scroll-to-top/scroll-to-top" as *;
+
+
+body {
+  user-select: none;
+}
+
+main {
+  /* 1 (grow) - растягиваться */
+
+  /* 1 (shrink) - сжиматься при необходимости */
+
+  /* auto (basis) - брать размер в зависимости от контента */
+  flex: 1 1 auto;
+}
+
+// ГЛOБАЛЬНАЯ СЕТКА И КОНТЕЙНЕРЫ
+.container {
+  width: 100%;
+  max-width: 1140px; // Жестко ограничиваем ширину контента по всему сайту
+  padding: 0 20px; // Безопасные отступы, чтобы текст не лип к краям на смартфонах
+  margin: 0 auto; // Идеально центрируем по центру любого экрана
+}

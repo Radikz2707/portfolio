@@ -1,0 +1,162 @@
+// ЖЕСТКО УНИЧТОЖАЕМ СКРОЛЛБАР ВСЕГО САЙТА: страница никогда не будет дергаться по горизонтали
+html,
+body {
+  overflow-x: hidden !important;
+}
+
+// Принудительно красим всю страницу блога, если на ней открыт наш компонент
+:has(.blog-article),
+body:has(.blog-article) {
+  background-color: #0f172a !important;
+}
+
+.blog-article {
+  min-height: 100vh;
+  padding: 140px 0 80px; // Верхний отступ защищает заголовок от наплыва фиксированной шапки
+  background-color: #0f172a; // Глубокий тёмно-синий фон
+
+  // Компактная контентная зона статьи + сайдбара
+  &__container {
+    width: 100%;
+    max-width: 1100px !important;
+    padding: 0 20px;
+    margin: 0 auto;
+  }
+
+  // РАЦИОНАЛЬНАЯ СЕТКА: Текст жестко 740px, Сайдбар 300px
+  &__layout {
+    display: grid !important;
+    grid-template-columns: 740px 300px !important; // Четкие журнальные размеры колонок
+    gap: 0 !important;
+    align-items: start !important;
+    justify-content: space-between !important; // Идеально расталкиваем их по краям контейнера
+
+    // Адаптив для средних экранов (ноутбуки/планшеты)
+    @media (width <= 1100px) {
+      grid-template-columns: 1fr 300px !important;
+      gap: 40px !important;
+    }
+
+    // Адаптив для mobile телефонов (сайдбар падает вниз под статью)
+    @media (width <= 768px) {
+      grid-template-columns: 1fr !important;
+      gap: 40px !important;
+    }
+  }
+
+  // Левая колонка: жестко зажата, чтобы длина строки была комфортна для глаз
+  &__main-content {
+    min-width: 0 !important; // Ключевая защита Grid-сетки от выпирания кода
+    max-width: 740px !important;
+  }
+
+  &__sidebar {
+    width: 300px !important;
+  }
+
+  &__back-link {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 40px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #6366f1 !important; // Фиолетовая стрелка возврата
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #a855f7 !important;
+    }
+  }
+
+  // Оформление HTML-тегов, которые генерирует плагин gulp-markdown
+  h1,
+  h2,
+  h3 {
+    font-weight: 700;
+    line-height: 1.3;
+    color: #fff !important;
+    text-align: center !important;
+  }
+
+  h1 {
+    margin-top: 1rem;
+    margin-bottom: 32px !important;
+    font-size: clamp(28px, 4vw, 40px) !important;
+    font-weight: 800 !important;
+  }
+
+  h2 {
+    margin-top: 48px !important;
+    margin-bottom: 20px !important;
+    font-size: clamp(22px, 3vw, 28px) !important;
+    color: #f1f5f9 !important;
+  }
+
+  p {
+    margin-bottom: 24px !important;
+    font-size: 18px !important;
+    line-height: 1.8 !important;
+    color: #cbd5e1 !important; // Комфортный для чтения светло-серый текст
+  }
+
+  // БЛOК КОДА С АВТОПЕРЕНОСОМ СТРОК (Полное уничтожение горизонтального скролла)
+  pre {
+    width: 100% !important;
+    max-width: 740px !important; /* Держим ширину текстовой колонки */
+    padding: 24px !important;
+    margin: 32px 0 !important;
+    overflow-x: auto !important; // Резервный скролл, если слово слишком длинное
+    background-color: #0b0f19 !important; /* Font контрастный темный фон подложки */
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+
+    code {
+      font-family:
+        "Fira Code", Consolas, "Courier New", Courier, monospace !important;
+      font-size: 14px !important;
+      line-height: 1.6 !important;
+      color: #e2e8f0 !important;
+      overflow-wrap: break-word !important; // Заменили word-break на overflow-wrap
+      white-space: pre-wrap !important;
+    }
+  }
+
+  // Короткий инлайновый код внутри обычных абзацев
+  p code,
+  li code {
+    padding: 3px 6px !important;
+    font-size: 14px !important;
+    color: #f43f5e !important; /* Розовый акцент */
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+    background-color: #1e293b !important;
+    border-radius: 4px !important;
+  }
+
+  ul,
+  ol {
+    padding-left: 24px !important;
+    margin-bottom: 32px !important;
+
+    li {
+      margin-bottom: 12px !important;
+      font-size: 17px !important;
+      line-height: 1.6 !important;
+      color: #cbd5e1 !important;
+    }
+  }
+
+  ul li {
+    list-style-type: disc !important;
+
+    &::marker {
+      color: #6366f1 !important; // Фиолетовые маркеры списков
+    }
+  }
+
+  strong {
+    font-weight: 600 !important;
+    color: #fff !important;
+  }
+}

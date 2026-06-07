@@ -1,0 +1,140 @@
+// Секция сетки проектов
+.projects-grid {
+  padding: 100px 0;
+  background-color: #0b0f19; // Чуть темнее, чем hero, для красивого контраста секций
+
+  &__container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__title {
+    margin-bottom: 16px;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  &__subtitle {
+    margin-bottom: 60px;
+    font-size: 16px;
+    color: #64748b;
+    text-align: center;
+  }
+
+  &__wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); // Авто-подстройка колонок под экран
+    gap: 30px;
+    width: 100%;
+    max-width: 1100px;
+  }
+}
+
+// Стили для карточек проектов
+.card-project {
+  display: flex;
+  flex-direction: column;
+  background-color: #1e293b; // Светло-серый/синий цвет карточки
+  border: 1px solid #334155;
+  border-radius: 12px;
+  
+  // 🔥 ИСПРАВЛЕНО: Объединили transition для плавной анимации появления и для эффекта ховера
+  transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s ease;
+
+  // Эффект ховера срабатывает только тогда, когда карточка уже ПОЯВИЛАСЬ (есть класс _active)
+  &._active:hover {
+    border-color: #6366f1;
+    transform: translateY(-6px); // Приподнимаем карточку при наведении
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 32px;
+  }
+
+  &__tag {
+    align-self: flex-start;
+    padding: 4px 10px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #818cf8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background-color: rgb(99 102 241 / 10%);
+    border-radius: 4px;
+  }
+
+  &__name {
+    margin-bottom: 12px;
+    font-size: 22px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  &__text {
+    flex-grow: 1;
+    margin-bottom: 24px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #94a3b8;
+  }
+
+  &__tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+
+    span {
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #cbd5e1;
+      background-color: #0f172a;
+      border-radius: 4px;
+    }
+  }
+
+  &__link {
+    align-self: flex-start;
+    font-size: 15px;
+    font-weight: 600;
+    color: #6366f1;
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover:not(&--disabled) {
+      color: #a855f7;
+    }
+
+    &--disabled {
+      color: #64748b;
+      cursor: not-allowed;
+    }
+  }
+}
+
+
+// 🔥 ИСПРАВЛЕНО: Добавлена пустая строка перед комментарием
+// КЛАССЫ АНИМАЦИИ ПОЯВЛЕНИЯ
+
+// КЛАССЫ АНИМАЦИИ ПОЯВЛЕНИЯ
+
+// КЛАССЫ АНИМАЦИИ ПОЯВЛЕНИЯ
+.element-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1), 
+              transform 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity, transform;
+
+  &._active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
