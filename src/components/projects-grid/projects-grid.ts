@@ -1,9 +1,9 @@
 export const projectsGrid = (): void => {
-  console.log("Компонент проектов (TS) инициализирован");
+  console.log('Компонент проектов (TS) инициализирован');
 
   // Находим заголовки и сами карточки проектов внутри этой секции
   const revealElements = document.querySelectorAll(
-    ".projects-grid__title, .projects-grid__subtitle, .card-project",
+    '.projects-grid__title, .projects-grid__subtitle, .card-project',
   );
 
   if (revealElements.length === 0) return;
@@ -11,7 +11,7 @@ export const projectsGrid = (): void => {
   // Настройки наблюдателя
   const observerOptions: IntersectionObserverInit = {
     root: null, // Отслеживаем относительно экрана
-    rootMargin: "0px 0px -50px 0px", // Срабатывает чуть раньше, чем элемент дойдет до центра
+    rootMargin: '0px 0px -50px 0px', // Срабатывает чуть раньше, чем элемент дойдет до центра
     threshold: 0.1, // Срабатывает, когда 10% элемента показалось снизу
   };
 
@@ -22,7 +22,7 @@ export const projectsGrid = (): void => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         // Добавляем класс _active, который запускает CSS-анимацию
-        entry.target.classList.add("_active");
+        entry.target.classList.add('_active');
 
         // Отключаем слежку, чтобы анимация не переигрывалась при каждом скролле
         observer.unobserve(entry.target);
@@ -41,7 +41,7 @@ export const projectsGrid = (): void => {
     // мы мгновенно активируем его, чтобы он не остался невидимым.
     const rect = element.getBoundingClientRect();
     if (rect.top < window.innerHeight) {
-      element.classList.add("_active");
+      element.classList.add('_active');
       observer.unobserve(element);
     }
   });

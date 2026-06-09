@@ -1,26 +1,37 @@
 {
   "compilerOptions": {
-    "noEmit": false, // ИСПРАВЛЕНО: возвращаем false, чтобы ts-loader мог отдавать код в Webpack
-    "target": "ESNext",
+    "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "ignoreDeprecations": "6.0",
-    "strict": true,
-    "isolatedModules": true,
-    "sourceMap": true,
-    "allowJs": false,
+    "moduleResolution": "bundler",
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+    "allowJs": true,
     "checkJs": false,
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/js/*"],
-      "@comp/*": ["./src/components/*"],
-      "@modules/*": ["./src/js/modules/*"],
-      "@plugins/*": ["./src/js/plugins/*"]
-    }
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "archives"]
+  "include": [
+    "src/js/**/*.ts",
+    "src/components/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "archives"
+  ]
 }

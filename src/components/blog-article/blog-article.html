@@ -3,13 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Мой Блог — Статья</title>
-    @@include('../../parts/favicon-links.html')
-    <!-- 🔥 ИСПРАВЛЕНО: Поднимаемся на уровень выше из папки blog, чтобы найти стили -->
+    <title>@@title | Блог Radik.Dev</title>
+    @@include("../../parts/favicon-links.html")
     <link rel="stylesheet" href="../css/app.min.css" />
   </head>
   <body>
-    @@include('../../components/header/header.html')
+    @@include("../../components/header/header.html")
 
     <article class="blog-article">
       <div class="blog-article__container container">
@@ -17,21 +16,21 @@
           <!-- Левая колонка: Текст текущей статьи -->
           <div class="blog-article__main-content">
             <a href="../index.html" class="blog-article__back-link"
-              >&larr; Ко всем статьям</a
+              >&larr; На главную</a
             >
-            @@include('@@articleFile')
+            <!-- 🔥 Робот заменит эту метку на скомпилированный из Markdown текст статьи -->
+            @@content
           </div>
 
-          <!-- Правая колонка: ПОДКЛЮЧАЕМ НАШ НЕЗАВИСИМЫЙ КОМПОНЕНТ САЙДБАРА -->
+          <!-- Правая колонка: Сюда робот вставит ваш собранный независимый сайдбар -->
           <div class="blog-article__sidebar">
-            @@include('../../components/blog-sidebar/blog-sidebar.html')
+            @@sidebar
           </div>
         </div>
       </div>
     </article>
 
-    @@include('../../components/footer/footer.html')
-    <!-- 🔥 ИСПРАВЛЕНО: Поднимаемся на уровень выше из папки blog, чтобы найти скрипты -->
+    @@include("../../components/footer/footer.html")
     <script src="../js/app.min.js" defer></script>
   </body>
 </html>

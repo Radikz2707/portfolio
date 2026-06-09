@@ -4,26 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Radik.Dev — Портфолио</title>
-    @@include('parts/favicon-links.html')
-    <!-- 🔥 ИСПРАВЛЕНО: Чистый относительный путь для корня сайта -->
-    <link rel="stylesheet" href="./css/app.min.css" />
+    @@include("parts/favicon-links.html")
+    <link rel="stylesheet" href="css/app.min.css" />
   </head>
   <body>
-    <!-- Шапка сайта -->
-    @@include("components/header/header.html")
+    <div class="wrapper">
+      @@include("components/header/header.html")
 
-    <!-- Центральные секции портфолио -->
-    <main class="main">
-      @@include("components/hero/hero.html")
-      @@include("components/projects-grid/projects-grid.html")
-      @@include("components/about-me/about-me.html")
-    </main>
+      <main class="main">
+        @@include("components/hero/hero.html")
+        @@include("components/projects-grid/projects-grid.html")
+        @@include("components/about-me/about-me.html")
+      </main>
 
-    <!-- Подвал сайта -->
-    @@include("components/footer/footer.html")
+      @@include("components/footer/footer.html")
 
-    <!-- 🔥 ИСПРАВЛЕНО: Чистый относительный путь к скриптам -->
-    <script src="./js/app.min.js" defer></script>
-  @@include("components/contacts/contacts.html")
-</body>
+      <!-- 🔥 ИСПРАВЛЕНО: Контакты занесены внутрь wrapper, DOM-дерево больше не ломается! -->
+      @@include("components/contacts/contacts.html")
+    </div>
+
+    <!-- Чистый ориентир для вашего gulp.create.js -->
+    <script src="js/app.min.js"></script>
+  </body>
 </html>

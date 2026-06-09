@@ -1,11 +1,12 @@
 // Файл стилей для обнуления
-@use "base/zero";
+@use "./base/zero";
 
 // КОМПОНЕНТЫ СТРУКТУРЫ САЙТА
 @use "../components/header/header";
 @use "../components/hero/hero";
 @use "../components/projects-grid/projects-grid";
 @use "../components/about-me/about-me";
+@use "../components/main/main";
 @use "../components/blog-article/blog-article";
 @use "../components/footer/footer";
 @use "../components/menu/menu";
@@ -14,7 +15,6 @@
 
 // ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
 @use "../js/modules/scroll-to-top/scroll-to-top" as *;
-
 
 body {
   user-select: none;

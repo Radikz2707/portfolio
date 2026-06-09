@@ -1,26 +1,26 @@
-import fs from "fs";
-import path from "path";
-import { config } from "./gulp.config.js";
+import fs from 'fs';
+import path from 'path';
+import { config } from './gulp.config.js';
 
 const toCamelCase = (str) =>
   str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 
 const updateFileContent = (filePath, modifyCallback) => {
   if (!fs.existsSync(filePath)) return;
-  const content = fs.readFileSync(filePath, "utf-8");
+  const content = fs.readFileSync(filePath, 'utf-8');
   const updatedContent = modifyCallback(content);
-  fs.writeFileSync(filePath, updatedContent.trimEnd() + "\n");
+  fs.writeFileSync(filePath, updatedContent.trimEnd() + '\n');
 };
 
 const updateAppTs = (filePath, name, camelName) => {
   updateFileContent(filePath, (content) => {
     const lines = content.split(/\r?\n/);
-    const importLine = `import { ${camelName} } from "@/modules/${name}/${name}";`;
+    const importLine = `import { ${camelName} } from "../modules/${name}/${name}";`;
     const callLine = `${camelName}();`;
 
     // 1. ИМПОРТЫ: Находим самый последний импорт в файле и вставляем под него
     const lastImportIndex = lines.findLastIndex((line) =>
-      line.trim().startsWith("import "),
+      line.trim().startsWith('import '),
     );
     if (lastImportIndex !== -1) {
       lines.splice(lastImportIndex + 1, 0, importLine);
@@ -32,11 +32,11 @@ const updateAppTs = (filePath, name, camelName) => {
     lines.push(callLine);
 
     return lines
-      .join("\n")
-      .replace(/(import\s+.*?;)\n\s*\n\s*(import\s+.*?;)/gi, "$1\n$2")
-      .replace(/\n{3,}/g, "\n\n");
+      .join('\n')
+      .replace(/(import\s+.*?;)\n\s*\n\s*(import\s+.*?;)/gi, '$1\n$2')
+      .replace(/\n{3,}/g, '\n\n');
   });
-  console.log("📝 Модуль успешно добавлен в app.ts");
+  console.log('📝 Модуль успешно добавлен в app.ts');
 };
 
 const updateStyleScss = (filePath, dirPath, name, camelName) => {
@@ -44,20 +44,20 @@ const updateStyleScss = (filePath, dirPath, name, camelName) => {
     const styleDir = path.dirname(filePath);
     let relativePath = path
       .relative(styleDir, path.join(dirPath, name))
-      .replace(/\\/g, "/");
-    if (!relativePath.startsWith(".")) relativePath = `./${relativePath}`;
+      .replace(/\\/g, '/');
+    if (!relativePath.startsWith('.')) relativePath = `./${relativePath}`;
 
     const lines = content.split(/\r?\n/);
 
-    // ИСПРАВЛЕНО: Генерация стилей идет через as *, чтобы они работали глобально
-    const newImport = `@use "${relativePath}" as *;`;
+    // ИСПРАВЛЕНО: Безопасный импорт стилей с уникальным пространством имен (алиасом) на основе camelName
+    const newImport = `@use "${relativePath}" as ${camelName};`;
 
     const firstCodeIndex = lines.findIndex((line) => {
       const trimmed = line.trim();
       return (
-        trimmed !== "" &&
-        !trimmed.startsWith("@use") &&
-        !trimmed.startsWith("//")
+        trimmed !== '' &&
+        !trimmed.startsWith('@use') &&
+        !trimmed.startsWith('//')
       );
     });
 
@@ -68,29 +68,29 @@ const updateStyleScss = (filePath, dirPath, name, camelName) => {
     }
 
     return lines
-      .join("\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/(@use\s+.*?;)\n*(?![^]*@use)/i, "$1\n\n");
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/(@use\s+.*?;)\n*(?![^]*@use)/i, '$1\n\n');
   });
-  console.log("🎨 Стили добавлены в блок модулей style.scss");
+  console.log('🎨 Стили добавлены в блок модулей style.scss');
 };
 
 // ВОТ ЭТА ФУНКЦИЯ БЫЛА УТЕРЯНА. ВОЗВРАЩАЕМ ЕЁ НА МЕСТО:
 export const createModule = (done) => {
   const name = process.argv
-    .find((arg) => arg.startsWith("--"))
-    ?.replace("--", "");
+    .find((arg) => arg.startsWith('--'))
+    ?.replace('--', '');
 
   if (!name) {
     console.log(
-      "\n❌ Укажите имя модуля! Пример: gulp createModule --my-block\n",
+      '\n❌ Укажите имя модуля! Пример: gulp createModule --my-block\n',
     );
     return done();
   }
 
   const camelName = toCamelCase(name);
   const dirPath = path.join(config.structure.modules, name);
-  const appJsPath = path.join(config.srcFolder, "js", "app.ts");
+  const appJsPath = path.join(config.srcFolder, 'js', 'app.ts');
   const styleScssPath = path.join(
     config.srcFolder,
     config.preprocessor,

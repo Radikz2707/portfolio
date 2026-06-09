@@ -10,22 +10,24 @@ const cleancss = require("gulp-clean-css");
 const rename = require("gulp-rename");
 const gulpSass = require("gulp-sass");
 
-// 🔥 ДОБАВЛЕНО ДЛЯ ОПТИМИЗАЦИИ DEV-РЕЖИМА: Умный кэш файлов
-const cached = require("gulp-cached");
-const dependents = require("gulp-dependents");
-
 import * as dartSass from "sass";
 import postcss from "gulp-postcss";
 import autoprefixer from "autoprefixer";
-
 import webpInCssModule from "webp-in-css/plugin.js";
 import sortMediaQueries from "postcss-sort-media-queries";
 const webpInCss = webpInCssModule.default || webpInCssModule;
 
-import { onError, isProd, bs } from "./server.js";
+import { onError, bs } from "./server.js";
 
 const { src, dest } = gulp;
 const sass = gulpSass(dartSass);
+
+/**
+ * Флаг режима сборки.
+ * Возвращает true, если в команду терминала передан аргумент "build" (npm run build).
+ * Используется для включения сжатия CSS и отключения генерации карт кода (sourcemaps).
+ */
+export const isProd = process.argv.includes("build");
 
 export function styles() {
   const pipeline = [
@@ -33,21 +35,12 @@ export function styles() {
     plumber({ errorHandler: onError }),
   ];
 
-  // 🔥 ОПТИМИЗАЦИЯ: Включаем кэш только в режиме разработки (npm run dev)
-  // На продакшене билд всегда должен собираться начисто
-  if (!isProd) {
-    pipeline.push(
-      cached("sass"), // Пропускает дальше по потоку только измененный файл
-      dependents(), // Вычисляет, какие компоненты связаны через @import, и обновляет их
-    );
-  }
-
-  // ИСПРАВЛЕНО: Карта инициализируется строго в самом начале потока
+  // Инициализируем карту кода строго в начале потока для режима разработки
   if (!isProd) {
     pipeline.push(sourcemaps.init());
   }
 
-  // Базовые плагины трансформации
+  // Базовые плагины трансформации (Dart Sass + PostCSS)
   pipeline.push(
     sass({
       silenceDeprecations: ["import"],
@@ -63,7 +56,7 @@ export function styles() {
     ]),
   );
 
-  // ИСПРАВЛЕНО: Сжатие стилей выполняется исключительно для продакшена
+  // Сжатие стилей выполняется исключительно для продакшена
   if (isProd) {
     pipeline.push(cleancss({ level: { 2: { mergeMedia: true } } }));
   }

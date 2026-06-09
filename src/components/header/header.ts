@@ -1,14 +1,14 @@
 export const header = (): void => {
-  const headerElement = document.querySelector<HTMLElement>(".header");
+  const headerElement = document.querySelector<HTMLElement>('.header');
 
   if (!headerElement) return;
 
   const toggleHeaderScroll = (): void => {
     // Если прокрутили больше 20px, добавляем класс, иначе убираем
     if (window.scrollY > 20) {
-      headerElement.classList.add("_scroll");
+      headerElement.classList.add('_scroll');
     } else {
-      headerElement.classList.remove("_scroll");
+      headerElement.classList.remove('_scroll');
     }
   };
 
@@ -16,5 +16,5 @@ export const header = (): void => {
   toggleHeaderScroll();
 
   // Отслеживаем скролл
-  window.addEventListener("scroll", toggleHeaderScroll);
+  window.addEventListener('scroll', toggleHeaderScroll);
 };

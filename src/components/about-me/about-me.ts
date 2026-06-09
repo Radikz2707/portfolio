@@ -1,17 +1,17 @@
 export const aboutMe = (): void => {
   // 🔥 Ваш изначальный лог на месте — вы увидите его в консоли!
-  console.log("Блок about-me (TS) инициализирован");
+  console.log('Блок about-me (TS) инициализирован');
 
   // Находим элементы анимации внутри секции "О себе"
   const revealElements = document.querySelectorAll(
-    ".element-reveal, .element-reveal-left",
+    '.element-reveal, .element-reveal-left',
   );
 
   if (revealElements.length === 0) return;
 
   const observerOptions: IntersectionObserverInit = {
     root: null,
-    rootMargin: "0px",
+    rootMargin: '0px',
     threshold: 0.05,
   };
 
@@ -24,7 +24,7 @@ export const aboutMe = (): void => {
         entry.isIntersecting ||
         entry.boundingClientRect.top < window.innerHeight
       ) {
-        entry.target.classList.add("_active");
+        entry.target.classList.add('_active');
         observer.unobserve(entry.target);
       }
     });
@@ -38,7 +38,7 @@ export const aboutMe = (): void => {
     // Защита от пустого места: если мы перешли из блога и секция уже на экране,
     // сразу делаем её видимой, не дожидаясь скролла
     if (element.getBoundingClientRect().top < window.innerHeight) {
-      element.classList.add("_active");
+      element.classList.add('_active');
     }
   });
 };

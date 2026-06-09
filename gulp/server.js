@@ -1,119 +1,116 @@
-import { config } from "../gulp.config.js";
-import gulp from "gulp";
-import browserSync from "browser-sync";
-import notify from "gulp-notify";
+import { config } from '../gulp.config.js';
+import gulp from 'gulp';
+import browserSync from 'browser-sync';
+import path from 'path';
+import fs from 'fs';
 
-// Импортируем таск стилей для прямого и быстрого запуска в вотчере
-import { styles } from "./styles.js";
-// Импортируем инфраструктуру линтинга (она завязана на хитрую логику автофикса)
-import { lintCss, lintJs } from "./lint.js";
+import { styles } from './styles.js';
+import { lintCss, lintJs } from './lint.js';
 
 const { watch, series } = gulp;
 export const bs = browserSync.create();
 
-export const isProd = process.argv.includes("build");
+// Флаг режима продакшен сборки
+export const isProd = process.argv.includes('build');
 
 export const onError = function (err) {
-  // Выводим ошибку в консоль красивым красным цветом с указанием плагина
   console.error(
-    "\x1b[31m%s\x1b[0m",
-    `[Error] ${err.plugin || "Gulp"}: ${err.message || err.toString()}`,
+    '\x1b[31m%s\x1b[0m',
+    `[Error] ${err.plugin || 'Gulp'}: ${err.message || err.toString()}`,
   );
-
-  if (err.plugin !== "webpack-stream") {
-    this.emit("end");
+  if (err.plugin !== 'webpack-stream') {
+    this.emit('end');
   }
 };
 
 export function browsersync() {
-  // Проверяем, задано ли имя репозитория в конфигурации проекта
-  const hasRepo = config.repoName && config.repoName.trim() !== "";
-
   bs.init({
     server: {
       baseDir: config.buildFolder,
-      // Если репозиторий задан, создаем виртуальный роутинг,
-      // чтобы ссылки вида /portfolio/blog/.. не вели на пустую страницу
-      ...(hasRepo && {
-        routes: {
-          [`/${config.repoName}`]: config.buildFolder,
-        },
-      }),
     },
-    // Сервер сразу откроется по правильному адресу (например, localhost:3000/portfolio/)
-    startPath: hasRepo ? `/${config.repoName}/` : "/",
-
-    // 🔥 ДОБАВЛЕНО: Принудительно заставляем систему автоматически открывать браузер на localhost
-    open: "local",
-
+    startPath: '/',
+    open: 'local',
     notify: false,
     online: true,
   });
 }
 
 export function startwatch() {
-  // 1. СЛЕЖЕНИЕ ЗА СТИЛЯМИ (Прямой запуск функции без реестра строк)
+  // 1. СЛЕДИТЕЛЬ ЗА СТИЛЯМИ
   const styleWatcher = watch(
     [`${config.srcFolder}/**/*.${config.preprocessor}`],
     { delay: 300 },
   );
 
-  styleWatcher.on("change", (filePath) => {
-    lintCss(() => {
-      // Запускаем импортированный таск стилей напрямую для мгновенного обновления CSS
+  styleWatcher.on('change', async (filePath) => {
+    try {
+      await lintCss(filePath);
       series(styles)();
-    }, filePath);
+    } catch (err) {
+      onError(err);
+    }
   });
 
-  // 2. СЛЕЖЕНИЕ ЗА СКРИПТАМИ
+  // 2. СЛЕДИТЕЛЬ ЗА СКРИПТАМИ
   const scriptWatcher = watch([`${config.srcFolder}/**/*.{js,ts}`], {
     delay: 300,
   });
 
-  scriptWatcher.on("change", (filePath) => {
-    lintJs(() => {
-      // В dev-режиме webpack сам следит за изменениями JS/TS, пересборка нужна только на продакшене
+  scriptWatcher.on('change', async (filePath) => {
+    try {
+      await lintJs(filePath);
       if (isProd) {
-        const scriptsTask = gulp.registry().get("scripts");
+        const scriptsTask = gulp.registry().get('scripts');
         if (scriptsTask) series(scriptsTask)();
       }
-    }, filePath);
+    } catch (err) {
+      onError(err);
+    }
   });
 
-  // 3. УМНЫЕ АВТОМАТИЧЕСКИЕ НАБЛЮДАТЕЛИ (Генерация путей по имени файла таска)
-  // Динамически импортируем список найденных файлов из главного gulpfile.js
-  import("../gulpfile.js").then(({ dynamicTaskNames }) => {
-    dynamicTaskNames.forEach((taskName) => {
-      let watchPath;
+  // 3. АВТОНОМНЫЕ ВОТЧЕРЫ ДЛЯ РАЗМЕТКИ И КОНТЕНТА
+  // Слежение за глобальными HTML-файлами проекта и компонентами
+  watch(
+    [
+      `${config.srcFolder}/**/*.html`,
+      `${config.srcFolder}/components/**/*.html`,
+      `${config.srcFolder}/parts/**/*.html`,
+    ],
+    (done) => {
+      const htmlTask = gulp.registry().get('html');
+      if (htmlTask) return gulp.series('html')();
+      done();
+    },
+  );
 
-      // Задаем правила генерации путей на основе имени файла таска:
-      if (taskName === "html") {
-        watchPath = [
-          `${config.srcFolder}/**/*.html`,
-          `${config.srcFolder}/components/**/*.html`,
-        ];
-      } else if (taskName === "images") {
-        watchPath = `${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,webp,gif}`;
-      } else {
-        // Для всех остальных разделов контента (blog, portfolio и т.д.) путь строится автоматически:
-        watchPath = `${config.srcFolder}/content/${taskName}/**/*`;
-      }
-
-      // Запускаем автоматическое слежение
-      watch(watchPath, (done) => {
-        const registeredTask = gulp.registry().get(taskName);
-        if (registeredTask) {
-          return gulp.series(taskName)();
-        }
-        done();
+  // Слежение за изменениями текстов контента (blog, portfolio)
+  watch(`${config.srcFolder}/content/**/*`, (done) => {
+    const contentDir = path.join(config.srcFolder, 'content');
+    if (fs.existsSync(contentDir)) {
+      const folders = fs.readdirSync(contentDir);
+      folders.forEach((folder) => {
+        const taskKey = folder.toLowerCase();
+        const registeredTask = gulp.registry().get(taskKey);
+        if (registeredTask) gulp.series(taskKey)();
       });
-    });
+    }
+    done();
   });
 
-  // Изолированный вотчер для сборки SVG-спрайтов
+  // Слежение за картинками в компонентах
+  watch(
+    `${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,webp,gif}`,
+    (done) => {
+      const imagesTask = gulp.registry().get('imagesDev');
+      if (imagesTask) return gulp.series('imagesDev')();
+      done();
+    },
+  );
+
+  // Слежение за SVG-иконками для автосборки спрайта
   watch(config.paths.images.svg, (done) => {
-    const spriteTask = gulp.registry().get("sprite");
-    if (spriteTask) return gulp.series(spriteTask)();
+    const spriteTask = gulp.registry().get('sprite');
+    if (spriteTask) return gulp.series('sprite')();
     done();
   });
 }

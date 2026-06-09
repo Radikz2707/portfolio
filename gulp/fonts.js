@@ -13,8 +13,12 @@ const { src, dest } = gulp;
 // 1. КОНВЕРТАЦИЯ ШРИФТОВ В WOFF И WOFF2
 export function fonts(done) {
   const sourceDir = path.dirname(config.paths.fonts.src).replace(/\*\*$/, "");
-  if (!fs.existsSync(sourceDir) || fs.readdirSync(sourceDir).length === 0)
+
+  // Если директория не существует или пуста - просто завершаем задачу
+  if (!fs.existsSync(sourceDir) || fs.readdirSync(sourceDir).length === 0) {
+    console.log("ℹ️ Шрифты не найдены, пропускаем конвертацию.");
     return done();
+  }
 
   return src(config.paths.fonts.src, { encoding: false, allowEmpty: true })
     .pipe(plumber({ errorHandler: onError }))
@@ -32,7 +36,11 @@ export function fonts(done) {
       bs.reload();
       done();
     })
-    .on("error", done);
+    .on("error", (err) => {
+      console.error("Ошибка при обработке шрифтов:", err);
+      bs.reload();
+      done();
+    });
 }
 
 // 2. АВТОМАТИЧЕСКОЕ ПОДКЛЮЧЕНИЕ ШРИФТОВ В SCSS/SASS
@@ -82,4 +90,3 @@ export function fontsStyle(done) {
   console.log(`📝 Файл _fonts.${extension} успешно обновлен.`);
   done();
 }
-

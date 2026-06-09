@@ -1,18 +1,18 @@
-import fs from "fs";
-import path from "path";
-import { config } from "./gulp.config.js";
+import fs from 'fs';
+import path from 'path';
+import { config } from './gulp.config.js';
 
 const PROTECTED_NAMES = [
-  "js",
-  "scss",
-  "html",
-  "img",
-  "fonts",
-  "components",
-  "modules",
-  "src",
-  "dist",
-  "plugins",
+  'js',
+  'scss',
+  'html',
+  'img',
+  'fonts',
+  'components',
+  'modules',
+  'src',
+  'dist',
+  'plugins',
 ];
 
 const toCamelCase = (str) =>
@@ -20,9 +20,9 @@ const toCamelCase = (str) =>
 
 const updateFileContent = (filePath, modifyCallback) => {
   if (!fs.existsSync(filePath)) return;
-  const content = fs.readFileSync(filePath, "utf-8");
+  const content = fs.readFileSync(filePath, 'utf-8');
   const updatedContent = modifyCallback(content);
-  fs.writeFileSync(filePath, updatedContent.trimEnd() + "\n");
+  fs.writeFileSync(filePath, updatedContent.trimEnd() + '\n');
 };
 
 const cleanAppTs = (filePath, blockName, camelName) => {
@@ -33,19 +33,25 @@ const cleanAppTs = (filePath, blockName, camelName) => {
 
       // ИСПРАВЛЕНО: Более точная проверка импорта (ищет имя блока как изолированную часть пути в кавычках)
       const isTargetImport =
-        trimmed.startsWith("import ") &&
+        trimmed.startsWith('import ') &&
         (trimmed.includes(`/${blockName}/`) ||
           trimmed.includes(`/${blockName}"`) ||
-          trimmed.includes(`/${blockName}'`));
+          trimmed.includes(`/${blockName}'`) ||
+          trimmed.includes(`@comp/${blockName}/`) ||
+          trimmed.includes(`@comp/${blockName}"`) ||
+          trimmed.includes(`@comp/${blockName}'`) ||
+          trimmed.includes(`@modules/${blockName}/`) ||
+          trimmed.includes(`@modules/${blockName}"`) ||
+          trimmed.includes(`@modules/${blockName}'`));
 
       // ИСПРАВЛЕНО: Проверка вызова функции без привязки к лишним пробелам или табам по краям
-      const isTargetCall = trimmed.replace(/\s+/g, "") === `${camelName}();`;
+      const isTargetCall = trimmed.replace(/\s+/g, '') === `${camelName}();`;
 
       return !isTargetImport && !isTargetCall;
     });
-    return filteredLines.join("\n").replace(/\n{3,}/g, "\n\n");
+    return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n');
   });
-  console.log("✂️ Импорты и вызовы TS успешно удалены.");
+  console.log('✂️ Импорты и вызовы TS успешно удалены.');
 };
 
 const cleanStyleScss = (filePath, blockName) => {
@@ -59,7 +65,7 @@ const cleanStyleScss = (filePath, blockName) => {
         !trimmed.includes(`/${blockName}'`)
       );
     });
-    return filteredLines.join("\n").replace(/\n{3,}/g, "\n\n");
+    return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n');
   });
   console.log(`✂️ Стили удалены из style.${config.preprocessor}`);
 };
@@ -69,20 +75,20 @@ const cleanIndexHtml = (filePath, blockName) => {
     // ИСПРАВЛЕНО: Регулярное выражение теперь корректно вырезает инклуд вместе с переносом строки, не оставляя пустых дыр
     const htmlIncludeReg = new RegExp(
       `@@include\\(['"].*?${blockName}/${blockName}.html['"]\\)\\r?\\n?`,
-      "g",
+      'g',
     );
-    return content.replace(htmlIncludeReg, "").replace(/\n{3,}/g, "\n\n");
+    return content.replace(htmlIncludeReg, '').replace(/\n{3,}/g, '\n\n');
   });
-  console.log("✂️ Инклуд удален из HTML.");
+  console.log('✂️ Инклуд удален из HTML.');
 };
 
 export const remove = (done) => {
   const blockName = process.argv
-    .find((arg) => arg.startsWith("--"))
-    ?.replace("--", "");
+    .find((arg) => arg.startsWith('--'))
+    ?.replace('--', '');
 
   if (!blockName) {
-    console.log("\n❌ Ошибка: Укажите имя! Пример: gulp remove --header\n");
+    console.log('\n❌ Ошибка: Укажите имя! Пример: gulp remove --header\n');
     return done();
   }
 
@@ -112,7 +118,7 @@ export const remove = (done) => {
     config.preprocessor,
     `style.${config.preprocessor}`,
   );
-  const indexHtmlPath = path.join(config.srcFolder, "index.html");
+  const indexHtmlPath = path.join(config.srcFolder, 'index.html');
 
   let dirDeleted = false;
 

@@ -3,9 +3,23 @@
   "tabWidth": 2,
   "useTabs": false,
   "semi": true,
-  "singleQuote": false,
+  "singleQuote": true,
   "trailingComma": "all",
   "bracketSpacing": true,
   "arrowParens": "always",
-  "endOfLine": "lf"
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": ["*.html", "*.json"],
+      "options": {
+        "singleQuote": false
+      }
+    },
+    {
+      "files": ["*.ts", "*.js", "*.scss"],
+      "options": {
+        "singleQuote": true
+      }
+    }
+  ]
 }

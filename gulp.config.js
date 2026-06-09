@@ -1,16 +1,17 @@
-import path from "path";
+import path from 'path';
 
 // ==========================================
 // БАЗОВЫЕ НАСТРОЙКИ НАПРАВЛЕНИЙ
 // ==========================================
-const preprocessor = "scss";
-const srcFolder = "src"; // Папка с исходными файлами
-const buildFolder = "dist"; // Папка готовой сборки проекта
+const preprocessor = 'scss';
+const srcFolder = 'src'; // Папка с исходными файлами
+const buildFolder = 'dist'; // Папка готовой сборки проекта
 
 export const config = {
   // 🔥 ДОБАВЛЕНО: Имя удаленного репозитория на GitHub для автоматизации ссылок
-   repoName: "portfolio",
-   
+  // repoName отключено, чтобы избежать префиксов в ссылках на фавиконки
+  repoName: null,
+
   preprocessor,
   srcFolder,
   buildFolder,
@@ -19,14 +20,14 @@ export const config = {
   // СТРУКТУРА ПРОЕКТА ДЛЯ АВТОМАТИЗАЦИИ
   // ==========================================
   structure: {
-    components: path.join(srcFolder, "components"),
-    modules: path.join(srcFolder, "js", "modules"),
-    lessons: path.join(srcFolder, "js", "modules", "lessons"),
-    plugins: path.join(srcFolder, "js", "plugins"),
+    components: path.join(srcFolder, 'components'),
+    modules: path.join(srcFolder, 'js', 'modules'),
+    lessons: path.join(srcFolder, 'js', 'modules', 'lessons'),
+    plugins: path.join(srcFolder, 'js', 'plugins'),
   },
 
   // Корень для JS алиасов (используется в webpack и jsconfig)
-  aliasPath: path.join(srcFolder, "js"),
+  aliasPath: path.join(srcFolder, 'js'),
 
   // ==========================================
   // ПУТИ К ФАЙЛАМ ДЛЯ СБОРЩИКА GULP
@@ -35,17 +36,17 @@ export const config = {
     styles: {
       src: `${srcFolder}/${preprocessor}/style.{sass,scss,less}`, // Оставляем glob-паттерн для Gulp
       dest: `${buildFolder}/css/`,
-      output: "app.min.css",
+      output: 'app.min.css',
     },
     scripts: {
       src: `${srcFolder}/js/app.ts`,
       dest: `${buildFolder}/js/`,
-      output: "app.min.js",
+      output: 'app.min.js',
     },
     images: {
-      src: `${srcFolder}/images/src/**/*`,
+      src: `${srcFolder}/images/**/*`,
       dest: `${buildFolder}/images/`,
-      svg: `${srcFolder}/images/src/**/*.svg`,
+      svg: `${srcFolder}/images/**/*.svg`,
     },
     fonts: {
       src: `${srcFolder}/fonts/src/**/*.{ttf,otf}`,
@@ -62,16 +63,16 @@ export const config = {
       jpeg: 75,
       png: 5,
     },
-    autoprefixer: ["> 0.5%", "last 2 versions", "not dead"],
+    autoprefixer: ['> 0.5%', 'last 2 versions', 'not dead'],
   },
 
   // ==========================================
   // 🔥 КАРТА АВТОМАТИЧЕСКОГО СЛЕЖЕНИЯ ЗА ФАЙЛАМИ
   // ==========================================
   watchers: [
-    { mask: "/**/*.html", task: "html" },
-    { mask: "/content/blog/**/*.md", task: "blog" }, // <-- Наш блог
-    { mask: "/fonts/src/**/*", task: "fonts" },
-    { mask: "/components/**/*.{jpg,jpeg,png,svg,webp,gif}", task: "imagesDev" },
+    { mask: '/**/*.html', task: 'html' },
+    { mask: '/content/blog/**/*.md', task: 'blog' }, // <-- Наш блог
+    { mask: '/fonts/src/**/*', task: 'fonts' },
+    { mask: '/components/**/*.{jpg,jpeg,png,svg,webp,gif}', task: 'imagesDev' },
   ],
 };

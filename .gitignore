@@ -13,6 +13,7 @@ dist/
 archives/
 .cache/
 .tmp/
+.gigacode/
 
 # Логи операционных систем и программ
 *.log
