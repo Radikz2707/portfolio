@@ -1,27 +1,25 @@
-import { config } from "../gulp.config.js";
-import gulp from "gulp";
-import path from "path";
-import plumber from "gulp-plumber";
+import { config } from '../gulp.config.js';
+import gulp from 'gulp';
+import path from 'path';
+import plumber from 'gulp-plumber';
 
-import { createRequire } from "module"; 
-const require = createRequire(import.meta.url); 
-const webpackStream = require("webpack-stream");
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const webpackStream = require('webpack-stream');
+import webpack from 'webpack';
+import TerserPlugin from 'terser-webpack-plugin';
 
-import webpack from "webpack"; 
-import TerserPlugin from "terser-webpack-plugin";
-
-import { onError, isProd, bs } from "./server.js";
+import { onError, isProd, bs } from './server.js';
 
 const { src, dest } = gulp;
 
-export function scripts(done) { 
-  let isFirstBuild = true;
-
+export function scripts() {
+  // Базовая конфигурация Webpack, общая для обоих режимов
   const webpackConfig = {
     mode: isProd ? 'production' : 'development',
-    watch: !isProd,
-    // Кэшируем сборку в оперативной памяти, убирая конфликты с диском Windows
-    cache: isProd ? false : { type: 'memory' },
+    // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ДЛЯ GULP 5: Отключаем встроенный watch вебпака в dev-режиме,
+    // так как за пересборку теперь полностью отвечает наш стабильный файловый watcher из server.js
+    watch: false,
     performance: { hints: false },
     entry: {
       app: path.resolve(config.paths.scripts.src),
@@ -47,10 +45,11 @@ export function scripts(done) {
             {
               loader: 'ts-loader',
               options: {
-                transpileOnly: !isProd, // Максимальное ускорение в dev-режиме
-                /* 🔥 ИСПРАВЛЕНО: Принудительно разрешаем генерацию кода для потока Webpack */
+                // transpileOnly гарантирует молниеносную скорость в режиме разработки,
+                // отключая тяжелую проверку типов на каждом сохранении (её делает npm run lint)
+                transpileOnly: !isProd,
                 compilerOptions: {
-                  noEmit: false,
+                  noEmit: false, // Принудительно разрешаем генерацию кода для потока Webpack
                 },
               },
             },
@@ -70,23 +69,25 @@ export function scripts(done) {
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
   };
 
-  const stream = src(config.paths.scripts.src) 
-    .pipe(plumber({ errorHandler: onError })) 
-    .pipe( 
-      webpackStream(webpackConfig, webpack, (err, stats) => { 
-        if (err) return;
-        if (!isProd) { 
-          if (isFirstBuild) { 
-            isFirstBuild = false; 
-            done(); 
-          } 
-          bs.reload(); 
-        } 
-      }), 
-    ) 
-    .pipe(dest(config.paths.scripts.dest));
+  // Инициализируем пайплайн. В Gulp 5 для скриптов тоже отключаем кодировку строк ({ encoding: false }),
+  // чтобы минифицированный JS и бинарные карты кода (.map) не повредились при потоковой записи.
+  const pipeline = [
+    src(config.paths.scripts.src, { encoding: false }),
+    plumber({ errorHandler: onError }),
+    // Передаем кастомный логгер в коллбэк webpack-stream для вывода статистики компиляции
+    webpackStream(webpackConfig, webpack, (err, stats) => {
+      if (err) return;
+      if (stats.hasErrors()) {
+        console.error(stats.toString('minimal'));
+      }
+    }),
+    dest(config.paths.scripts.dest),
+  ];
 
-  if (isProd) { 
-    return stream.on("end", done); 
-  } 
+  // Склеиваем стримы черезreduce и триггерим обновление браузера
+  return pipeline
+    .reduce((stream, plugin) => stream.pipe(plugin))
+    .on('end', () => {
+      bs.reload();
+    });
 }

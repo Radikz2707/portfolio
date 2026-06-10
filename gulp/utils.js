@@ -2,44 +2,53 @@ import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
 import fs from 'fs';
+import fsPromises from 'fs/promises'; // Асинхронное ядро I/O
 import plumber from 'gulp-plumber';
 import zip from 'gulp-zip';
-
 import { onError } from './server.js';
 
 const { src, dest } = gulp;
 
-// 1. ПОЛНАЯ ОЧИСТКА ПЕРЕД СБОРКОЙ (Выполняется строго ОДИН раз в самом начале)
-export function cleandist(done) {
-  // Физическое удаление папки готовой сборки (dist/)
-  if (fs.existsSync(config.buildFolder)) {
-    fs.rmSync(config.buildFolder, { recursive: true, force: true });
-  }
+// =========================================================================
+// 🧹 1. ПОЛНАЯ АСИНХРОННАЯ ОЧИСТКА ПЕРЕД СБОРКОЙ (БЕЗ БЛОКИРОВКИ EVENT LOOP)
+// =========================================================================
+export async function cleandist(done) {
+  try {
+    // Асинхронное физическое удаление папки готовой сборки (dist/)
+    if (fs.existsSync(config.buildFolder)) {
+      await fsPromises.rm(config.buildFolder, { recursive: true, force: true });
+    }
 
-  // Очистка скрытого кэша Webpack, Babel и линтеров в node_modules
-  const cacheFolder = path.join('node_modules', '.cache');
-  if (fs.existsSync(cacheFolder)) {
-    fs.rmSync(cacheFolder, { recursive: true, force: true });
-  }
+    // Асинхронная очистка скрытого кэша Webpack, Babel и линтеров в node_modules
+    const cacheFolder = path.join('node_modules', '.cache');
+    if (fs.existsSync(cacheFolder)) {
+      await fsPromises.rm(cacheFolder, { recursive: true, force: true });
+    }
 
-  // Авто-удаление скрытых временных файлов Microsoft Word (~$...)
-  const blogDir = path.join(config.srcFolder, 'content', 'blog');
-  if (fs.existsSync(blogDir)) {
-    const files = fs.readdirSync(blogDir);
-    for (const file of files) {
-      if (file.startsWith('~$')) {
-        const trashFilePath = path.join(blogDir, file);
-        fs.unlinkSync(trashFilePath);
+    // Авто-удаление скрытых временных файлов Microsoft Word (~...) в блоге
+    const blogDir = path.join(config.srcFolder, 'content', 'blog');
+    if (fs.existsSync(blogDir)) {
+      const files = await fsPromises.readdir(blogDir);
+      for (const file of files) {
+        if (file.startsWith('~')) {
+          const trashFilePath = path.join(blogDir, file);
+          await fsPromises.unlink(trashFilePath);
+        }
       }
     }
-  }
 
-  done();
+    done(); // Сигнализируем Gulp об успешном завершении асинхронной очистки
+  } catch (err) {
+    onError(err);
+    done(err);
+  }
 }
 
-// 2. БЕЗОПАСНОЕ КОПИРОВАНИЕ ШРИФТОВ (Ничего не удаляет, только дописывает ресурсы!)
+// =========================================================================
+// 🔤 2. БЕЗОПАСНОЕ КОПИРОВАНИЕ ШРИФТОВ (ЗАЩИТА БИНАРНЫХ ДАННЫХ В GULP 5)
+// =========================================================================
 export function buildcopy(done) {
-  // Гарантируем наличие папки dist и создаем пустой .nojekyll для GitHub Pages
+  // Гарантируем наличие папки dist и асинхронно создаем пустой .nojekyll для GitHub Pages
   if (!fs.existsSync(config.buildFolder)) {
     fs.mkdirSync(config.buildFolder, { recursive: true });
   }
@@ -49,16 +58,23 @@ export function buildcopy(done) {
   const srcFontsFolder = path.join(config.srcFolder, 'fonts');
   if (!fs.existsSync(srcFontsFolder)) return done();
 
-  // Линейно копируем шрифты в dist/fonts, не затрагивая сгенерированную папку /blog/
-  return src(path.join(srcFontsFolder, '**', '*'), {
-    allowEmpty: true,
-    encoding: false,
-  })
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(dest(path.join(config.buildFolder, 'fonts')));
+  // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ДЛЯ GULP 5: Принудительно передаем { encoding: false },
+  // чтобы шрифты .woff2/.ttf не прочитались как текст UTF-8 и не повредились на диске!
+  const pipeline = [
+    src(path.join(srcFontsFolder, '**', '*'), {
+      allowEmpty: true,
+      encoding: false,
+    }),
+    plumber({ errorHandler: onError }),
+    dest(path.join(config.buildFolder, 'fonts')),
+  ];
+
+  return pipeline.reduce((stream, plugin) => stream.pipe(plugin));
 }
 
-// 3. АРХИВИРОВАНИЕ СБОРКИ
+// =========================================================================
+// 📦 3. АРХИВИРОВАНИЕ СБОРКИ (PIPELINE + REDUCE PATTERN + GULP 5 ENCODING)
+// =========================================================================
 export function zipFiles() {
   const now = new Date();
   const year = now.getFullYear();
@@ -69,11 +85,22 @@ export function zipFiles() {
 
   const fileName = `dist_${year}-${month}-${day}_${hours}-${minutes}.zip`;
 
-  return src(path.join(config.buildFolder, '**', '*'), { allowEmpty: true })
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(zip(fileName))
-    .pipe(dest('archives/'))
+  // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ДЛЯ GULP 5: Для создания корректного ZIP-архива
+  // все упаковываемые файлы и картинки должны быть прочитаны в бинарном режиме ({ encoding: false })
+  const pipeline = [
+    src(path.join(config.buildFolder, '**', '*'), {
+      allowEmpty: true,
+      encoding: false,
+    }),
+    plumber({ errorHandler: onError }),
+    zip(fileName),
+    dest('archives/'),
+  ];
+
+  // Ваш фирменный нативный метод связки стримов через reduce
+  return pipeline
+    .reduce((stream, plugin) => stream.pipe(plugin))
     .on('end', () => {
-      console.log(`\n📦 Архив успешно создан: archives/${fileName}\n`);
+      console.log(`\n📦 [Gulp 5] Архив успешно создан: archives/${fileName}\n`);
     });
 }

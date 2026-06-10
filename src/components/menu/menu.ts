@@ -1,11 +1,13 @@
 export const menu = (): void => {
   console.log('Модуль навигационного меню (TS) инициализирован');
 
-  const menuIcon = document.querySelector('.menu-icon');
-  const menuBody = document.querySelector('.menu');
+  // Строгая типизация DOM-элементов через дженерики querySelector
+  const menuIcon = document.querySelector<HTMLElement>('.menu-icon');
+  const menuBody = document.querySelector<HTMLElement>('.menu');
 
-  // 🔥 ИСПРАВЛЕНО: Теперь ищем все ссылки, которые СОДЕРЖАТ '#', а не только начинаются с неё
-  const anchors = document.querySelectorAll<HTMLAnchorElement>("a[href*='#']");
+  // Явное указание типа NodeListOf для коллекции ссылок-якорей
+  const anchors: NodeListOf<HTMLAnchorElement> =
+    document.querySelectorAll<HTMLAnchorElement>("a[href*='#']");
 
   // Функция для принудительного закрытия меню
   const closeMenu = (): void => {
@@ -16,70 +18,105 @@ export const menu = (): void => {
     }
   };
 
-  // 1. УПРАВЛЕНИЕ БУРГЕР-МЕНЮ НА СМАРТФОНАХ
+  // 1. УПРАВЛЕНИЕ БУРГЕР-МЕНЮ НА СМАРТФОНАХ (С ЗАЩИТОЙ ОТ ДРЕБЕЗГА КЛИКОВ)
   if (menuIcon && menuBody) {
-    menuIcon.addEventListener('click', () => {
+    let isClickBlocked = false;
+
+    menuIcon.addEventListener('click', (e: MouseEvent): void => {
+      e.stopPropagation();
+      if (isClickBlocked) return;
+
+      // Блокируем гонку частых кликов на 300мс (время анимации гамбургера)
+      isClickBlocked = true;
+
       document.body.classList.toggle('_lock');
       menuIcon.classList.toggle('_active');
       menuBody.classList.toggle('_active');
+
+      setTimeout(() => {
+        isClickBlocked = false;
+      }, 300);
     });
   }
 
   // 2. УНИВЕРСАЛЬНЫЙ СКРОЛЛ И ПЕРЕХОД МЕЖДУ СТРАНИЦАМИ
-  anchors.forEach((anchor) => {
-    anchor.addEventListener('click', (e: Event) => {
-      const href = anchor.getAttribute('href');
+  anchors.forEach((anchor: HTMLAnchorElement) => {
+    anchor.addEventListener('click', (e: Event): void => {
+      const href: string | null = anchor.getAttribute('href');
       if (!href) return;
 
       // Проверяем, находимся ли мы в блоге (путь содержит '/blog/')
-      const isBlogPage = window.location.pathname.includes('/blog/');
+      const isBlogPage: boolean = window.location.pathname.includes('/blog/');
 
       if (isBlogPage) {
-        // Если мы в блоге, отменять клик НЕ надо!
-        // Позволяем браузеру совершить стандартный переход по ссылке на главную.
-        closeMenu(); // На всякий случай закрываем меню перед уходом со страницы
+        // Если мы в блоге, отменять клик НЕ надо! Позволяем перейти на главную
+        closeMenu();
         return;
       }
 
-      // Если мы НА ГЛАВНОЙ странице, включаем наш фирменный плавный скролл
+      // Если мы НА ГЛАВНОЙ странице, включаем плавный скролл
       e.preventDefault();
 
-      // 🔥 ИСПРАВЛЕНО: Извлекаем чистый ID секции, удаляя всё до знака '#' включительно
-      const targetId = href.substring(href.indexOf('#') + 1);
-      const targetSection = document.getElementById(targetId);
+      // Извлекаем чистый ID секции, удаляя всё до знака '#' включительно
+      const targetId: string = href.substring(href.indexOf('#') + 1);
+      const targetSection: HTMLElement | null =
+        document.getElementById(targetId);
 
       if (targetSection) {
-        // 🔥 ДОБАВЛЕНО: Закрываем мобильное меню сразу при клике, чтобы увидеть анимацию скролла контента
         closeMenu();
 
-        const headerOffset = 80;
-        const elementPosition = targetSection.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - headerOffset;
+        const headerElement = document.querySelector<HTMLElement>('.header');
+        // Динамически высчитываем высоту шапки, если она изменилась (например, класс _scroll)
+        const headerOffset: number = headerElement
+          ? headerElement.offsetHeight
+          : 80;
+
+        const elementPosition: number =
+          targetSection.getBoundingClientRect().top;
+        const offsetPosition: number =
+          elementPosition + window.scrollY - headerOffset;
 
         window.scrollTo({
           top: offsetPosition,
-          behavior: 'smooth', // Добавит нативную плавность, если она не задана глобально в CSS
+          behavior: 'smooth',
         });
       }
     });
   });
 
-  // 3. ХИТРЫЙ ТРЮК: Если мы только что перешли из блога на главную по якорной ссылке
+  // 3. СТАБИЛЬНЫЙ СКРОЛЛ ПРИ ПЕРЕХОДЕ ИЗ БЛОГА НА ГЛАВНУЮ (БЕЗ СЛЕПЫХ ТАЙМАУТОВ)
   if (!window.location.pathname.includes('/blog/') && window.location.hash) {
-    // Ждем 300мс, пока страница полностью загрузится и прорисуется
-    setTimeout(() => {
-      const targetId = window.location.hash.replace('#', '');
-      const targetSection = document.getElementById(targetId);
+    const handleInitialScroll = (): void => {
+      const targetId: string = window.location.hash.replace('#', '');
+      const targetSection: HTMLElement | null =
+        document.getElementById(targetId);
 
       if (targetSection) {
-        const headerOffset = 80;
-        const elementPosition = targetSection.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.scrollY - headerOffset;
+        // requestAnimationFrame гарантирует, что браузер полностью построил Layout
+        requestAnimationFrame(() => {
+          const headerElement = document.querySelector<HTMLElement>('.header');
+          const headerOffset: number = headerElement
+            ? headerElement.offsetHeight
+            : 80;
 
-        window.scrollTo({
-          top: offsetPosition,
+          const elementPosition: number =
+            targetSection.getBoundingClientRect().top;
+          const offsetPosition: number =
+            elementPosition + window.scrollY - headerOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth',
+          });
         });
       }
-    }, 300);
+    };
+
+    // Если страница еще загружается, ждем события полного рендеринга
+    if (document.readyState === 'complete') {
+      handleInitialScroll();
+    } else {
+      window.addEventListener('load', handleInitialScroll, { once: true });
+    }
   }
 };

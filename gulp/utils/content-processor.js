@@ -1,17 +1,18 @@
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
 import { config } from '../../gulp.config.js';
 import mammoth from 'mammoth';
-
 import gulp from 'gulp';
 import markdown from 'gulp-markdown';
-import through2 from 'through2'; // Используем уже имеющийся в проекте through2
+import { Transform } from 'stream'; // Нативная замена through2 для Gulp 5
 
 const { src } = gulp;
 
-const getFirstLineOfFile = (filePath) => {
-  return new Promise((resolve) => {
+// Асинхронное чтение первой строчки файла (без блокировки потока)
+const getFirstLineOfFile = async (filePath) => {
+  try {
     const fileStream = fs.createReadStream(filePath, 'utf-8');
     const rl = readline.createInterface({
       input: fileStream,
@@ -19,18 +20,18 @@ const getFirstLineOfFile = (filePath) => {
     });
 
     let firstLine = '';
-    rl.on('line', (line) => {
+    for await (const line of rl) {
       const trimmed = line.trim();
       if (trimmed.startsWith('# ')) {
         firstLine = trimmed.replace(/^#\s+/, '');
         rl.close();
+        break;
       }
-    });
-
-    rl.on('close', () => {
-      resolve(firstLine);
-    });
-  });
+    }
+    return firstLine;
+  } catch {
+    return '';
+  }
 };
 
 export const parsePlainText = (content) => {
@@ -38,17 +39,16 @@ export const parsePlainText = (content) => {
   return content.replace(/<\/?[^>]+(>|$)/g, '').trim();
 };
 
+// =========================================================================
+// 📑 1. АСИНХРОННАЯ ГЕНЕРАЦИЯ ССЫЛОК САЙДБАРА (БЕЗ БЛОКИРОВКИ EVENT LOOP)
+// =========================================================================
 export const generateSidebarLinks = async (folderName) => {
   const dirPath = path.join(config.srcFolder, 'content', folderName);
   if (!fs.existsSync(dirPath)) return '';
 
-  const files = fs.readdirSync(dirPath);
+  // Переходим на полностью асинхронное чтение директории
+  const files = await fsPromises.readdir(dirPath);
   let linksHtml = '';
-  const isProdBuild = process.argv.includes('build');
-  const repo =
-    isProdBuild && config.repoName
-      ? `/${config.repoName.replace(/^\/|\/$/g, '')}`
-      : '';
 
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
@@ -60,11 +60,9 @@ export const generateSidebarLinks = async (folderName) => {
 
     if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
       title = await getFirstLineOfFile(filePath);
-    }
-
-    if (ext === '.docx') {
+    } else if (ext === '.docx') {
       try {
-        const docBuffer = fs.readFileSync(filePath);
+        const docBuffer = await fsPromises.readFile(filePath);
         const result = await mammoth.extractRawText({ buffer: docBuffer });
         const textValue = result.value || '';
         const firstLine = textValue
@@ -81,55 +79,49 @@ export const generateSidebarLinks = async (folderName) => {
       title = title.charAt(0).toUpperCase() + title.slice(1);
     }
 
-    linksHtml += `  <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>
-`;
+    linksHtml += `  <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
   }
   return linksHtml;
 };
 
 export const processHtmlContent = (html, pathPrefix) => {
-  let updatedHtml = html;
-  updatedHtml = updatedHtml.replace(
-    /src="\.?\/images\//gi,
-    `src="${pathPrefix}images/`,
-  );
-  updatedHtml = updatedHtml.replace(
-    /src="images\//gi,
-    `src="${pathPrefix}images/`,
-  );
-  return updatedHtml;
+  return html
+    .replace(/src="\.?\/images\//gi, `src="${pathPrefix}images/`)
+    .replace(/src="images\//gi, `src="${pathPrefix}images/`);
 };
 
-/**
- * 3. 🔥 ИСПРАВЛЕННЫЙ КОМПИЛЯТОР: Защищает файлы Word от повреждения плагином gulp-markdown!
- */
+// =========================================================================
+// 🗜️ 2. ИСПРАВЛЕННЫЙ КОМПИЛЯТОР КОНТЕНТА (NATIVE GULP 5 TRANSFORM)
+// =========================================================================
 export const compileContentStream = () => {
-  return through2.obj(function (file, encoding, callback) {
-    if (file.isBuffer()) {
-      const ext = path.extname(file.path).toLowerCase();
+  return new Transform({
+    objectMode: true,
+    transform(file, encoding, callback) {
+      if (file.isBuffer()) {
+        const ext = path.extname(file.path).toLowerCase();
 
-      // Через markdown() пускаем ТОЛЬКО текстовые файлы статей
-      if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
-        const stream = markdown();
-        stream.on('data', (updatedFile) => {
-          file.contents = updatedFile.contents;
-          file.path = file.path.replace(/\.(md|txt|rtf)$/i, '.html');
-        });
-        stream.write(file);
-        stream.end();
+        // Через маркдаун пускаем ТОЛЬКО текстовые исходники
+        if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
+          const stream = markdown();
+          stream.on('data', (updatedFile) => {
+            file.contents = updatedFile.contents;
+            file.path = file.path.replace(/\.(md|txt|rtf)$/i, '.html');
+          });
+          stream.write(file);
+          stream.end();
+        }
+        // Если .docx — оставляем бинарник нетронутым, его обработает следующий этап
       }
-      // Если это файл .docx — through2 оставляет его бинарник нетронутым и передает дальше!
-    }
-    callback(null, file);
+      callback(null, file);
+    },
   });
 };
 
-/**
- * 4. ОБЕРТКА СЫРЫХ HTML В ВАШ КОМПОНЕНТ СТАТЬИ
- */
+// =========================================================================
+// 🎨 3. ОБЕРТКА СТАТЕЙ В ШАБЛОН (БЕЗОПАСНАЯ АСИНХРОННАЯ ЗАПИСЬ НА ДИСК)
+// =========================================================================
 export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   const folderName = rawFolderName.toLowerCase();
-
   const sidebarLinks = await generateSidebarLinks(folderName);
 
   const sidebarComponentPath = path.join(
@@ -140,9 +132,8 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   );
   let sidebarHtml = '';
   if (fs.existsSync(sidebarComponentPath)) {
-    sidebarHtml = fs
-      .readFileSync(sidebarComponentPath, 'utf-8')
-      .replace('@@links', sidebarLinks);
+    const rawSidebar = await fsPromises.readFile(sidebarComponentPath, 'utf-8');
+    sidebarHtml = rawSidebar.replace('@@links', sidebarLinks);
   }
 
   const articleComponentPath = path.join(
@@ -152,9 +143,11 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
     'blog-article.html',
   );
   if (!fs.existsSync(articleComponentPath)) return;
-  const articleTemplate = fs.readFileSync(articleComponentPath, 'utf-8');
+  const articleTemplate = await fsPromises.readFile(
+    articleComponentPath,
+    'utf-8',
+  );
 
-  // 🔥 ИСПРАВЛЕНО: Читаем содержимое favicon-links.html и вставляем его в статьи блога
   const faviconLinksPath = path.join(
     config.srcFolder,
     'parts',
@@ -162,21 +155,20 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   );
   let faviconLinksHtml = '';
   if (fs.existsSync(faviconLinksPath)) {
-    faviconLinksHtml = fs.readFileSync(faviconLinksPath, 'utf-8');
+    faviconLinksHtml = await fsPromises.readFile(faviconLinksPath, 'utf-8');
   }
 
   if (fs.existsSync(tempDestPath)) {
-    const files = fs.readdirSync(tempDestPath);
+    const files = await fsPromises.readdir(tempDestPath);
+
     for (const file of files) {
       const ext = path.extname(file).toLowerCase();
       if (file.toLowerCase() === 'index.html') continue;
 
       const filePath = path.join(tempDestPath, file);
       const cleanFileName = file.toLowerCase().replace('.docx', '.html');
-
       let rawHtml = '';
 
-      // Если это Word файл, mammoth нативно считывает его чистый буфер без иероглифов!
       if (ext === '.docx') {
         try {
           const originalDocxPath = path.join(
@@ -186,7 +178,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
             file,
           );
           if (fs.existsSync(originalDocxPath)) {
-            const docBuffer = fs.readFileSync(originalDocxPath);
+            const docBuffer = await fsPromises.readFile(originalDocxPath);
             const result = await mammoth.convertToHtml({ buffer: docBuffer });
             rawHtml = result.value || '';
           }
@@ -198,7 +190,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
           continue;
         }
       } else if (ext === '.html') {
-        rawHtml = fs.readFileSync(filePath, 'utf-8');
+        rawHtml = await fsPromises.readFile(filePath, 'utf-8');
       } else {
         continue;
       }
@@ -210,21 +202,21 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
       let finalPageHtml = articleTemplate
         .replace('@@title', capitalizedTitle)
         .replace('@@content', rawHtml)
-        .replace('@@sidebar', sidebarHtml);
-
-      // 🔥 ИСПРАВЛЕНО: Вставляем favicon-links.html вместо @@include
-      finalPageHtml = finalPageHtml.replace(
-        '@@include("../../parts/favicon-links.html")',
-        faviconLinksHtml,
-      );
+        .replace('@@sidebar', sidebarHtml)
+        .replace(
+          '@@include("../../parts/favicon-links.html")',
+          faviconLinksHtml,
+        );
 
       finalPageHtml = processHtmlContent(finalPageHtml, '../');
 
       const finalArticlePath = path.join(tempDestPath, cleanFileName);
-      fs.writeFileSync(finalArticlePath, finalPageHtml, 'utf-8');
+
+      // Асинхронная запись гарантирует, что Node.js не заблокирует другие таски Gulp 5
+      await fsPromises.writeFile(finalArticlePath, finalPageHtml, 'utf-8');
 
       if (ext === '.docx' || file !== cleanFileName) {
-        fs.unlinkSync(filePath);
+        await fsPromises.unlink(filePath);
       }
     }
   }

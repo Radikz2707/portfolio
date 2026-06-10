@@ -8,8 +8,7 @@ import htmlhint from 'gulp-htmlhint';
 import htmlBeautify from 'gulp-html-beautify';
 import rename from 'gulp-rename';
 
-// 🔥 ИСПРАВЛЕНО: Импортируем только новые чистые хелперы стримов контента.
-// Все зависимости (mammoth, through2, markdown) теперь скрыты внутри процессора!
+// Импорты процессоров контента
 import {
   generateSidebarLinks,
   processHtmlContent,
@@ -18,10 +17,12 @@ import {
   wrapInMasterLayout,
 } from './gulp/utils/content-processor.js';
 
-// Импорты фиксированной инфраструктуры сервера и утилит
+// Импорты инфраструктуры сервера
 import { browsersync, startwatch, onError, isProd, bs } from './gulp/server.js';
 import { lintCss, lintJs } from './gulp/lint.js';
 import { cleandist, buildcopy, zipFiles } from './gulp/utils.js';
+
+// Импорты системных утилит
 import { create } from './gulp.create.js';
 import { createModule as module } from './gulp.module.js';
 import { createPlugin as plugin } from './gulp.plugin.js';
@@ -30,91 +31,112 @@ import { createStructure as init } from './gulp.init.js';
 import { help } from './gulp.help.js';
 
 const { parallel, series, src, dest } = gulp;
-const tasks = {};
-export const dynamicTaskNames = [];
+
+const loadedModules = {};
 
 // =========================================================================
-// 🛠 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (HELPERS)
+// 📦 1. УМНЫЙ ДИСПЕТЧЕР ЛЕНИВОГО ИМПОРТА С ПОЛНОЙ МАРШРУТИЗАЦИЕЙ ФАЙЛОВ
 // =========================================================================
+const runTask = (taskName) => {
+  // Создаем именованную функцию-обертку вместо анонимной стрелочной
+  const gulpTaskWrapper = async (done) => {
+    try {
+      let fileName = taskName;
+      if (taskName === 'fontsStyle') {
+        fileName = 'fonts';
+      } else if (
+        ['imagesDev', 'createWebp', 'sprite', 'favs', 'faviconsDev'].includes(
+          taskName,
+        )
+      ) {
+        fileName = 'images';
+      }
 
-// =========================================================================
-// 📦 1. АВТО-ИМПОРТ СТАНДАРТНЫХ ТАСКОВ ИЗ ПАПКИ GULP/
-// =========================================================================
-const gulpDir = path.resolve('./gulp');
-if (fs.existsSync(gulpDir)) {
-  const files = fs.readdirSync(gulpDir);
-  for (const file of files) {
-    if (
-      file.endsWith('.js') &&
-      !['server.js', 'utils.js', 'lint.js'].includes(file)
-    ) {
-      const taskModule = await import(`./gulp/${file}`);
-      const taskName = file.replace('.js', '');
-      dynamicTaskNames.push(taskName);
-      Object.keys(taskModule).forEach((key) => {
-        if (typeof taskModule[key] === 'function') {
-          tasks[key] = taskModule[key];
-          gulp.task(key, taskModule[key]);
-        }
-      });
+      if (!loadedModules[fileName]) {
+        loadedModules[fileName] = await import(`./gulp/${fileName}.js`);
+      }
+
+      const taskModule = loadedModules[fileName];
+
+      if (typeof taskModule[taskName] === 'function') {
+        return taskModule[taskName](done);
+      }
+      if (typeof taskModule.default === 'function') {
+        return taskModule.default(done);
+      }
+      done();
+    } catch (err) {
+      console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
+      done(err);
     }
-  }
-}
+  };
+
+  // КРИТИЧЕСКИЙ ШАГ ДЛЯ ЛОГОВ GULP: Явно переопределяем имя функции для терминала
+  Object.defineProperty(gulpTaskWrapper, 'name', {
+    value: taskName,
+    writable: false,
+  });
+
+  return gulpTaskWrapper;
+};
 
 // =========================================================================
-// 🤖 2. ДИНАМИЧЕСКИЙ РОБОТ-ГЕНЕРАТОР ТАСКОВ ДЛЯ ЛЮБОГО КОНТЕНТА (ВСЕЯДНЫЙ)
+// 🤖 2. ИЗОЛИРОВАННЫЙ РОБОТ-ГЕНЕРАТОР ТАСКОВ ДЛЯ MD/DOCX КОНТЕНТА
 // =========================================================================
+const createDynamicContentTask = (folderName) => {
+  return (done) => {
+    const sourcePath = path.join(
+      config.srcFolder,
+      'content',
+      folderName,
+      '**',
+      '*.{md,txt,rtf,docx}',
+    );
+    const tempDestPath = path.join(config.buildFolder, folderName);
+
+    src(sourcePath, { allowEmpty: true, encoding: false })
+      .pipe(
+        plumber({
+          errorHandler: (err) => {
+            console.error(err);
+            done(err);
+          },
+        }),
+      )
+      .pipe(compileContentStream())
+      .pipe(dest(tempDestPath))
+      .on('end', () => {
+        wrapInMasterLayout(tempDestPath, folderName)
+          .then(() => {
+            bs.reload();
+            done();
+          })
+          .catch((err) => done(err));
+      });
+  };
+};
+
 const contentDir = path.join(config.srcFolder, 'content');
-if (fs.existsSync(contentDir)) {
-  const contentFolders = fs.readdirSync(contentDir);
+const dynamicContentFolderNames = fs.existsSync(contentDir)
+  ? fs
+      .readdirSync(contentDir)
+      .filter((f) => fs.statSync(path.join(contentDir, f)).isDirectory())
+  : [];
 
-  for (const folderName of contentFolders) {
-    const dynamicTask = (done) => {
-      const sourcePath = path.join(
-        config.srcFolder,
-        'content',
-        folderName,
-        '**',
-        '*.{md,txt,rtf,docx}',
-      );
-      const tempDestPath = path.join(config.buildFolder, folderName);
+const runAllContentTasks = (done) => {
+  if (dynamicContentFolderNames.length === 0) return done();
 
-      // ЭТАП 1: Генерируем сырой HTML-контент через изолированный хелпер-конвертер
-      src(sourcePath, { allowEmpty: true })
-        .pipe(plumber({ errorHandler: onError }))
-        .pipe(compileContentStream())
-        .pipe(dest(tempDestPath))
+  const contentTasks = dynamicContentFolderNames.map((folderName) => {
+    return (taskDone) => createDynamicContentTask(folderName)(taskDone);
+  });
 
-        // ЭТАП 2: Передаем управление хелперу оборачивания в шаблоны, фавиконки и сайдбар
-        .on('end', () => {
-          wrapInMasterLayout(tempDestPath, folderName)
-            .then(() => {
-              bs.reload();
-              done();
-            })
-            .catch((err) => done(err));
-        });
-    };
-
-    gulp.task(folderName, dynamicTask);
-    tasks[folderName] = dynamicTask;
-    dynamicTaskNames.push(folderName);
-  }
-}
-
-// Селектор зарегистрированных HTML и контентных задач
-const runTask = (name) => tasks[name] || ((done) => done());
-const getContentTasks = () =>
-  Object.keys(tasks)
-    .filter((name) => name.includes('html') || dynamicTaskNames.includes(name))
-    .map(runTask);
+  return parallel(...contentTasks)(done);
+};
 
 // =========================================================================
 // 🚀 ОПРЕДЕЛЕНИЕ СЦЕНАРИЕВ ВЫПОЛНЕНИЯ (CLI TASKS)
 // =========================================================================
 
-// 1. Вспомогательный сценарий сборки ресурсов (Assets Pipeline)
-// 🔥 ИСПРАВЛЕНО: runTask('favs') убран из compileAssets, так как он уже запускается в начале build
 const compileAssets = parallel(
   runTask('styles'),
   runTask('scripts'),
@@ -123,22 +145,22 @@ const compileAssets = parallel(
   runTask('sprite'),
 );
 
-// 2. ПОЛНЫЙ ЦИКЛ СБОРКИ ДЛЯ ПРОДАKШЕНА (npm run build / npm run deploy)
 export const build = series(
-  cleandist, // 1. Чистим dist
-  runTask('favs'), // 🔥 1.1. Генерируем фавиконки сразу после очистки
-  parallel(lintCss, lintJs, runTask('fonts'), runTask('fontsStyle')), // 2. Запускаем линтеры и шрифты
-  compileAssets, // 3. Компилируем все стили, скрипты и картинки
-  parallel(...getContentTasks()), // 4. Генерируем HTML-страницы из Markdown блога
-  buildcopy, // 5. Переносим все финальные файлы в dist
-  zipFiles, // 6. Архивируем проект
+  cleandist,
+  runTask('favs'),
+  parallel(lintCss, lintJs, runTask('fonts'), runTask('fontsStyle')),
+  runAllContentTasks,
+  compileAssets,
+  buildcopy,
+  zipFiles,
   (done) => {
-    console.log('>>> 🚀 Project successfully assembled and archived! <<<');
+    console.log(
+      '>>> 🚀 [Gulp 5] Project successfully assembled line-by-line! <<<',
+    );
     done();
   },
 );
 
-// 3. СТАРТОВЫЙ ТАСК ДЛЯ РАЗРАБОТКИ (npm run dev)
 export default series(
   help,
   series(runTask('fonts'), runTask('fontsStyle')),
@@ -148,14 +170,23 @@ export default series(
     runTask('imagesDev'),
     runTask('createWebp'),
     runTask('sprite'),
-    runTask('favs'), // 🔥 Генерируем фавиконки в режиме разработки
-    runTask('faviconsDev'), // 🔥 Копируем фавиконки для сервера (запускается ПОСЛЕ favs)
+    runTask('favs'),
+    runTask('faviconsDev'),
+    runTask('html'), // <--- ИСПРАВЛЕНО: Генерируем index.html при старте сервера!
   ),
-  parallel(...getContentTasks()),
+  runAllContentTasks,
   buildcopy,
-  // 🔥 ИСПРАВЛЕНО НАВСЕГДА: Передаем функции напрямую как переменные в обход реестра Gulp!
   parallel(browsersync, startwatch),
 );
 
-// Экспорт системных утилит
-export { create, remove, module, plugin, init, help, cleandist, lintJs, lintCss };
+export {
+  create,
+  remove,
+  module,
+  plugin,
+  init,
+  help,
+  cleandist,
+  lintJs,
+  lintCss,
+};

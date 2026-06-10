@@ -4,15 +4,14 @@ import browserSync from 'browser-sync';
 import path from 'path';
 import fs from 'fs';
 
-import { styles } from './styles.js';
-import { lintCss, lintJs } from './lint.js';
-
 const { watch, series } = gulp;
 export const bs = browserSync.create();
 
-// Флаг режима продакшен сборки
 export const isProd = process.argv.includes('build');
 
+// =========================================================================
+// 🎛️ 1. БЕЗОПАСНЫЙ ОБРАБОТЧИК ОШИБОК ДЛЯ ПОТОКОВ GULP 5 (STREAMX)
+// =========================================================================
 export const onError = function (err) {
   console.error(
     '\x1b[31m%s\x1b[0m',
@@ -23,6 +22,9 @@ export const onError = function (err) {
   }
 };
 
+// =========================================================================
+// 🌐 2. ИНИЦИАЛИЗАЦИЯ ЛОКАЛЬНОГО СЕРВЕРА BROWSER-SYNC
+// =========================================================================
 export function browsersync() {
   bs.init({
     server: {
@@ -35,82 +37,118 @@ export function browsersync() {
   });
 }
 
+// Вспомогательный хелпер для ленивого запуска тасок внутри вотчера
+const dynamicRun = (moduleName, functionName) => {
+  return async (done) => {
+    try {
+      const mod = await import(`./${moduleName}.js`);
+      const task = mod[functionName] || mod.default;
+      if (typeof task === 'function') {
+        return task(done);
+      }
+      done();
+    } catch (err) {
+      console.error(
+        `\x1b[31m[Watcher Error] Не удалось запустить ${functionName}: ${err.message}\x1b[0m`,
+      );
+      done(err);
+    }
+  };
+};
+
+// =========================================================================
+// 👁️ 3. СЛЕДИТЕЛЬ ЗА ИЗМЕНЕНИЯМИ (WATCHER ENGINE ДЛЯ GULP 5)
+// =========================================================================
 export function startwatch() {
-  // 1. СЛЕДИТЕЛЬ ЗА СТИЛЯМИ
+  const watchOptions = { delay: 300, queue: true };
+
+  // 1. Наблюдатель за стилями (SCSS)
   const styleWatcher = watch(
     [`${config.srcFolder}/**/*.${config.preprocessor}`],
-    { delay: 300 },
+    watchOptions,
   );
-
-  styleWatcher.on('change', async (filePath) => {
-    try {
-      await lintCss(filePath);
-      series(styles)();
-    } catch (err) {
-      onError(err);
-    }
+  styleWatcher.on('change', (filePath) => {
+    console.log(`✨ [Style Change] Изменен: ${path.basename(filePath)}`);
+    series(dynamicRun('styles', 'styles'))();
   });
 
-  // 2. СЛЕДИТЕЛЬ ЗА СКРИПТАМИ
-  const scriptWatcher = watch([`${config.srcFolder}/**/*.{js,ts}`], {
-    delay: 300,
+  // 2. Наблюдатель за скриптами (JS/TS) — ТЕПЕРЬ ПОЛНОСТЬЮ БЕЗОПАСНЫЙ И ЛИНЕЙНЫЙ
+  const scriptWatcher = watch(
+    [`${config.srcFolder}/**/*.{js,ts}`],
+    watchOptions,
+  );
+  scriptWatcher.on('change', (filePath) => {
+    console.log(`✨ [Script Change] Изменен: ${path.basename(filePath)}`);
+    series(dynamicRun('scripts', 'scripts'))();
   });
 
-  scriptWatcher.on('change', async (filePath) => {
-    try {
-      await lintJs(filePath);
-      if (isProd) {
-        const scriptsTask = gulp.registry().get('scripts');
-        if (scriptsTask) series(scriptsTask)();
-      }
-    } catch (err) {
-      onError(err);
-    }
-  });
-
-  // 3. АВТОНОМНЫЕ ВОТЧЕРЫ ДЛЯ РАЗМЕТКИ И КОНТЕНТА
-  // Слежение за глобальными HTML-файлами проекта и компонентами
-  watch(
+  // 3. Наблюдатель за глобальной разметкой (HTML-компоненты и инклуды)
+  const htmlWatcher = watch(
     [
-      `${config.srcFolder}/**/*.html`,
+      `${config.srcFolder}/*.html`,
       `${config.srcFolder}/components/**/*.html`,
       `${config.srcFolder}/parts/**/*.html`,
     ],
-    (done) => {
-      const htmlTask = gulp.registry().get('html');
-      if (htmlTask) return gulp.series('html')();
-      done();
-    },
+    watchOptions,
   );
+  htmlWatcher.on('change', (filePath) => {
+    console.log(`✨ [HTML Change] Изменен: ${path.basename(filePath)}`);
+    series(dynamicRun('html', 'html'))();
+  });
 
-  // Слежение за изменениями текстов контента (blog, portfolio)
-  watch(`${config.srcFolder}/content/**/*`, (done) => {
-    const contentDir = path.join(config.srcFolder, 'content');
-    if (fs.existsSync(contentDir)) {
-      const folders = fs.readdirSync(contentDir);
-      folders.forEach((folder) => {
-        const taskKey = folder.toLowerCase();
-        const registeredTask = gulp.registry().get(taskKey);
-        if (registeredTask) gulp.series(taskKey)();
-      });
+  // 4. Наблюдатель за текстовым контентом (Markdown / Word-статьи блога)
+  const contentWatcher = watch(
+    [`${config.srcFolder}/content/**/*`],
+    watchOptions,
+  );
+  contentWatcher.on('change', (filePath) => {
+    const relativePath = path.relative(
+      path.join(config.srcFolder, 'content'),
+      filePath,
+    );
+    const folder = relativePath.split(path.sep);
+
+    if (folder) {
+      console.log(`📝 [Content Update] Обновление секции блога: ${folder}`);
+      series(async (done) => {
+        const { wrapInMasterLayout } =
+          await import('./utils/content-processor.js');
+        const tempDestPath = path.join(
+          config.buildFolder,
+          folder.toLowerCase(),
+        );
+
+        try {
+          await wrapInMasterLayout(tempDestPath, folder);
+          bs.reload();
+          done();
+        } catch (err) {
+          done(err);
+        }
+      })();
     }
-    done();
   });
 
-  // Слежение за картинками в компонентах
-  watch(
-    `${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,webp,gif}`,
-    (done) => {
-      const imagesTask = gulp.registry().get('imagesDev');
-      if (imagesTask) return gulp.series('imagesDev')();
-      done();
-    },
+  // 5. Наблюдатель за картинками компонентов
+  const componentImagesWatcher = watch(
+    [`${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,webp,gif}`],
+    watchOptions,
   );
-
-  // Слежение за SVG-иконками для автосборки спрайта
-  watch(config.paths.images.svg, (done) => {
-    const spriteTask = gulp.registry().get('sprite');
-    if (spriteTask) return gulp.series('sprite')();
-    done();
+  componentImagesWatcher.on('change', (filePath) => {
+    console.log(
+      `🖼️ [Image Change] Добавлена картинка в компонент: ${path.basename(filePath)}`,
+    );
+    series(dynamicRun('images', 'imagesDev'))();
   });
+
+  // 6. Наблюдатель за векторными иконками (SVG Sprite)
+  if (config.paths?.images?.svg) {
+    const svgWatcher = watch([config.paths.images.svg], watchOptions);
+    svgWatcher.on('change', (filePath) => {
+      console.log(
+        `🧬 [Sprite Change] Обновлена иконка: ${path.basename(filePath)}`,
+      );
+      series(dynamicRun('images', 'sprite'))();
+    });
+  }
 }

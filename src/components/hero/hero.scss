@@ -1,10 +1,12 @@
+@use "../../scss/base/vars" as v;
+
 .hero {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 80vh;
   padding: 60px 0;
-  background-color: #0f172a; // Глубокий темно-синий/грифельный цвет
+  background-color: v.$bg-deep-blue; // Глубокий темно-синий/грифельный цвет
 
   &__container {
     display: flex;

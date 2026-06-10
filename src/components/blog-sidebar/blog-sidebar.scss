@@ -1,36 +1,65 @@
-.blog-sidebar {
-  padding: 24px;
-  background-color: #1e293b; // Красивая темная подложка в цвет карточек
-  border: 1px solid rgb(51 65 85 / 50%);
-  border-radius: 12px;
+// src/components/blog-sidebar/blog-sidebar.scss
+@use "../../scss/base/vars" as v;
 
-  &__title {
-    margin-bottom: 20px;
-    font-size: 18px;
-    font-weight: 700;
-    color: #f1f5f9;
-    letter-spacing: -0.01em;
+.blog-sidebar {
+  width: 100%;
+  padding: 24px;
+  background-color: v.$bg-card; // Наша переменная цвета карточек (#1e293b)
+  border: 1px solid #334155;
+  border-radius: 8px;
+
+  // 🖥️ ДЕСКТОПНАЯ ВЕРСИЯ: Заставляем меню красиво двигаться вместе со взглядом пользователя
+  @media (min-width: 769px) {
+    position: sticky;
+    top: 140px; // Учитываем высоту вашей фиксированной шапки сайта, чтобы меню не заезжало под неё
   }
 
+  // Заголовок сайдбара (например, "Другие статьи")
+  &__title {
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  // Список ссылок
   &__list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     padding: 0;
     margin: 0;
     list-style: none;
   }
 
+  // Элемент списка
+  &__item {
+    padding: 0;
+    margin: 0;
+  }
+
+  // Интерактивная ссылка на статью
   &__link {
     display: block;
-    font-size: 15px;
-    line-height: 1.5;
-    color: #94a3b8;
+    font-size: 16px;
+    line-height: 1.4;
+    color: v.$color-text-muted; // Наш мягкий серый цвет для второстепенного текста
     text-decoration: none;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, transform 0.2s ease;
 
+    // Эффект при наведении мышкой
     &:hover {
-      color: #6366f1; // Подсветка фиолетовым при наведении
+      color: #ffffff;
+      transform: translateX(4px); // Ссылка аккуратно сдвинется вправо, подсказывая, что на неё можно кликнуть
+    }
+
+    // Стили для активной статьи, которую пользователь читает прямо сейчас
+    &._active {
+      font-weight: 600;
+      color: v.$color-accent; // Подсвечиваем цветом индиго
+      pointer-events: none; // Отключаем кликабельность по уже открытой статье
     }
   }
 }

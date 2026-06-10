@@ -13,119 +13,141 @@ import svgSprite from 'gulp-svg-sprite';
 import favicons from 'gulp-favicons';
 import newer from 'gulp-newer';
 import gulpIf from 'gulp-if';
-import through2 from 'through2';
+import { Transform } from 'stream'; // Нативная замена through2 для Gulp 5
 
 import { onError, bs } from './server.js';
-
 const { src, dest } = gulp;
 
-// Общий массив путей к исходным картинкам
+// Общий массив путей к исходным картинкам (исключаем исходник фавиконки)
 const imageSources = [
   `${config.srcFolder}/images/**/*`,
+  `!${config.srcFolder}/images/src/favicon.png`,
   `!${config.srcFolder}/images/favicon.png`,
   `!${config.srcFolder}/images/favicons/**/*`,
   `${config.srcFolder}/components/**/img/**/*.{jpg,jpeg,png,svg,webp,gif}`,
 ];
 
-// 1. ПРОДАКШЕН СБОРКА КАРТИНОК
+// КРИТИЧЕСКИЙ ФЛАГ ДЛЯ GULP 5: Отключает текстовое кодирование для бинарников
+const gulp5Options = { encoding: false };
+
+// =========================================================================
+// 🖼 1. ПРОДАКШЕН СБОРКА КАРТИНОК (PIPELINE + REDUCE PATTERN)
+// =========================================================================
 export function images() {
-  return src(imageSources, { encoding: false })
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(
-      newer({
-        dest: config.paths.images.dest,
-        map: (relative) => path.basename(relative),
-      }),
-    )
-    .pipe(
-      imagemin([
-        mozjpeg({ quality: config.settings.imagemin.jpeg, progressive: true }),
-        optipng({ optimizationLevel: config.settings.imagemin.png }),
-        svgo({ plugins: [{ name: 'preset-default' }] }),
-      ]),
-    )
-    .pipe(flatten())
-    .pipe(dest(config.paths.images.dest))
+  const pipeline = [
+    src(imageSources, gulp5Options),
+    plumber({ errorHandler: onError }),
+    newer({
+      dest: config.paths.images.dest,
+      map: (relative) => path.basename(relative),
+    }),
+    imagemin([
+      mozjpeg({ quality: config.settings.imagemin.jpeg, progressive: true }),
+      optipng({ optimizationLevel: config.settings.imagemin.png }),
+      svgo({ plugins: [{ name: 'preset-default' }] }),
+    ]),
+    flatten(),
+    dest(config.paths.images.dest),
+  ];
+
+  return pipeline
+    .reduce((stream, plugin) => stream.pipe(plugin))
     .on('end', bs.reload);
 }
 
-// === КРИСТАЛЬНО ЧИСТАЯ И ИСПРАВЛЕННАЯ ФУНКЦИЯ В gulp/images.js ===
+// =========================================================================
+// ⚡ 2. РЕЖИМ РАЗРАБОТКИ (БЫСТРОЕ КОПИРОВАНИЕ БЕЗ СЖАТИЯ)
+// =========================================================================
 export function imagesDev() {
-  return (
-    src([
-      `${config.srcFolder}/images/**/*`,
-      `!${config.srcFolder}/images/favicons/**/*`,
-    ])
-      .pipe(plumber({ errorHandler: onError }))
-      /* 🔥 ИСПРАВЛЕНО: Читаем свойство .dest (маленькими буквами), 
-       в точности как оно объявлено в вашем gulp.config.js! */
-      .pipe(dest(config.paths.images.dest))
-      .on('end', bs.reload)
-  );
+  const pipeline = [
+    // Передаем тот же массив источников, что и в продакшене (включая компоненты)
+    src(imageSources, gulp5Options),
+    plumber({ errorHandler: onError }),
+    // Обязательно добавляем flatten(), чтобы фото из компонентов сбросило
+    // свою вложенность папок и легло ровно в dist/images/photo.jpg
+    flatten(),
+    dest(config.paths.images.dest),
+  ];
+
+  return pipeline
+    .reduce((stream, plugin) => stream.pipe(plugin))
+    .on('end', bs.reload);
 }
 
-// 3. СТАБИЛЬНАЯ КОНВЕРТАЦИЯ В WEBP С АВТОПОВОРОТОМ
+// =========================================================================
+// 🚀 3. КОНВЕРТАЦИЯ В WEBP
+// =========================================================================
 export function createWebp() {
-  return src(
-    [
-      `${config.srcFolder}/images/**/*.{png,jpg,jpeg}`,
-      `!${config.srcFolder}/images/favicon.png`,
-      `!${config.srcFolder}/images/favicons/**/*`,
-      `${config.srcFolder}/components/**/img/**/*.{png,jpg,jpeg}`,
-    ],
-    { encoding: false },
-  )
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(
-      newer({
-        dest: config.paths.images.dest,
-        map: (relative) =>
-          path.basename(relative, path.extname(relative)) + '.webp',
-      }),
-    )
-    .pipe(imagemin([mozjpeg({ progressive: true })]))
-    .pipe(webp({ quality: config.settings.webpQuality }))
-    .pipe(flatten())
-    .pipe(dest(config.paths.images.dest))
+  const pipeline = [
+    src(
+      [
+        `${config.srcFolder}/images/**/*.{png,jpg,jpeg}`,
+        `!${config.srcFolder}/images/favicon.png`,
+        `!${config.srcFolder}/images/favicons/**/*`,
+        `${config.srcFolder}/components/**/img/**/*.{png,jpg,jpeg}`,
+      ],
+      gulp5Options,
+    ),
+    plumber({ errorHandler: onError }),
+    newer({
+      dest: config.paths.images.dest,
+      map: (relative) =>
+        path.basename(relative, path.extname(relative)) + '.webp',
+    }),
+    imagemin([mozjpeg({ progressive: true })]),
+    webp({ quality: config.settings.webpQuality }),
+    flatten(),
+    dest(config.paths.images.dest),
+  ];
+
+  return pipeline
+    .reduce((stream, plugin) => stream.pipe(plugin))
     .on('end', bs.reload);
 }
 
-// 4. СБОРКА SVG-СПРАЙТОВ (Чистая векторная оптимизация ВСТРОЕННЫМИ средствами)
+// =========================================================================
+// 🧬 4. СБОРКА SVG-СПРАЙТОВ
+// =========================================================================
 export function sprite() {
-  return src(config.paths.images.svg, { encoding: false })
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(newer(path.join(config.paths.images.dest, 'sprite.svg')))
-    .pipe(
-      svgSprite({
-        mode: { symbol: { dest: '.', sprite: 'sprite.svg' } },
-        shape: {
-          id: { generator: (name) => name.split('.').shift() },
-          transform: [
-            {
-              /* 🔥 ИСПОЛЬЗУЕМ ВСТРОЕННЫЙ SVGO: Никаких внешних плагинов не нужно! */
-              svgo: {
-                plugins: [
-                  { name: 'preset-default' },
-                  { name: 'cleanupIds', active: true },
-                  /* 🔥 ТОТАЛЬНАЯ ОЧИСТКА: Жестко вырезаем цвета и инлайновые стили из всех вложенных тегов */
-                  {
-                    name: 'removeAttrs',
-                    params: { attrs: '(fill|stroke|style|class|id|data-name)' },
-                  },
-                ],
-              },
+  const pipeline = [
+    src(config.paths.images.svg, gulp5Options),
+    plumber({ errorHandler: onError }),
+    newer(path.join(config.paths.images.dest, 'sprite.svg')),
+    svgSprite({
+      mode: { symbol: { dest: '.', sprite: 'sprite.svg' } },
+      shape: {
+        id: { generator: (name) => name.split('.').shift() },
+        transform: [
+          {
+            svgo: {
+              plugins: [
+                { name: 'preset-default' },
+                { name: 'cleanupIds', active: true },
+                {
+                  name: 'removeAttrs',
+                  params: { attrs: '(fill|stroke|style|class|id|data-name)' },
+                },
+              ],
             },
-          ],
-        },
-      }),
-    )
-    .pipe(dest(config.paths.images.dest))
+          },
+        ],
+      },
+    }),
+    dest(config.paths.images.dest),
+  ];
+
+  return pipeline
+    .reduce((stream, plugin) => stream.pipe(plugin))
     .on('end', bs.reload);
 }
 
-// === ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: ГЕНЕРИРУЕТ ФАВИКОНКИ И ВОЗВРАЩАЕТ ОДИН ПОТОК ===
-function generateFavicons() {
-  const faviconPath = path.join(config.srcFolder, 'images', 'favicon.png');
+// =========================================================================
+// 🛡️ 5. ПОСЛЕДОВАТЕЛЬНАЯ ГЕНЕРАЦИЯ ФАВИКОНОК БЕЗ МУСОРА В ИСХОДНИКАХ
+// =========================================================================
+
+// Вспомогательный генератор базового потока от плагина
+function getFaviconsStream() {
+  const faviconPath = config.paths.favicons.src;
   const hasFavicon =
     fs.existsSync(faviconPath) && fs.statSync(faviconPath).size > 0;
   const targetPath = hasFavicon
@@ -138,7 +160,7 @@ function generateFavicons() {
       gulpIf(
         hasFavicon,
         favicons({
-          path: '',
+          path: 'images/favicons/',
           appName: 'Radik.Dev',
           html: 'favicon-links.html',
           pipeHTML: true,
@@ -154,78 +176,48 @@ function generateFavicons() {
     );
 }
 
-// 5. ГЕНЕРАЦИЯ ФАВИКОНОК — ИСПРАВЛЕННАЯ ВЕРСИЯ
-// 🔥 ИСПРАВЛЕНО: Теперь функция правильно записывает HTML в src/parts/ и картинки в dist/images/favicons/
-export function favs() {
-  return new Promise((resolve, reject) => {
-    // 🔥 Генерируем фавиконки
-    const faviconsStream = generateFavicons();
-
-    // 🔥 Массивы для накопления файлов
-    const htmlFiles = [];
-    const imageFiles = [];
-
-    // 🔥 Обрабатываем поток с помощью through2.obj()
-    faviconsStream
-      .pipe(
-        through2.obj(function (file, encoding, callback) {
-          if (file.isBuffer()) {
-            // Если это HTML-файл, сохраняем для записи в src/parts/
-            if (file.path.endsWith('.html')) {
-              let content = file.contents.toString('utf-8');
-              content = content.replace(/href="\/portfolio\//g, 'href="');
-              content = content.replace(/href="\/\//g, 'href="');
-              file.contents = Buffer.from(content, 'utf-8');
-              htmlFiles.push(file);
-            }
-            // Если это картинка, сохраняем для записи в dist/images/favicons/
-            else {
-              imageFiles.push(file);
-            }
-          }
-          callback(null, file);
-        }),
-      )
-      // 🔥 Записываем HTML-файлы в src/parts/
-      .pipe(
-        through2.obj(function (file, encoding, callback) {
-          if (file.isBuffer() && file.path.endsWith('.html')) {
+// СТРОГИЙ ИЗОЛИРОВАННЫЙ ТАСК ДЛЯ HTML (ПИШЕТ СТРОГО В SRC/PARTS/)
+function favsHtml() {
+  return getFaviconsStream()
+    .pipe(
+      new Transform({
+        objectMode: true,
+        transform(file, enc, cb) {
+          // Пропускаем дальше по конвейеру ТОЛЬКО текстовый HTML файл ссылок
+          if (file.path.endsWith('.html')) {
             this.push(file);
           }
-          callback(null, file);
-        }),
-      )
-      .pipe(dest(path.join(config.srcFolder, 'parts')))
-      .on('end', () => {
-        // 🔥 После завершения HTML-потока записываем картинки в dist/images/favicons/
-        if (imageFiles.length > 0) {
-          // Создаём отдельный поток для картинок
-          const imageStream = through2.obj();
-          
-          // Добавляем все накопленные картинки в поток
-          imageFiles.forEach((file) => {
-            imageStream.write(file);
-          });
-          imageStream.end();
-          
-          // Записываем картинки
-          imageStream
-            .pipe(dest(path.join(config.buildFolder, 'images', 'favicons')))
-            .on('end', () => {
-              bs.reload();
-              resolve();
-            })
-            .on('error', reject);
-        } else {
-          bs.reload();
-          resolve();
-        }
-      })
-      .on('error', reject);
-  });
+          cb();
+        },
+      }),
+    )
+    .pipe(dest(path.join(config.srcFolder, 'parts')));
 }
 
-// 6. ОЧИСТКА ГРАФИКИ
+// СТРОГИЙ ИЗОЛИРОВАННЫЙ ТАСК ДЛЯ КАРТИНОК (ПИШЕТ СТРОГО В DIST/)
+function favsImages() {
+  return getFaviconsStream()
+    .pipe(
+      new Transform({
+        objectMode: true,
+        transform(file, enc, cb) {
+          // Пропускаем дальше по конвейеру ВСЁ, КРОМЕ файла разметки
+          if (!file.path.endsWith('.html')) {
+            this.push(file);
+          }
+          cb();
+        },
+      }),
+    )
+    .pipe(dest(config.paths.favicons.dest));
+}
+
+// Главный последовательный экспорт, полностью исключающий гонки потоков
+export const favs = gulp.series(favsHtml, favsImages);
+
+// =========================================================================
+// 🧹 6. ОЧИСТКА ГРАФИКИ & 7. СТРАХОВОЧНОЕ КОПИРОВАНИЕ ДЛЯ DEV
+// =========================================================================
 export function cleanimg(done) {
   if (fs.existsSync(config.paths.images.dest)) {
     const files = fs.readdirSync(config.paths.images.dest);
@@ -241,34 +233,25 @@ export function cleanimg(done) {
   done();
 }
 
-// 7. КОПИРОВАНИЕ ФАВИКОНОК ДЛЯ РЕЖИМА РАЗРАБОТКИ
-// 🔥 ИСПРАВЛЕНО: Теперь функция проверяет существование исходников и создаёт пустую папку при их отсутствии
 export function faviconsDev() {
   return new Promise((resolve, reject) => {
-    const faviconsDestPath = path.join(config.buildFolder, 'images', 'favicons');
-    const faviconSourcePath = path.join(config.srcFolder, 'images', 'favicon.png');
-    const faviconLinksPath = path.join(config.srcFolder, 'parts', 'favicon-links.html');
+    const faviconSourcePath = config.paths.favicons.src;
+    const faviconsDestPath = config.paths.favicons.dest;
 
-    // 🔥 Проверяем, существует ли исходная иконка
-    if (!fs.existsSync(faviconSourcePath)) {
-      // 🔥 Если исходника нет, создаём пустую папку и завершаемся
+    if (
+      !fs.existsSync(faviconSourcePath) ||
+      !fs.existsSync(faviconsDestPath) ||
+      fs.readdirSync(faviconsDestPath).length === 0
+    ) {
       fs.mkdirSync(faviconsDestPath, { recursive: true });
-      console.log('>>> ⚠️ Источник favicon.png не найден. Создана пустая папка dist/images/favicons/');
       resolve();
       return;
     }
 
-    // 🔥 Если исходник есть, проверяем, существуют ли сгенерированные фавиконки
-    if (!fs.existsSync(faviconsDestPath) || fs.readdirSync(faviconsDestPath).length === 0) {
-      // 🔥 Если фавиконок нет, создаём пустую папку и завершаемся
-      fs.mkdirSync(faviconsDestPath, { recursive: true });
-      console.log('>>> ⚠️ Фавиконки не сгенерированы. Создана пустая папка dist/images/favicons/');
-      resolve();
-      return;
-    }
-
-    // 🔥 Если фавиконки есть, копируем их для dev-режима
-    src(path.join(faviconsDestPath, '**', '*'), { allowEmpty: true, encoding: false })
+    src(path.join(faviconsDestPath, '**', '*'), {
+      allowEmpty: true,
+      encoding: false,
+    })
       .pipe(plumber({ errorHandler: onError }))
       .pipe(dest(faviconsDestPath))
       .on('end', () => {

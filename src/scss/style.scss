@@ -1,38 +1,39 @@
 // Файл стилей для обнуления
-@use "./base/zero";
+@use './base/zero';
+
+// ПОДКЛЮЧЕНИЕ КОНФИГУРАЦИИ И ПЕРЕМЕННЫХ
+@use './base/vars' as v;
 
 // КОМПОНЕНТЫ СТРУКТУРЫ САЙТА
-@use "../components/header/header";
-@use "../components/hero/hero";
-@use "../components/projects-grid/projects-grid";
-@use "../components/about-me/about-me";
-@use "../components/main/main";
-@use "../components/blog-article/blog-article";
-@use "../components/footer/footer";
-@use "../components/menu/menu";
-@use "../components/blog-sidebar/blog-sidebar";
-@use "../components/contacts/contacts";
+@use '../components/header/header';
+@use '../components/hero/hero';
+@use '../components/projects-grid/projects-grid';
+@use '../components/about-me/about-me';
+@use '../components/main/main';
+@use '../components/blog-article/blog-article';
+@use '../components/footer/footer';
+@use '../components/menu/menu';
+@use '../components/blog-sidebar/blog-sidebar';
+@use '../components/contacts/contacts';
 
 // ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
-@use "../js/modules/scroll-to-top/scroll-to-top" as *;
+@use '../js/modules/scroll-to-top/scroll-to-top' as *;
 
 body {
   user-select: none;
-}
-
-main {
-  /* 1 (grow) - растягиваться */
-
-  /* 1 (shrink) - сжиматься при необходимости */
-
-  /* auto (basis) - брать размер в зависимости от контента */
-  flex: 1 1 auto;
+  background-color: v.$bg-dark;
 }
 
 // ГЛOБАЛЬНАЯ СЕТКА И КОНТЕЙНЕРЫ
 .container {
+  // Дополнительная защита от внезапного горизонтального скролла на мобилках
+  box-sizing: border-box;
   width: 100%;
-  max-width: 1140px; // Жестко ограничиваем ширину контента по всему сайту
-  padding: 0 20px; // Безопасные отступы, чтобы текст не лип к краям на смартфонах
-  margin: 0 auto; // Идеально центрируем по центру любого экрана
+
+  // Изменяем на 1180px, чтобы чистая область контента оставалась ровно 1140px,
+  // а по бокам всегда оставались безопасные 20px полей
+  max-width: 1180px;
+
+  padding: 0 20px; // Безопасные отступы для смартфонов
+  margin: 0 auto; // Идеальное центрирование блока по центру экрана
 }

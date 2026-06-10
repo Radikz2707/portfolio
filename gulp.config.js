@@ -8,8 +8,7 @@ const srcFolder = 'src'; // Папка с исходными файлами
 const buildFolder = 'dist'; // Папка готовой сборки проекта
 
 export const config = {
-  // 🔥 ДОБАВЛЕНО: Имя удаленного репозитория на GitHub для автоматизации ссылок
-  // repoName отключено, чтобы избежать префиксов в ссылках на фавиконки
+  // Имя удаленного репозитория на GitHub для автоматизации ссылок
   repoName: null,
 
   preprocessor,
@@ -22,7 +21,6 @@ export const config = {
   structure: {
     components: path.join(srcFolder, 'components'),
     modules: path.join(srcFolder, 'js', 'modules'),
-    lessons: path.join(srcFolder, 'js', 'modules', 'lessons'),
     plugins: path.join(srcFolder, 'js', 'plugins'),
   },
 
@@ -34,7 +32,7 @@ export const config = {
   // ==========================================
   paths: {
     styles: {
-      src: `${srcFolder}/${preprocessor}/style.{sass,scss,less}`, // Оставляем glob-паттерн для Gulp
+      src: `${srcFolder}/${preprocessor}/style.{sass,scss,less}`,
       dest: `${buildFolder}/css/`,
       output: 'app.min.css',
     },
@@ -47,6 +45,12 @@ export const config = {
       src: `${srcFolder}/images/**/*`,
       dest: `${buildFolder}/images/`,
       svg: `${srcFolder}/images/**/*.svg`,
+    },
+    // 🔥 ДОБАВЛЕНО: Централизованные пути для генератора фавиконок
+    favicons: {
+      src: `${srcFolder}/images/src/favicon.png`, // Новый путь к исходнику
+      dest: `${buildFolder}/images/favicons/`, // Папка назначения в dist
+      htmlOutput: path.join(srcFolder, 'parts', 'favicon-links.html'), // Где лежит кусок разметки
     },
     fonts: {
       src: `${srcFolder}/fonts/src/**/*.{ttf,otf}`,
@@ -67,11 +71,11 @@ export const config = {
   },
 
   // ==========================================
-  // 🔥 КАРТА АВТОМАТИЧЕСКОГО СЛЕЖЕНИЯ ЗА ФАЙЛАМИ
+  // КАРТА АВТОМАТИЧЕСКОГО СЛЕЖЕНИЯ ЗА ФАЙЛАМИ
   // ==========================================
   watchers: [
     { mask: '/**/*.html', task: 'html' },
-    { mask: '/content/blog/**/*.md', task: 'blog' }, // <-- Наш блог
+    { mask: '/content/blog/**/*.md', task: 'blog' },
     { mask: '/fonts/src/**/*', task: 'fonts' },
     { mask: '/components/**/*.{jpg,jpeg,png,svg,webp,gif}', task: 'imagesDev' },
   ],
