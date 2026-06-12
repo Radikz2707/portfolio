@@ -34,111 +34,135 @@ const gulp5Options = { encoding: false };
 // 🖼 1. ПРОДАКШЕН СБОРКА КАРТИНОК (PIPELINE + REDUCE PATTERN)
 // =========================================================================
 export function images() {
-  const pipeline = [
-    src(imageSources, gulp5Options),
-    plumber({ errorHandler: onError }),
-    newer({
-      dest: config.paths.images.dest,
-      map: (relative) => path.basename(relative),
-    }),
-    imagemin([
-      mozjpeg({ quality: config.settings.imagemin.jpeg, progressive: true }),
-      optipng({ optimizationLevel: config.settings.imagemin.png }),
-      svgo({ plugins: [{ name: 'preset-default' }] }),
-    ]),
-    flatten(),
-    dest(config.paths.images.dest),
-  ];
+  return new Promise((resolve, reject) => {
+    const pipeline = [
+      src(imageSources, gulp5Options),
+      plumber({ errorHandler: onError }),
+      newer({
+        dest: config.paths.images.dest,
+        map: (relative) => path.basename(relative),
+      }),
+      imagemin([
+        mozjpeg({ quality: config.settings.imagemin.jpeg, progressive: true }),
+        optipng({ optimizationLevel: config.settings.imagemin.png }),
+        svgo({ plugins: [{ name: 'preset-default' }] }),
+      ]),
+      flatten(),
+      dest(config.paths.images.dest),
+    ];
 
-  return pipeline
-    .reduce((stream, plugin) => stream.pipe(plugin))
-    .on('end', bs.reload);
+    pipeline
+      .reduce((stream, plugin) => stream.pipe(plugin))
+      .on('end', () => {
+        bs.reload();
+        resolve();
+      })
+      .on('error', reject);
+  });
 }
 
 // =========================================================================
 // ⚡ 2. РЕЖИМ РАЗРАБОТКИ (БЫСТРОЕ КОПИРОВАНИЕ БЕЗ СЖАТИЯ)
 // =========================================================================
 export function imagesDev() {
-  const pipeline = [
-    // Передаем тот же массив источников, что и в продакшене (включая компоненты)
-    src(imageSources, gulp5Options),
-    plumber({ errorHandler: onError }),
-    // Обязательно добавляем flatten(), чтобы фото из компонентов сбросило
-    // свою вложенность папок и легло ровно в dist/images/photo.jpg
-    flatten(),
-    dest(config.paths.images.dest),
-  ];
+  return new Promise((resolve, reject) => {
+    const pipeline = [
+      // Передаем тот же массив источников, что и в продакшене (включая компоненты)
+      src(imageSources, gulp5Options),
+      plumber({ errorHandler: onError }),
+      // Обязательно добавляем flatten(), чтобы фото из компонентов сбросило
+      // свою вложенность папок и легло ровно в dist/images/photo.jpg
+      flatten(),
+      dest(config.paths.images.dest),
+    ];
 
-  return pipeline
-    .reduce((stream, plugin) => stream.pipe(plugin))
-    .on('end', bs.reload);
+    pipeline
+      .reduce((stream, plugin) => stream.pipe(plugin))
+      .on('end', () => {
+        bs.reload();
+        resolve();
+      })
+      .on('error', reject);
+  });
 }
 
 // =========================================================================
 // 🚀 3. КОНВЕРТАЦИЯ В WEBP
 // =========================================================================
 export function createWebp() {
-  const pipeline = [
-    src(
-      [
-        `${config.srcFolder}/images/**/*.{png,jpg,jpeg}`,
-        `!${config.srcFolder}/images/favicon.png`,
-        `!${config.srcFolder}/images/favicons/**/*`,
-        `${config.srcFolder}/components/**/img/**/*.{png,jpg,jpeg}`,
-      ],
-      gulp5Options,
-    ),
-    plumber({ errorHandler: onError }),
-    newer({
-      dest: config.paths.images.dest,
-      map: (relative) =>
-        path.basename(relative, path.extname(relative)) + '.webp',
-    }),
-    imagemin([mozjpeg({ progressive: true })]),
-    webp({ quality: config.settings.webpQuality }),
-    flatten(),
-    dest(config.paths.images.dest),
-  ];
+  return new Promise((resolve, reject) => {
+    const pipeline = [
+      src(
+        [
+          `${config.srcFolder}/images/**/*.{png,jpg,jpeg}`,
+          `!${config.srcFolder}/images/favicon.png`,
+          `!${config.srcFolder}/images/favicons/**/*`,
+          `${config.srcFolder}/components/**/img/**/*.{png,jpg,jpeg}`,
+        ],
+        gulp5Options,
+      ),
+      plumber({ errorHandler: onError }),
+      newer({
+        dest: config.paths.images.dest,
+        map: (relative) =>
+          path.basename(relative, path.extname(relative)) + '.webp',
+      }),
+      imagemin([mozjpeg({ progressive: true })]),
+      webp({ quality: config.settings.webpQuality }),
+      flatten(),
+      dest(config.paths.images.dest),
+    ];
 
-  return pipeline
-    .reduce((stream, plugin) => stream.pipe(plugin))
-    .on('end', bs.reload);
+    pipeline
+      .reduce((stream, plugin) => stream.pipe(plugin))
+      .on('end', () => {
+        bs.reload();
+        resolve();
+      })
+      .on('error', reject);
+  });
 }
 
 // =========================================================================
 // 🧬 4. СБОРКА SVG-СПРАЙТОВ
 // =========================================================================
 export function sprite() {
-  const pipeline = [
-    src(config.paths.images.svg, gulp5Options),
-    plumber({ errorHandler: onError }),
-    newer(path.join(config.paths.images.dest, 'sprite.svg')),
-    svgSprite({
-      mode: { symbol: { dest: '.', sprite: 'sprite.svg' } },
-      shape: {
-        id: { generator: (name) => name.split('.').shift() },
-        transform: [
-          {
-            svgo: {
-              plugins: [
-                { name: 'preset-default' },
-                { name: 'cleanupIds', active: true },
-                {
-                  name: 'removeAttrs',
-                  params: { attrs: '(fill|stroke|style|class|id|data-name)' },
-                },
-              ],
+  return new Promise((resolve, reject) => {
+    const pipeline = [
+      src(config.paths.images.svg, gulp5Options),
+      plumber({ errorHandler: onError }),
+      newer(path.join(config.paths.images.dest, 'sprite.svg')),
+      svgSprite({
+        mode: { symbol: { dest: '.', sprite: 'sprite.svg' } },
+        shape: {
+          id: { generator: (name) => name.split('.').shift() },
+          transform: [
+            {
+              svgo: {
+                plugins: [
+                  { name: 'preset-default' },
+                  { name: 'cleanupIds', active: true },
+                  {
+                    name: 'removeAttrs',
+                    params: { attrs: '(fill|stroke|style|class|id|data-name)' },
+                  },
+                ],
+              },
             },
-          },
-        ],
-      },
-    }),
-    dest(config.paths.images.dest),
-  ];
+          ],
+        },
+      }),
+      dest(config.paths.images.dest),
+    ];
 
-  return pipeline
-    .reduce((stream, plugin) => stream.pipe(plugin))
-    .on('end', bs.reload);
+    pipeline
+      .reduce((stream, plugin) => stream.pipe(plugin))
+      .on('end', () => {
+        bs.reload();
+        resolve();
+      })
+      .on('error', reject);
+  });
 }
 
 // =========================================================================
@@ -161,7 +185,7 @@ function getFaviconsStream() {
         hasFavicon,
         favicons({
           path: 'images/favicons/',
-          appName: 'Radik.Dev',
+          appName: config.siteName,
           html: 'favicon-links.html',
           pipeHTML: true,
           icons: {

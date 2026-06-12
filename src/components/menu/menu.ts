@@ -6,8 +6,9 @@ export const menu = (): void => {
   const menuBody = document.querySelector<HTMLElement>('.menu');
 
   // Явное указание типа NodeListOf для коллекции ссылок-якорей
+  // 🔥 ИСПРАВЛЕНО: Ищем ВСЕ ссылки, включая те, что без # (например, ./why-gulp-ts.html)
   const anchors: NodeListOf<HTMLAnchorElement> =
-    document.querySelectorAll<HTMLAnchorElement>("a[href*='#']");
+    document.querySelectorAll<HTMLAnchorElement>('a[href]');
 
   // Функция для принудительного закрытия меню
   const closeMenu = (): void => {
@@ -39,34 +40,110 @@ export const menu = (): void => {
     });
   }
 
-  // 2. УНИВЕРСАЛЬНЫЙ СКРОЛЛ И ПЕРЕХОД МЕЖДУ СТРАНИЦАМИ
+  // 2. ФУНКЦИЯ ДЛЯ ПРОВЕРКИ, НАХОДИМСЯ ЛИ МЫ В БЛОГЕ
+  const checkIsBlogPage = (): boolean => {
+    return /\/blog\//.test(window.location.pathname);
+  };
+
+  // 3. ФУНКЦИЯ ДЛЯ ВЫДЕЛЕНИЯ АКТИВНОГО ПУНКТА МЕНЮ
+  const highlightActiveMenu = (): void => {
+    const isBlogPage = checkIsBlogPage();
+    anchors.forEach((anchor: HTMLAnchorElement) => {
+      const href: string | null = anchor.getAttribute('href');
+      if (!href) return;
+
+      // Если мы на странице блога, выделяем пункт "Блог" (GO_BLOG)
+      if (isBlogPage && href.includes('GO_BLOG')) {
+        anchor.classList.add('_active');
+      }
+
+      // Если мы на странице блога и это якорная ссылка (например, #contacts), выделяем соответствующий пункт
+      if (isBlogPage && href.startsWith('#') && href.length > 1) {
+        const targetIdMain: string = href.substring(href.indexOf('#') + 1);
+        if (window.location.hash === '#' + targetIdMain) {
+          anchor.classList.add('_active');
+        }
+      }
+    });
+  };
+
+  // Выполняем выделение при инициализации
+  highlightActiveMenu();
+
+  // 3. УНИВЕРСАЛЬНЫЙ СКРОЛЛ И ПЕРЕХОД МЕЖДУ СТРАНИЦАМИ
   anchors.forEach((anchor: HTMLAnchorElement) => {
     anchor.addEventListener('click', (e: Event): void => {
       const href: string | null = anchor.getAttribute('href');
       if (!href) return;
 
-      // Проверяем, находимся ли мы в блоге (путь содержит '/blog/')
-      const isBlogPage: boolean = window.location.pathname.includes('/blog/');
-
-      if (isBlogPage) {
-        // Если мы в блоге, отменять клик НЕ надо! Позволяем перейти на главную
+      // ✅ ДОБАВЛЕНО: Если ссылка ведёт на index.html (с относительным путём или без),
+      // мы НЕ отменяем клик! Позволяем браузеру просто перезагрузить/открыть главную страницу.
+      // Проверяем как простой index.html, так и относительные пути (../index.html, ./index.html)
+      const isIndexLink = href === 'index.html' || href === '/index.html' || href.endsWith('/index.html') || href.endsWith('index.html');
+      if (isIndexLink) {
         closeMenu();
         return;
       }
 
-      // Если мы НА ГЛАВНОЙ странице, включаем плавный скролл
+      // 🔥 ИСПРАВЛЕНО: Если ссылка ведёт на blog/index.html, разрешаем переход
+      const isBlogLink = href.includes('blog/index.html') || href === 'blog/index.html';
+      if (isBlogLink) {
+        closeMenu();
+        return;
+      }
+
+      // 🔥 ИСПРАВЛЕНО: Проверяем, является ли ссылка якорной (внутренней навигацией)
+      const isAnchorLink: boolean = href.startsWith('#');
+
+      // 🔥 ИСПРАВЛЕНО: Блокировка кликов внутри блога только для якорных ссылок
+      // (чтобы не переключать секции внутри одной статьи)
+      const isBlogPage = checkIsBlogPage();
+
+      // 🔥 ИСПРАВЛЕНО: Разрешаем переход по якорным ссылкам (например, #contacts) при нахождении в блоге
+      // Блокируем только если это пустая якорная ссылка (#) или если цель не найдена
+      if (isBlogPage && isAnchorLink && href.length > 1) {
+        const targetIdAnchor: string = href.substring(href.indexOf('#') + 1);
+        const targetSection: HTMLElement | null =
+          document.getElementById(targetIdAnchor);
+
+        if (targetSection) {
+          e.preventDefault();
+          closeMenu();
+          const headerElement = document.querySelector<HTMLElement>('.header');
+          const headerOffset: number = headerElement
+            ? headerElement.offsetHeight
+            : 80;
+
+          const elementPosition: number =
+            targetSection.getBoundingClientRect().top;
+          const offsetPosition: number =
+            elementPosition + window.scrollY - headerOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth',
+          });
+        }
+        return;
+      }
+
+      // 🔥 ИСПРАВЛЕНО: Если это не якорная ссылка и не index.html, разрешаем переход
+      // (включая ссылки на другие статьи блога вида blog/why-gulp-ts.html)
+      if (!isAnchorLink) {
+        closeMenu();
+        return;
+      }
+
+      // "Если мы НА ГЛАВНОЙ странице и это якорная ссылка" (содержит #), включаем плавный скролл
       e.preventDefault();
 
-      // Извлекаем чистый ID секции, удаляя всё до знака '#' включительно
-      const targetId: string = href.substring(href.indexOf('#') + 1);
+      const targetIdMain: string = href.substring(href.indexOf('#') + 1);
       const targetSection: HTMLElement | null =
-        document.getElementById(targetId);
+        document.getElementById(targetIdMain);
 
       if (targetSection) {
         closeMenu();
-
         const headerElement = document.querySelector<HTMLElement>('.header');
-        // Динамически высчитываем высоту шапки, если она изменилась (например, класс _scroll)
         const headerOffset: number = headerElement
           ? headerElement.offsetHeight
           : 80;
@@ -84,8 +161,8 @@ export const menu = (): void => {
     });
   });
 
-  // 3. СТАБИЛЬНЫЙ СКРОЛЛ ПРИ ПЕРЕХОДЕ ИЗ БЛОГА НА ГЛАВНУЮ (БЕЗ СЛЕПЫХ ТАЙМАУТОВ)
-  if (!window.location.pathname.includes('/blog/') && window.location.hash) {
+  // 4. СТАБИЛЬНЫЙ СКРОЛЛ ПРИ ПЕРЕХОДЕ ИЗ БЛОГА НА ГЛАВНУЮ (БЕЗ СЛЕПЫХ ТАЙМАУТОРОВ)
+  if (!checkIsBlogPage() && window.location.hash) {
     const handleInitialScroll = (): void => {
       const targetId: string = window.location.hash.replace('#', '');
       const targetSection: HTMLElement | null =
@@ -112,7 +189,7 @@ export const menu = (): void => {
       }
     };
 
-    // Если страница еще загружается, ждем события полного рендеринга
+    // Если страница еще загружается, ждем событие полного рендеринга
     if (document.readyState === 'complete') {
       handleInitialScroll();
     } else {

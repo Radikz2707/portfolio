@@ -15,6 +15,7 @@
 @use '../components/menu/menu';
 @use '../components/blog-sidebar/blog-sidebar';
 @use '../components/contacts/contacts';
+@use '../components/blog-page/blog-page';
 
 // ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
 @use '../js/modules/scroll-to-top/scroll-to-top' as *;
@@ -26,14 +27,9 @@ body {
 
 // ГЛOБАЛЬНАЯ СЕТКА И КОНТЕЙНЕРЫ
 .container {
-  // Дополнительная защита от внезапного горизонтального скролла на мобилках
   box-sizing: border-box;
   width: 100%;
-
-  // Изменяем на 1180px, чтобы чистая область контента оставалась ровно 1140px,
-  // а по бокам всегда оставались безопасные 20px полей
   max-width: 1180px;
-
-  padding: 0 20px; // Безопасные отступы для смартфонов
-  margin: 0 auto; // Идеальное центрирование блока по центру экрана
+  padding: 0 20px;
+  margin: 0 auto;
 }

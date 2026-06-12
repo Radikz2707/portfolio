@@ -10,6 +10,7 @@ export default tseslint.config(
       'dist/**',
       'archives/**',
       'gulpfile.js',
+      'gulp.config.js',
       'gulp/**/*.js',
       'gulp/**/*.ts',
       'webpack.config.js',

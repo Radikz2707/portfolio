@@ -4,33 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@@title | Блог Radik.Dev</title>
-    @@include("../../parts/favicon-links.html")
+    @@include("parts/favicon-links.html")
     <link rel="stylesheet" href="../css/app.min.css" />
   </head>
-  <body>
-    @@include("../../components/header/header.html")
+  <body class="page-blog">
+    @@include("components/header/header.html")
 
     <article class="blog-article">
       <div class="blog-article__container container">
         <div class="blog-article__layout">
           <!-- Левая колонка: Текст текущей статьи -->
           <div class="blog-article__main-content">
-            <a href="../index.html" class="blog-article__back-link"
-              >&larr; На главную</a
-            >
+            <a href="/" class="blog-article__back-link">&larr; На главную</a>
+
             <!-- 🔥 Робот заменит эту метку на скомпилированный из Markdown текст статьи -->
             @@content
           </div>
 
           <!-- Правая колонка: Сюда робот вставит ваш собранный независимый сайдбар -->
-          <div class="blog-article__sidebar">
-            @@sidebar
-          </div>
+          <div class="blog-article__sidebar">@@sidebar</div>
         </div>
       </div>
     </article>
 
-    @@include("../../components/footer/footer.html")
+    @@include("components/footer/footer.html")
     <script src="../js/app.min.js" defer></script>
   </body>
 </html>

@@ -6,7 +6,7 @@ import { config } from '../../gulp.config.js';
 import mammoth from 'mammoth';
 import gulp from 'gulp';
 import markdown from 'gulp-markdown';
-import { Transform } from 'stream'; // Нативная замена through2 для Gulp 5
+import { Transform } from 'stream';
 
 const { src } = gulp;
 
@@ -18,7 +18,6 @@ const getFirstLineOfFile = async (filePath) => {
       input: fileStream,
       crlfDelay: Infinity,
     });
-
     let firstLine = '';
     for await (const line of rl) {
       const trimmed = line.trim();
@@ -36,7 +35,7 @@ const getFirstLineOfFile = async (filePath) => {
 
 export const parsePlainText = (content) => {
   if (!content) return '';
-  return content.replace(/<\/?[^>]+(>|$)/g, '').trim();
+  return content.replace(/<?[^>]+(>|$)/g, '').trim();
 };
 
 // =========================================================================
@@ -46,11 +45,12 @@ export const generateSidebarLinks = async (folderName) => {
   const dirPath = path.join(config.srcFolder, 'content', folderName);
   if (!fs.existsSync(dirPath)) return '';
 
-  // Переходим на полностью асинхронное чтение директории
   const files = await fsPromises.readdir(dirPath);
   let linksHtml = '';
 
   for (const file of files) {
+    if (file.toLowerCase().startsWith('index.')) continue;
+
     const ext = path.extname(file).toLowerCase();
     if (!['.md', '.txt', '.rtf', '.docx'].includes(ext)) continue;
 
@@ -79,46 +79,81 @@ export const generateSidebarLinks = async (folderName) => {
       title = title.charAt(0).toUpperCase() + title.slice(1);
     }
 
-    linksHtml += `  <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
+    linksHtml += ` <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
   }
   return linksHtml;
 };
 
-export const processHtmlContent = (html, pathPrefix) => {
+// Экранирование специальных HTML-символов внутри блоков pre и code
+const escapeCodeBlocks = (html) => {
+  if (!html) return '';
   return html
-    .replace(/src="\.?\/images\//gi, `src="${pathPrefix}images/`)
+    .replace(
+      /(<pre[^>]*>)([\s\S]*?)(<\/pre>)/gi,
+      (match, preOpen, codeContent, preClose) => {
+        const escaped = codeContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `${preOpen}${escaped}${preClose}`;
+      },
+    )
+    .replace(
+      /(<code[^>]*>)([\s\S]*?)(<\/code>)/gi,
+      (match, codeOpen, codeContent, codeClose) => {
+        const escaped = codeContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `${codeOpen}${escaped}${codeClose}`;
+      },
+    );
+};
+
+export const processHtmlContent = (html, pathPrefix) => {
+  if (!html) return '';
+  let processedHtml = html
+    .replace(/src="\.\//gi, `src="${pathPrefix}images/`)
     .replace(/src="images\//gi, `src="${pathPrefix}images/`);
+
+  processedHtml = escapeCodeBlocks(processedHtml);
+  return processedHtml;
 };
 
 // =========================================================================
-// 🗜️ 2. ИСПРАВЛЕННЫЙ КОМПИЛЯТОР КОНТЕНТА (NATIVE GULP 5 TRANSFORM)
+// ⚙️ 2. КОМПИЛЯТОР КОНТЕНТА (NATIVE GULP 5 TRANSFORM)
 // =========================================================================
 export const compileContentStream = () => {
   return new Transform({
     objectMode: true,
-    transform(file, encoding, callback) {
+    async transform(file, encoding, callback) {
       if (file.isBuffer()) {
         const ext = path.extname(file.path).toLowerCase();
-
-        // Через маркдаун пускаем ТОЛЬКО текстовые исходники
         if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
-          const stream = markdown();
-          stream.on('data', (updatedFile) => {
-            file.contents = updatedFile.contents;
-            file.path = file.path.replace(/\.(md|txt|rtf)$/i, '.html');
-          });
-          stream.write(file);
-          stream.end();
+          try {
+            const stream = markdown();
+            stream.on('data', (updatedFile) => {
+              file.contents = updatedFile.contents;
+              file.path = file.path.replace(/\.(md|txt|rtf)$/i, '.html');
+            });
+            stream.on('end', () => {
+              callback(null, file);
+            });
+            stream.write(file);
+            stream.end();
+          } catch (err) {
+            console.error(
+              `Ошибка обработки Markdown для ${file.relative}:`,
+              err,
+            );
+            callback(null, file);
+          }
+        } else {
+          callback(null, file);
         }
-        // Если .docx — оставляем бинарник нетронутым, его обработает следующий этап
+      } else {
+        callback(null, file);
       }
-      callback(null, file);
     },
   });
 };
 
 // =========================================================================
-// 🎨 3. ОБЕРТКА СТАТЕЙ В ШАБЛОН (БЕЗОПАСНАЯ АСИНХРОННАЯ ЗАПИСЬ НА ДИСК)
+// 🎨 3. ОБЕРТКА СТАТЕЙ В ШАБЛОН С ПОЛНЫМ ИМПОРТОМ ХЕДЕРА И ФУТЕРА
 // =========================================================================
 export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   const folderName = rawFolderName.toLowerCase();
@@ -148,76 +183,96 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
     'utf-8',
   );
 
-  const faviconLinksPath = path.join(
-    config.srcFolder,
-    'parts',
-    'favicon-links.html',
-  );
+  // Асинхронно считываем фавиконки
+   // Асинхронно считываем фавиконки
+  const faviconLinksPath = path.join(config.srcFolder, 'parts', 'favicon-links.html');
   let faviconLinksHtml = '';
   if (fs.existsSync(faviconLinksPath)) {
     faviconLinksHtml = await fsPromises.readFile(faviconLinksPath, 'utf-8');
   }
 
+  // Считываем файлы шапки сайта
+  const headerPath = path.join(config.srcFolder, 'components', 'header', 'header.html');
+  let headerHtml = '';
+  if (fs.existsSync(headerPath)) {
+    headerHtml = await fsPromises.readFile(headerPath, 'utf-8');
+  }
+
+  // Считываем файлы подвала сайта
+  const footerPath = path.join(config.srcFolder, 'components', 'footer', 'footer.html');
+  let footerHtml = '';
+  if (fs.existsSync(footerPath)) {
+    footerHtml = await fsPromises.readFile(footerPath, 'utf-8');
+  }
+
+  // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Считываем файл меню навигации, чтобы убрать серый текст
+  const menuPath = path.join(config.srcFolder, 'components', 'menu', 'menu.html');
+  let menuHtml = '';
+  if (fs.existsSync(menuPath)) {
+    menuHtml = await fsPromises.readFile(menuPath, 'utf-8');
+  }
+
   if (fs.existsSync(tempDestPath)) {
     const files = await fsPromises.readdir(tempDestPath);
-
     for (const file of files) {
-      const ext = path.extname(file).toLowerCase();
       if (file.toLowerCase() === 'index.html') continue;
 
-      const filePath = path.join(tempDestPath, file);
-      const cleanFileName = file.toLowerCase().replace('.docx', '.html');
+      const ext = path.extname(file).toLowerCase();
+      const cleanFileName = path.basename(file, ext) + '.html';
       let rawHtml = '';
 
       if (ext === '.docx') {
         try {
-          const originalDocxPath = path.join(
-            config.srcFolder,
-            'content',
-            folderName,
-            file,
-          );
+          const originalDocxPath = path.join(config.srcFolder, 'content', folderName, file);
           if (fs.existsSync(originalDocxPath)) {
             const docBuffer = await fsPromises.readFile(originalDocxPath);
             const result = await mammoth.convertToHtml({ buffer: docBuffer });
             rawHtml = result.value || '';
           }
         } catch (err) {
-          console.error(
-            `[Mammoth Error] Не удалось сконвертировать Word файл ${file}:`,
-            err,
-          );
+          console.error(`[Mammoth Error] Не удалось сконвертировать Word файл ${file}:`, err);
           continue;
         }
       } else if (ext === '.html') {
-        rawHtml = await fsPromises.readFile(filePath, 'utf-8');
+        rawHtml = await fsPromises.readFile(path.join(tempDestPath, file), 'utf-8');
       } else {
         continue;
       }
 
       const pageTitle = cleanFileName.replace('.html', '').replace(/-/g, ' ');
-      const capitalizedTitle =
-        pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
+      const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
 
+      // Склеиваем переменные контента
       let finalPageHtml = articleTemplate
         .replace('@@title', capitalizedTitle)
         .replace('@@content', rawHtml)
         .replace('@@sidebar', sidebarHtml)
-        .replace(
-          '@@include("../../parts/favicon-links.html")',
-          faviconLinksHtml,
-        );
+        .replace(/@@include\s*\(\s*["']\s*parts\/favicon-links\.html\s*["']\s*\)/gi, faviconLinksHtml)
+        .replace(/@@include\s*\(\s*["']\s*components\/header\/header\.html\s*["']\s*\)/gi, headerHtml)
+        .replace(/@@include\s*\(\s*["']\s*components\/footer\/footer\.html\s*["']\s*\)/gi, footerHtml)
+        // 🔥 ДОБАВЛЕНО: Принудительно вырезаем сырой инклуд меню и вставляем готовую разметку ссылок навигации
+        .replace(/@@include\s*\(\s*["']\s*components\/menu\/menu\.html\s*["']\s*\)/gi, menuHtml)
+        .replace(/SITE_NAME/gi, config.siteName || 'Radik.Dev'); // Автозамена имени сайта в шапке статьи
 
-      finalPageHtml = processHtmlContent(finalPageHtml, '../');
+      // 2. Корректируем ссылки меню с учётом текущей директории
+      const pathPrefix = '../';
+      finalPageHtml = finalPageHtml
+        .replace(/href=["']\s*\/?GO_HOME\s*["']/gis, `href="${pathPrefix}index.html"`)
+        .replace(/href=["']\s*\/?GO_PROJECTS\s*["']/gis, `href="${pathPrefix}index.html#projects"`)
+        .replace(/href=["']\s*\/?GO_ABOUT\s*["']/gis, `href="${pathPrefix}index.html#about"`)
+        .replace(/href=["']\s*\/?GO_BLOG\s*["']/gis, `href="${pathPrefix}blog/index.html"`);
+
+      // 3. Корректируем относительные пути ресурсов
+      finalPageHtml = processHtmlContent(finalPageHtml, pathPrefix);
 
       const finalArticlePath = path.join(tempDestPath, cleanFileName);
-
-      // Асинхронная запись гарантирует, что Node.js не заблокирует другие таски Gulp 5
       await fsPromises.writeFile(finalArticlePath, finalPageHtml, 'utf-8');
 
-      if (ext === '.docx' || file !== cleanFileName) {
-        await fsPromises.unlink(filePath);
+      if (ext === '.docx' || path.basename(file, ext) !== cleanFileName.replace('.html', '')) {
+        await fsPromises.unlink(path.join(tempDestPath, file));
       }
     }
   }
 };
+
+export default wrapInMasterLayout;

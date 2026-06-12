@@ -1,4 +1,5 @@
 import path from 'path';
+import { execSync } from 'child_process';
 
 // ==========================================
 // БАЗОВЫЕ НАСТРОЙКИ НАПРАВЛЕНИЙ
@@ -7,9 +8,40 @@ const preprocessor = 'scss';
 const srcFolder = 'src'; // Папка с исходными файлами
 const buildFolder = 'dist'; // Папка готовой сборки проекта
 
+// ==========================================
+// АВТОМАТИЧЕСКОЕ ОПРЕДЕЛЕНИЕ РЕПОЗИТОРИЯ
+// ==========================================
+// Получаем полный путь к репозиторию (username/repo) для ссылок на GitHub
+const detectRepoPath = () => {
+  try {
+    const remoteUrl = execSync('git remote get-url origin 2>/dev/null', {
+      encoding: 'utf-8',
+    }).trim();
+    // Формат: https://github.com/username/repo.git или git@github.com:username/repo.git
+    const match = remoteUrl.match(/github[/:]([^/]+)\/([^/.]+?)(?:\.git)?$/);
+    if (match) {
+      // match[1] — имя пользователя, match[2] — имя репозитория
+      return `${match[1]}/${match[2]}`;
+    }
+  } catch {
+    // Если git не найден или ошибка — используем значение из конфига
+  }
+  return null;
+};
+
+// Получаем полный путь к репозиторию для ссылок на GitHub
+// Приоритет: переменная окружения GITHUB_REPO_PATH, затем автоматическое определение, затем 'username/repo'
+const repoPath =
+  process.env.GITHUB_REPO_PATH ||
+  detectRepoPath() ||
+  'Radik/portfolio';
+
 export const config = {
-  // Имя удаленного репозитория на GitHub для автоматизации ссылок
-  repoName: null,
+  // Полный путь к репозиторию (username/repo) для ссылок на GitHub
+  repoPath: repoPath,
+
+  // Единая глобальная переменная названия вашего бренда
+  siteName: 'Radik.Dev',
 
   preprocessor,
   srcFolder,
@@ -46,7 +78,7 @@ export const config = {
       dest: `${buildFolder}/images/`,
       svg: `${srcFolder}/images/**/*.svg`,
     },
-    // 🔥 ДОБАВЛЕНО: Централизованные пути для генератора фавиконок
+    // Централизованные пути для генератора фавиконок
     favicons: {
       src: `${srcFolder}/images/src/favicon.png`, // Новый путь к исходнику
       dest: `${buildFolder}/images/favicons/`, // Папка назначения в dist
@@ -69,14 +101,4 @@ export const config = {
     },
     autoprefixer: ['> 0.5%', 'last 2 versions', 'not dead'],
   },
-
-  // ==========================================
-  // КАРТА АВТОМАТИЧЕСКОГО СЛЕЖЕНИЯ ЗА ФАЙЛАМИ
-  // ==========================================
-  watchers: [
-    { mask: '/**/*.html', task: 'html' },
-    { mask: '/content/blog/**/*.md', task: 'blog' },
-    { mask: '/fonts/src/**/*', task: 'fonts' },
-    { mask: '/components/**/*.{jpg,jpeg,png,svg,webp,gif}', task: 'imagesDev' },
-  ],
 };

@@ -2,15 +2,13 @@ export const blogSidebar = (): void => {
   console.log('Компонент боковой панели (TS) успешно инициализирован');
 
   // Находим все ссылки на статьи внутри нашего сайдбара
-  const sidebarLinks = document.querySelectorAll<HTMLAnchorElement>(
-    '.blog-sidebar__link',
-  );
+  const sidebarLinks = document.querySelectorAll<HTMLElement>('.blog-sidebar__link');
 
   // Получаем только имя текущего открытого HTML-файла (например, "why-gulp-ts.html")
   const currentFileName =
     window.location.pathname.split('/').pop() || 'index.html';
 
-  sidebarLinks.forEach((link) => {
+  sidebarLinks.forEach((link: HTMLElement) => {
     const linkHref = link.getAttribute('href');
     if (!linkHref) return;
 

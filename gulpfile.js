@@ -29,6 +29,7 @@ import { createPlugin as plugin } from './gulp.plugin.js';
 import { remove } from './gulp.remove.js';
 import { createStructure as init } from './gulp.init.js';
 import { help } from './gulp.help.js';
+import { blogIndex } from './gulp/html.js';
 
 const { parallel, series, src, dest } = gulp;
 
@@ -85,13 +86,17 @@ const runTask = (taskName) => {
 // =========================================================================
 const createDynamicContentTask = (folderName) => {
   return (done) => {
-    const sourcePath = path.join(
-      config.srcFolder,
-      'content',
-      folderName,
-      '**',
-      '*.{md,txt,rtf,docx}',
-    );
+    // 🔥 ИСПРАВЛЕНО: Используем массив путей для поддержки исключающих масок
+    const sourcePath = [
+      path.join(config.srcFolder, 'content', folderName, '**', '*.{md,txt,rtf,docx}')
+    ];
+    
+    // 🔥 ИСКЛЮЧАЕМ ИНДЕКСНЫЕ ФАЙЛЫ (index.md, index.txt и т.д.)
+    // Чтобы они не перезаписывали готовые index.html в dist/
+    if (folderName === 'blog') {
+      sourcePath.push('!' + path.join(config.srcFolder, 'content', folderName, 'index.{md,txt,rtf,docx}'));
+    }
+    
     const tempDestPath = path.join(config.buildFolder, folderName);
 
     src(sourcePath, { allowEmpty: true, encoding: false })
@@ -126,11 +131,23 @@ const dynamicContentFolderNames = fs.existsSync(contentDir)
 const runAllContentTasks = (done) => {
   if (dynamicContentFolderNames.length === 0) return done();
 
-  const contentTasks = dynamicContentFolderNames.map((folderName) => {
-    return (taskDone) => createDynamicContentTask(folderName)(taskDone);
-  });
+  try {
+    const contentTasks = dynamicContentFolderNames.map((folderName) => {
+      return (taskDone) => {
+        try {
+          createDynamicContentTask(folderName)(taskDone);
+        } catch (err) {
+          console.error(`\x1b[31m[Content Task Error] ${folderName}: ${err.message}\x1b[0m`);
+          taskDone(err);
+        }
+      };
+    });
 
-  return parallel(...contentTasks)(done);
+    return parallel(...contentTasks)(done);
+  } catch (err) {
+    console.error(`\x1b[31m[Content Tasks Error]: ${err.message}\x1b[0m`);
+    done(err);
+  }
 };
 
 // =========================================================================
@@ -149,7 +166,7 @@ export const build = series(
   cleandist,
   runTask('favs'),
   parallel(lintCss, lintJs, runTask('fonts'), runTask('fontsStyle')),
-  runAllContentTasks,
+  parallel(runTask('html'), blogIndex, runAllContentTasks),
   compileAssets,
   buildcopy,
   zipFiles,
@@ -172,7 +189,8 @@ export default series(
     runTask('sprite'),
     runTask('favs'),
     runTask('faviconsDev'),
-    runTask('html'), // <--- ИСПРАВЛЕНО: Генерируем index.html при старте сервера!
+    runTask('html'),
+    blogIndex,
   ),
   runAllContentTasks,
   buildcopy,

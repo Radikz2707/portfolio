@@ -1,6 +1,8 @@
 import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import plumber from 'gulp-plumber';
 
 import { createRequire } from 'module';
@@ -10,6 +12,9 @@ import webpack from 'webpack';
 import TerserPlugin from 'terser-webpack-plugin';
 
 import { onError, isProd, bs } from './server.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const { src, dest } = gulp;
 
@@ -45,6 +50,7 @@ export function scripts() {
             {
               loader: 'ts-loader',
               options: {
+                configFile: path.resolve(__dirname, '../tsconfig.json'),
                 // transpileOnly гарантирует молниеносную скорость в режиме разработки,
                 // отключая тяжелую проверку типов на каждом сохранении (её делает npm run lint)
                 transpileOnly: !isProd,

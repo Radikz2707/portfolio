@@ -13,8 +13,7 @@ export const contacts = (): void => {
    const messageInput = form.querySelector<HTMLTextAreaElement>('#form-message');
 
    const regexTelegram = /^[a-zA-Z0-9_]{5,32}/;
-   const regexPhone =
-      /^(?:\+7|8)?[\s-]?\(?[0-9]{3}\)?[\s-]?[0-9]{3}[\s-]?[0-9]{2}[\s-]?[0-9]{2}/;
+const regexPhone = /^(?:\+7|8)?[\s-]?\(?[0-9]{3}\)?[\s-]?[0-9]{3}[\s-]?[0-9]{2}[\s-]?[0-9]{2}/;
    const regexEmail = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
 
    const showError = (
@@ -141,7 +140,7 @@ export const contacts = (): void => {
    // =========================================================================
    // 👁️ ОПТИМИЗИРОВАННЫЙ INTERSECTION OBSERVER ДЛЯ АНИМАЦИИ ПОЯВЛЕНИЯ
    // =========================================================================
-   const revealElements: NodeListOf<HTMLElement> = document.querySelectorAll('.contacts__container.element-reveal');
+const revealElements = document.querySelectorAll<HTMLElement>('.contacts__container.element-reveal');
   
    if (revealElements.length > 0) {
       const observerOptions: IntersectionObserverInit = {

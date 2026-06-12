@@ -1,3 +1,4 @@
+import { blogPage } from "../components/blog-page/blog-page";
 // 1. ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ХЕЛПЕРОВ
 import { isWebp } from './modules/isWebp';
 
@@ -26,18 +27,14 @@ header();
 menu();
 hero();
 
-// Запуск анимационных модулей с микрозадержкой 100мс.
-// Это гарантирует, что IntersectionObserver увидит элементы после перерендеринга DOM.
-setTimeout(() => {
-  projectsGrid();
-  aboutMe();
-}, 100);
-
+/* #__PURE__ */ projectsGrid();
+/* #__PURE__ */ aboutMe();
 blogArticle();
 blogSidebar();
 contacts();
 footer();
 main();
+blogPage();
 
 // Интерактивные модули логики
 scrollToTop();
