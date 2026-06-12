@@ -164,7 +164,101 @@ export function sprite() {
 }
 
 // =========================================================================
-// 🛡️ 5. ПОСЛЕДОВАТЕЛЬНАЯ ГЕНЕРАЦИЯ ФАВИКОНОК БЕЗ МУСОРА В ИСХОДНИКАХ
+// 🛠️ 5. ФУНКЦИЯ ПОСТОБРАБОТКИ ВЕБ-МАНИФЕСТА (ИСПРАВЛЕНИЕ ПУТЕЙ)
+// =========================================================================
+
+/**
+ * Функция постобработки веб-манифеста для исправления путей к иконкам
+ * Убирает ведущий слэш из путей вида "/images/favicons/" -> "images/favicons/"
+ * @param {string} manifestPath - Путь к файлу manifest.webmanifest
+ */
+function fixManifest(manifestPath) {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(manifestPath)) {
+      console.log(`⚠️ Файл манифеста не найден: ${manifestPath}`);
+      resolve();
+      return;
+    }
+
+    try {
+      let content = fs.readFileSync(manifestPath, 'utf8');
+
+      // Заменяем пути к иконкам: "/images/favicons/" -> "images/favicons/"
+      // Это исправляет проблему с GitHub Pages, где абсолютные пути приводят к 404
+      const updatedContent = content.replace(
+        /"src":\s*"?\s*\/images\/favicons\//gi,
+        '"src": "images/favicons/',
+      );
+
+      // Заменяем "path": "/images/favicons/" на "path": "images/favicons/"
+      const finalContent = updatedContent.replace(
+        /"path":\s*"?\s*\/images\/favicons\//gi,
+        '"path": "images/favicons/',
+      );
+
+      // Проверяем, было ли изменение
+      if (content !== finalContent) {
+        fs.writeFileSync(manifestPath, finalContent, 'utf8');
+        console.log(`✅ Файл манифеста успешно обновлён: ${manifestPath}`);
+      } else {
+        console.log(`ℹ️ Файл манифеста не требует изменений: ${manifestPath}`);
+      }
+
+      resolve();
+    } catch (err) {
+      console.error(`❌ Ошибка при обработке манифеста: ${err.message}`);
+      reject(err);
+    }
+  });
+}
+
+// =========================================================================
+// 🛠️ 6. GULP-ТАСК ДЛЯ ПОСТПРОЦЕССИНГА МАНИФЕСТА
+// =========================================================================
+
+/**
+ * Gulp-таск для постобработки веб-манифеста
+ * Использует vinyl-файлы для интеграции в Gulp-поток
+ */
+function processManifest() {
+  const manifestPath = path.join(
+    config.paths.favicons.dest,
+    'manifest.webmanifest',
+  );
+
+  return src(manifestPath, { allowEmpty: true, encoding: false })
+    .pipe(
+      new Transform({
+        objectMode: true,
+        transform(file, enc, cb) {
+          if (file.isBuffer()) {
+            let content = file.contents.toString();
+
+            // 🔥 ИСПРАВЛЕНИЕ: Полностью удаляем путь "/images/favicons/", оставляя только имя файла
+            let finalContent = content.replace(
+              /"src":\s*"?\s*\/images\/favicons\//gi,
+              '"src": "',
+            );
+
+            // 🔥 ИСПРАВЛЕНИЕ: Аналогично очищаем свойство "path", если оно используется
+            finalContent = finalContent.replace(
+              /"path":\s*"?\s*\/images\/favicons\//gi,
+              '"path": "',
+            );
+
+            file.contents = Buffer.from(finalContent);
+          }
+
+          this.push(file);
+          cb();
+        },
+      }),
+    )
+    .pipe(dest(config.paths.favicons.dest));
+}
+
+// =========================================================================
+// 🛡️ 7. ПОСЛЕДОВАТЕЛЬНАЯ ГЕНЕРАЦИЯ ФАВИКОНОК БЕЗ МУСОРА В ИСХОДНИКАХ
 // =========================================================================
 
 // Вспомогательный генератор базового потока от плагина
@@ -205,22 +299,17 @@ export function favsHtml() {
       new Transform({
         objectMode: true,
         transform(file, enc, cb) {
-          // 🔥 Пропускаем дальше только файл разметки
-          if (file.path.endsWith('.html')) {
-            if (file.isBuffer()) {
-              let content = file.contents.toString();
-
-              // Очищаем любые ведущие слэши, превращая пути в относительные
-              content = content.replace(
-                /(href=["']\s*)\/?images\/favicons\//gi,
-                '$1images/favicons/',
-              );
-
-              // Записываем измененный контент обратно в буфер файла
-              file.contents = Buffer.from(content);
-            }
-            this.push(file);
+          // Обрабатываем HTML-код ссылок
+          if (file.path.endsWith('.html') && file.isBuffer()) {
+            let content = file.contents.toString();
+            content = content.replace(
+              /(href=["']\s*)\/?images\/favicons\//gi,
+              '$1images/favicons/',
+            );
+            file.contents = Buffer.from(content);
           }
+
+          this.push(file);
           cb();
         },
       }),
@@ -252,10 +341,10 @@ function favsImages() {
 }
 
 // Главный последовательный экспорт, полностью исключающий гонки потоков
-export const favs = gulp.series(favsImages, favsHtml);
+export const favs = gulp.series(favsImages, favsHtml, processManifest);
 
 // =========================================================================
-// 🧹 6. ОЧИСТКА ГРАФИКИ & 7. СТРАХОВОЧНОЕ КОПИРОВАНИЕ ДЛЯ DEV
+// 🧹 8. ОЧИСТКА ГРАФИКИ & 9. СТРАХОВОЧНОЕ КОПИРОВАНИЕ ДЛЯ DEV
 // =========================================================================
 export function cleanimg(done) {
   if (fs.existsSync(config.paths.images.dest)) {
