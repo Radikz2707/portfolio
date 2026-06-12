@@ -84,6 +84,10 @@ const fixPictureTags = () => {
               return match;
             }
             const webpPath = srcPath.replace(/\.(?:png|jpg|jpeg)$/i, '.webp');
+
+            // 🔥 ИСПРАВЛЕНО: Объявляем переменную cleanAttributes, чтобы Gulp не падал
+            const cleanAttributes = `${before.trim()} ${after.trim()}`.trim();
+
             return `<picture>\n <source srcset="${webpPath}" type="image/webp">\n <img src="${srcPath}"${cleanAttributes ? ' ' + cleanAttributes : ''}>\n</picture>`;
           },
         );

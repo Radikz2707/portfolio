@@ -1,4 +1,4 @@
-import { blogPage } from "../components/blog-page/blog-page";
+import { blogPage } from '../components/blog-page/blog-page';
 // 1. ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ХЕЛПЕРОВ
 import { isWebp } from './modules/isWebp';
 
