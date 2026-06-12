@@ -2,7 +2,7 @@ import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
 import fs from 'fs';
-import fsPromises from 'fs/promises'; // Асинхронное ядро I/O
+import fsPromises from 'fs/promises';
 import plumber from 'gulp-plumber';
 import zip from 'gulp-zip';
 import { onError } from './server.js';
@@ -37,7 +37,7 @@ export async function cleandist(done) {
       }
     }
 
-    done(); // Сигнализируем Gulp об успешном завершении асинхронной очистки
+    done();
   } catch (err) {
     onError(err);
     done(err);
@@ -48,25 +48,45 @@ export async function cleandist(done) {
 // 🔤 2. БЕЗОПАСНОЕ КОПИРОВАНИЕ ШРИФТОВ (ЗАЩИТА БИНАРНЫХ ДАННЫХ В GULP 5)
 // =========================================================================
 export function buildcopy(done) {
-  // Гарантируем наличие папки dist и асинхронно создаем пустой .nojekyll для GitHub Pages
+  // 1. Гарантируем наличие папки dist и создаем пустой .nojekyll для GitHub Pages
   if (!fs.existsSync(config.buildFolder)) {
     fs.mkdirSync(config.buildFolder, { recursive: true });
   }
   fs.writeFileSync(path.join(config.buildFolder, '.nojekyll'), '');
 
-  // Проверяем исходную папку шрифтов в src/fonts
+  // 2. Проверяем исходную папку шрифтов в src/fonts
   const srcFontsFolder = path.join(config.srcFolder, 'fonts');
   if (!fs.existsSync(srcFontsFolder)) return done();
 
-  // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ДЛЯ GULP 5: Принудительно передаем { encoding: false },
-  // чтобы шрифты .woff2/.ttf не прочитались как текст UTF-8 и не повредились на диске!
+  // 3. Формируем массив безопасных источников для копирования
+  const srcList = [path.join(srcFontsFolder, '**', '*')];
+
+  // Проверяем, где лежат ваши исходные фавиконки, чтобы Gulp не падал с ошибкой ENOENT
+  const rootFavs = path.join(config.srcFolder, 'favicons');
+  const imagesFavs = path.join(config.srcFolder, 'images', 'favicons');
+
+  if (fs.existsSync(rootFavs)) {
+    srcList.push(path.join(rootFavs, '**', '*'));
+  }
+  if (fs.existsSync(imagesFavs)) {
+    srcList.push(path.join(imagesFavs, '**', '*'));
+  }
+
+  // 🔥 ДОБАВЛЕНО: Копируем уже сгенерированные фавиконки из dist/images/favicons/
+  // const distFavs = path.join(config.buildFolder, 'images', 'favicons');
+  // if (fs.existsSync(distFavs)) {
+  //   srcList.push(path.join(distFavs, '**', '*'));
+  // }
+
+  // 4. Запускаем безопасный потоковый конвейер
   const pipeline = [
-    src(path.join(srcFontsFolder, '**', '*'), {
+    src(srcList, {
       allowEmpty: true,
       encoding: false,
+      base: config.srcFolder,
     }),
     plumber({ errorHandler: onError }),
-    dest(path.join(config.buildFolder, 'fonts')),
+    dest(config.buildFolder),
   ];
 
   return pipeline.reduce((stream, plugin) => stream.pipe(plugin));

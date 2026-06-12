@@ -19,29 +19,37 @@ import { main } from '../components/main/main';
 // ВЫЗОВЫ ФУНКЦИЙ (В порядке их инициализации)
 // ==========================================
 
-// Сервисные утилиты
+// Сервисные утилиты (работают везде)
 isWebp();
-
-// Компоненты структуры сайта
 header();
 menu();
-hero();
-
-/* #__PURE__ */ projectsGrid();
-/* #__PURE__ */ aboutMe();
-blogArticle();
-blogSidebar();
-contacts();
 footer();
 main();
-blogPage();
-
-// Интерактивные модули логики
 scrollToTop();
+
+// 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Определяем, где находится пользователь
+const isBlogPage =
+  window.location.pathname.includes('/blog/') ||
+  document.body.classList.contains('page-blog');
+
+if (isBlogPage) {
+  // 📑 Запускаем скрипты СТРОГО на страницах блога и статей
+  blogArticle();
+  blogSidebar();
+  blogPage();
+  console.log('Скрипты блога успешно инициализированы.');
+} else {
+  // 🚀 Запускаем скрипты СТРОГО на ГЛАВНОЙ странице портфолио
+  hero();
+  projectsGrid();
+  aboutMe();
+  contacts();
+  console.log('Скрипты главных разделов портфолио успешно инициализированы.');
+}
 
 console.log('TypeScript успешно запущен!');
 
-// 🔥 ЗАЩИТА АВТОРСКИХ ПРАВ: Блокировка копирования и скачивания
+// ЗАЩИТА АВТОРСКИХ ПРАВ
 document.addEventListener('contextmenu', (e: Event) => e.preventDefault());
 
 document.addEventListener('keydown', (e: KeyboardEvent): void => {

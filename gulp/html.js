@@ -34,29 +34,35 @@ function fixHtmlPaths() {
 
       let content = file.contents.toString();
 
-      if (pathPrefix) {
-        const hasPrefix = (match, p1, p2) =>
-          p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`;
+      const hasPrefix = (match, p1, p2) =>
+        p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`;
 
-        content = content.replace(
-          /(href=["']\s*)(css\/[^"']+\.css(?:\?[^"']*)?)/gi,
-          hasPrefix,
-        );
-        content = content.replace(
-          /(src=["']\s*)(js\/[^"']+\.js(?:\?[^"']*)?)/gi,
-          hasPrefix,
-        );
-        content = content.replace(
-          /((?:src|srcset)=["']\s*)(images\/[^"']+\.(?:png|jpg|jpeg|webp|svg|gif|ico))/gi,
-          (match, p1, p2) =>
-            p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`,
-        );
-        content = content.replace(
-          /(href=["']\s*)(favicons\/[^"']+\.(?:png|ico|xml|json|svg))/gi,
-          (match, p1, p2) =>
-            p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`,
-        );
-      }
+      content = content.replace(
+        /(href=["']\s*)(css\/[^"']+\.css(?:\?[^"']*)?)/gi,
+        hasPrefix,
+      );
+      content = content.replace(
+        /(src=["']\s*)(js\/[^"']+\.js(?:\?[^"']*)?)/gi,
+        hasPrefix,
+      );
+      content = content.replace(
+        /((?:src|srcset)=["']\s*)(images\/[^"']+\.(?:png|jpg|jpeg|webp|svg|gif|ico))/gi,
+        (match, p1, p2) =>
+          p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`,
+      );
+
+      // 🔥 ИСПРАВЛЕНО: Удаляем ведущий слэш у фавиконок на ВСЕХ страницах, включая главную!
+      // Регулярное выражение ловит и /favicons/, и favicons/ и делает пути относительными
+      content = content.replace(
+        /(href=["']\s*)\/?images\/favicons\//gi,
+        (match, p1) => {
+          // Удаляем ведущий слэш и добавляем pathPrefix если нужно
+          // Если pathPrefix пустой (главная страница), путь будет "images/favicons/"
+          // Если в блоге, pathPrefix будет "../", путь станет "../images/favicons/"
+          const prefix = pathPrefix ? pathPrefix : '';
+          return `${p1}${prefix}images/favicons/`;
+        },
+      );
 
       file.contents = Buffer.from(content);
       cb(null, file);
@@ -102,8 +108,8 @@ const fixPictureTags = () => {
 // 🚀 3. ОСНОВНАЯ ТАСКА СБОРКИ HTML КОД КОРНЯ САЙТА
 // =======================================================================
 export function html() {
+  // Конвейер плагинов главной страницы (без лишних мутаций путей)
   const pipeline = [
-    // Строго собираем только файлы корня сайта, игнорируя блоги и компоненты
     src([
       `${config.srcFolder}/*.html`,
       `!${config.srcFolder}/components/**/*.html`,
@@ -126,7 +132,6 @@ export function html() {
     replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, `href="blog/index.html"`),
     replace(/SITE_NAME/gi, config.siteName),
     replace(/SITE_AUTHOR/gi, config.repoPath),
-    fixHtmlPaths(),
   ];
 
   if (isProd) {
@@ -144,6 +149,7 @@ export function html() {
       extra_liners: [],
     }),
   );
+
   pipeline.push(
     htmlhint({
       'doctype-first': false,
@@ -159,6 +165,7 @@ export function html() {
       'spec-char-escape': true,
     }),
   );
+
   pipeline.push(htmlhint.reporter('htmlhint-stylish', { failReporter: false }));
 
   return pipeline

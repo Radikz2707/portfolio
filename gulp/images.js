@@ -13,7 +13,8 @@ import svgSprite from 'gulp-svg-sprite';
 import favicons from 'gulp-favicons';
 import newer from 'gulp-newer';
 import gulpIf from 'gulp-if';
-import { Transform } from 'stream'; // Нативная замена through2 для Gulp 5
+import replace from 'gulp-replace';
+import { Transform } from 'stream';
 
 import { onError, bs } from './server.js';
 const { src, dest } = gulp;
@@ -67,11 +68,8 @@ export function images() {
 export function imagesDev() {
   return new Promise((resolve, reject) => {
     const pipeline = [
-      // Передаем тот же массив источников, что и в продакшене (включая компоненты)
       src(imageSources, gulp5Options),
       plumber({ errorHandler: onError }),
-      // Обязательно добавляем flatten(), чтобы фото из компонентов сбросило
-      // свою вложенность папок и легло ровно в dist/images/photo.jpg
       flatten(),
       dest(config.paths.images.dest),
     ];
@@ -95,7 +93,7 @@ export function createWebp() {
       src(
         [
           `${config.srcFolder}/images/**/*.{png,jpg,jpeg}`,
-          `!${config.srcFolder}/images/favicon.png`,
+          `!${config.srcFolder}/images/**/favicon.png`,
           `!${config.srcFolder}/images/favicons/**/*`,
           `${config.srcFolder}/components/**/img/**/*.{png,jpg,jpeg}`,
         ],
@@ -201,31 +199,48 @@ function getFaviconsStream() {
 }
 
 // СТРОГИЙ ИЗОЛИРОВАННЫЙ ТАСК ДЛЯ HTML (ПИШЕТ СТРОГО В SRC/PARTS/)
-function favsHtml() {
+export function favsHtml() {
   return getFaviconsStream()
     .pipe(
       new Transform({
         objectMode: true,
         transform(file, enc, cb) {
-          // Пропускаем дальше по конвейеру ТОЛЬКО текстовый HTML файл ссылок
+          // 🔥 Пропускаем дальше только файл разметки
           if (file.path.endsWith('.html')) {
+            if (file.isBuffer()) {
+              let content = file.contents.toString();
+
+              // Очищаем любые ведущие слэши, превращая пути в относительные
+              content = content.replace(
+                /(href=["']\s*)\/?images\/favicons\//gi,
+                '$1images/favicons/',
+              );
+
+              // Записываем измененный контент обратно в буфер файла
+              file.contents = Buffer.from(content);
+            }
             this.push(file);
           }
           cb();
         },
       }),
     )
-    .pipe(dest(path.join(config.srcFolder, 'parts')));
+    .pipe(gulp.dest(path.dirname(config.paths.favicons.htmlOutput)));
 }
 
 // СТРОГИЙ ИЗОЛИРОВАННЫЙ ТАСК ДЛЯ КАРТИНОК (ПИШЕТ СТРОГО В DIST/)
 function favsImages() {
+  // 🔥 ГАРАНТИРОВАННОЕ СОЗДАНИЕ ПАПКИ НАЗНАЧЕНИЯ
+  const faviconsDestPath = config.paths.favicons.dest;
+  if (!fs.existsSync(faviconsDestPath)) {
+    fs.mkdirSync(faviconsDestPath, { recursive: true });
+  }
+
   return getFaviconsStream()
     .pipe(
       new Transform({
         objectMode: true,
         transform(file, enc, cb) {
-          // Пропускаем дальше по конвейеру ВСЁ, КРОМЕ файла разметки
           if (!file.path.endsWith('.html')) {
             this.push(file);
           }
@@ -233,11 +248,11 @@ function favsImages() {
         },
       }),
     )
-    .pipe(dest(config.paths.favicons.dest));
+    .pipe(dest(faviconsDestPath));
 }
 
 // Главный последовательный экспорт, полностью исключающий гонки потоков
-export const favs = gulp.series(favsHtml, favsImages);
+export const favs = gulp.series(favsImages, favsHtml);
 
 // =========================================================================
 // 🧹 6. ОЧИСТКА ГРАФИКИ & 7. СТРАХОВОЧНОЕ КОПИРОВАНИЕ ДЛЯ DEV

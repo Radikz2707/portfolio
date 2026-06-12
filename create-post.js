@@ -26,8 +26,12 @@ const generatePost = async (cleanTitle, mdFilePath) => {
   // 1. Создаем .md файл с русским заголовком и АНГЛИЙСКИМ смысловым именем
   fs.writeFileSync(mdFilePath, mdTemplate, 'utf-8');
   console.log(`\n✅ Markdown файл успешно сгенерирован: ${mdFilePath}`);
-  console.log(`ℹ️  Автоматический URL страницы: /blog/${path.basename(mdFilePath, '.md')}.html`);
-  console.log('🔗 Ссылка будет автоматически добавлена в сайдбар при сборке через Gulp.');
+  console.log(
+    `ℹ️  Автоматический URL страницы: /blog/${path.basename(mdFilePath, '.md')}.html`,
+  );
+  console.log(
+    '🔗 Ссылка будет автоматически добавлена в сайдбар при сборке через Gulp.',
+  );
 };
 
 const rl = readline.createInterface({
@@ -65,7 +69,7 @@ rl.question(
         .replace(/-+/g, '-'); // Убираем двойные дефисы
 
       console.log(`🇬🇧 Перевод заголовка: "${englishTitle}"`);
-      
+
       const mdFilePath = path.join('src', 'content', 'blog', `${cleanSlug}.md`);
 
       await generatePost(cleanTitle, mdFilePath);
