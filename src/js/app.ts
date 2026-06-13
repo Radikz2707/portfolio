@@ -1,3 +1,4 @@
+import { modal } from '../components/modal/modal';
 import { blogPage } from '../components/blog-page/blog-page';
 // 1. ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ХЕЛПЕРОВ
 import { isWebp } from './modules/isWebp';
@@ -23,6 +24,7 @@ import { main } from '../components/main/main';
 isWebp();
 header();
 menu();
+modal();
 footer();
 main();
 scrollToTop();

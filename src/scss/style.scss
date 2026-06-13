@@ -16,6 +16,7 @@
 @use '../components/blog-sidebar/blog-sidebar';
 @use '../components/contacts/contacts';
 @use '../components/blog-page/blog-page';
+@use "../components/modal/modal" as modal;
 
 // ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
 @use '../js/modules/scroll-to-top/scroll-to-top' as *;

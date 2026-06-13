@@ -55,7 +55,18 @@ export function styles() {
     pipeline.push(
       cleancss({
         level: {
-          2: { mergeMedia: true },
+          1: {
+            all: true, // Базовое сжатие (удаление пробелов и комментариев)
+            transform: (name, value) => value, // Защита от опасных трансформаций
+          },
+          2: {
+            all: true, // Глубокий рефакторинг структуры CSS
+            mergeMedia: true, // Слияние дублирующихся @media правил по всему итоговому файлу
+            mergeAdjacentRules: true, // Склеивание соседних одинаковых селекторов в один блок
+            removeDistinctSemicolons: true, // Удаление лишних точек с запятой
+            removeDuplicateRules: true, // Полное удаление дубликатов CSS-свойств
+            restructureRules: true, // Продвинутый рефакторинг селекторов для уменьшения веса
+          },
         },
       }),
     );

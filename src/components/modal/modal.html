@@ -1,0 +1,56 @@
+<section id="case-modal-1" class="modal" aria-hidden="true">
+  <!-- Оверлей (затемнение фона) ставим ПЕРЕД контейнером, чтобы размытие шло по всему экрану -->
+  <div class="modal__overlay" data-close></div>
+
+  <div class="modal__container container">
+    <div class="modal__window">
+      <!-- Кнопка Закрыть (Крестик) -->
+      <button
+        type="button"
+        class="modal__close"
+        data-close
+        aria-label="Закрыть окно"
+      >
+        <span></span>
+      </button>
+
+      <!-- Контент кейса портфолио -->
+      <div class="modal__content">
+        <h3 class="modal__title">Кейс: Разработка Radik.Dev</h3>
+        <p class="modal__text">
+          Собственное портфолио и блог, построенные на базе кастомного
+          модульного сборщика. В проекте реализована автоматическая генерация
+          страниц из Markdown, продвинутый роутинг якорных ссылок и сквозная
+          продакшен-оптимизация ресурсов.
+        </p>
+
+        <!-- Технологический стек -->
+        <div class="modal__tags">
+          <span class="modal__tag">Gulp 5</span>
+          <span class="modal__tag">TypeScript</span>
+          <span class="modal__tag">Webpack</span>
+          <span class="modal__tag">SCSS (BEM)</span>
+        </div>
+
+        <div class="modal__actions">
+          <a
+            href="https://github.com/Radikz2707/portfolio"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="modal__btn modal__btn--primary"
+          >
+            Смотреть код на GitHub
+          </a>
+          <button
+            type="button"
+            class="modal__btn modal__btn--secondary"
+            data-close
+          >
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+

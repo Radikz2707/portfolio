@@ -1,0 +1,160 @@
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  visibility: hidden;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+  opacity: 0;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+
+  &._active {
+    visibility: visible;
+    opacity: 1;
+
+    .modal__window {
+      transform: scale(1);
+    }
+  }
+
+  &__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(15 23 42 / 70%);
+    backdrop-filter: blur(4px);
+  }
+
+  &__window {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+    margin: 20px;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 50%);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+  }
+
+  &__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    background: none;
+    border: none;
+
+    span,
+    &::before {
+      position: absolute;
+      top: 11px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      content: '';
+      background-color: #94a3b8;
+      transition: background-color 0.2s;
+    }
+
+    &::before {
+      transform: rotate(45deg);
+    }
+
+    span {
+      transform: rotate(-45deg);
+    }
+
+    // 🔥 ИСПРАВЛЕНО ДЛЯ STYLELINT: Развернули правила на отдельные строки
+    &:hover {
+      span,
+      &::before {
+        background-color: #f8fafc;
+      }
+    }
+  }
+
+  &__title {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 22px;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  &__text {
+    margin-bottom: 24px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #94a3b8;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  &__tag {
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #818cf8;
+    background-color: rgb(99 102 241 / 10%);
+    border: 1px solid rgb(99 102 241 / 20%);
+    border-radius: 20px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+
+  &__btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: 6px;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s;
+
+    &--primary {
+      color: #ffffff;
+      background-color: #4f46e5;
+      border: 1px solid transparent;
+
+      &:hover {
+        background-color: #4338ca;
+      }
+    }
+
+    &--secondary {
+      color: #94a3b8;
+      background: none;
+      border: 1px solid #334155;
+
+      &:hover {
+        color: #f8fafc;
+        border-color: #475569;
+      }
+    }
+  }
+}

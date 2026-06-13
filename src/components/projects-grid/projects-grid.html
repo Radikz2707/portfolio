@@ -1,13 +1,20 @@
 <section class="projects-grid" id="projects">
   <div class="projects-grid__container container">
-    <!-- 🔥 Заголовок и подзаголовок плавно появляются вместе -->
+    <!-- Заголовок и подзаголовок секции -->
     <h2 class="projects-grid__title element-reveal">Мои проекты</h2>
     <p class="projects-grid__subtitle element-reveal">
       Проекты, которые я разработал, используя современный стек технологий
     </p>
 
     <div class="projects-grid__wrapper">
-      <!-- Карточка 1: убрали инлайновый стиль для задержки -->
+
+      <!-- ================================================================= -->
+      <!-- КАРТОЧКА ПРОЕКТА №1 (Для копирования) -->
+      <!-- ИНСТРУКЦИЯ ДЛЯ КОПИРОВАНИЯ: -->
+      <!-- 1. Скопируйте весь блок <article> ниже. -->
+      <!-- 2. Измените текст заголовка, тегов и технологий под новый проект. -->
+      <!-- 3. В атрибуте data-modal-trigger="..." укажите уникальный ID новой модалки (например: case-modal-3) -->
+      <!-- ================================================================= -->
       <article class="projects-grid__card card-project element-reveal">
         <div class="card-project__body">
           <span class="card-project__tag">Gulp + TS Stack</span>
@@ -22,17 +29,18 @@
             <span>BEM SCSS</span>
             <span>Webpack</span>
           </div>
-          <a
-            href="https://github.com/SITE_AUTHOR"
-            target="_blank"
-            rel="noopener noreferrer"
+          <!-- Менять data-modal-trigger при копировании под ID вашей модалки из modal.html -->
+          <button
+            type="button"
+            data-modal-trigger="case-modal-1"
             class="card-project__link"
-            >Смотреть кейс &rarr;</a
           >
+            Смотреть кейс &rarr;
+          </button>
         </div>
       </article>
 
-      <!-- Карточка 2: убрали инлайновый стиль для задержки -->
+      <!-- КАРТОЧКА ПРОЕКТА №2 (Унифицирована под общий стандарт тегов) -->
       <article class="projects-grid__card card-project element-reveal">
         <div class="card-project__body">
           <span class="card-project__tag">Landing Page</span>
@@ -47,11 +55,19 @@
             <span>JavaScript</span>
             <span>Pixel Perfect</span>
           </div>
-          <a href="#" class="card-project__link card-project__link--disabled"
-            >В разработке</a
+          <!-- Если проект готов, замените data-modal-trigger на ID нужной модалки -->
+          <button
+            type="button"
+            data-modal-trigger="case-modal-2"
+            class="card-project__link"
           >
+            Смотреть кейс &rarr;
+          </button>
         </div>
       </article>
+
+      <!-- ТУТ БУДЕТ ВАША КАРТОЧКА №3 (Просто вставьте скопированный блок сюда) -->
+
     </div>
   </div>
 </section>

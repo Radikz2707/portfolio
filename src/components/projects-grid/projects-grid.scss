@@ -25,7 +25,10 @@
 
   &__wrapper {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); // Авто-подстройка колонок под экран
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(320px, 1fr)
+    ); // Авто-подстройка колонок под экран
     gap: 30px;
     width: 100%;
     max-width: 1100px;
@@ -39,9 +42,12 @@
   background-color: #1e293b; // Светло-серый/синий цвет карточки
   border: 1px solid #334155;
   border-radius: 12px;
-  
+
   // 🔥 ИСПРАВЛЕНО: Объединили transition для плавной анимации появления и для эффекта ховера
-  transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s ease;
+  transition:
+    transform 0.3s ease,
+    border-color 0.3s ease,
+    opacity 0.8s ease;
 
   // Эффект ховера срабатывает только тогда, когда карточка уже ПОЯВИЛАСЬ (есть класс _active)
   &._active:hover {
@@ -100,11 +106,21 @@
   }
 
   &__link {
+
+    // 🔥 ИСПРАВЛЕНО: Безопасный сброс дефолтных стилей кнопки браузера
+    // Позволяет тегу <button> выглядеть и вести себя как нативная текстовая ссылка
+    display: inline-block;
     align-self: flex-start;
+    padding: 0;
+    font-family: inherit; // Чтобы шрифт наследовался от карточки, а не от системы
     font-size: 15px;
     font-weight: 600;
     color: #6366f1;
+    text-align: left;
     text-decoration: none;
+    cursor: pointer;
+    background: none;
+    border: none;
     transition: color 0.2s ease;
 
     &:hover:not(&--disabled) {
@@ -116,18 +132,19 @@
       cursor: not-allowed;
     }
   }
-}
 
-// КЛАССЫ АНИМАЦИИ ПОЯВЛЕНИЯ
-.element-reveal {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1), 
-              transform 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
-  will-change: opacity, transform;
+  // КЛАССЫ АНИМАЦИИ ПОЯВЛЕНИЯ
+  .element-reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition:
+      opacity 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1),
+      transform 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: opacity, transform;
 
-  &._active {
-    opacity: 1;
-    transform: translateY(0);
+    &._active {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
