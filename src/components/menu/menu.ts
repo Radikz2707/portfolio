@@ -1,26 +1,25 @@
-function checkIsBlogPage(): boolean {
-  // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Ловим любое упоминание слова blog в пути
-  return window.location.pathname.toLowerCase().includes('blog');
-}
-
 export function menu(): void {
-  const menuBtn = document.querySelector<HTMLElement>('.menu-btn');
+  // 🔥 ИСПРАВЛЕНО: Ищем кнопку по реальному классу .menu-icon из вашей разметки
+  const menuBtn = document.querySelector<HTMLElement>('.menu-icon');
   const menuElement = document.querySelector<HTMLElement>('.menu');
   const menuLinks =
     document.querySelectorAll<HTMLAnchorElement>('.menu__link, .logo');
 
   if (!menuBtn || !menuElement) return;
 
+  // Используем БЭМ-классы с нижним подчеркиванием из вашего SCSS
   const closeMenu = (): void => {
-    menuBtn.classList.remove('active');
-    menuElement.classList.remove('active');
-    document.body.classList.remove('lock');
+    menuBtn.classList.remove('_active');
+    menuElement.classList.remove('_active');
+    document.body.classList.remove('_lock');
   };
 
-  menuBtn.addEventListener('click', () => {
-    menuBtn.classList.toggle('active');
-    menuElement.classList.toggle('active');
-    document.body.classList.toggle('lock');
+  // Переключение гамбургера с защитой от всплытия событий
+  menuBtn.addEventListener('click', (e: MouseEvent) => {
+    e.stopPropagation();
+    menuBtn.classList.toggle('_active');
+    menuElement.classList.toggle('_active');
+    document.body.classList.toggle('_lock');
   });
 
   menuLinks.forEach((link) => {
@@ -28,73 +27,60 @@ export function menu(): void {
       const href = link.getAttribute('href');
       if (!href) return;
 
-      const isAnchorLink = href.includes('#');
-      const isBlogPage = checkIsBlogPage();
+      const hasHash = href.includes('#');
 
-      // ЛОГИКА ДЛЯ СТРАНИЦ БЛОГА И СТАТЕЙ
-      if (isBlogPage && isAnchorLink && href.length > 1) {
-        const targetIdAnchor: string = href.substring(href.indexOf('#') + 1);
-        const targetSection: HTMLElement | null =
-          document.getElementById(targetIdAnchor);
+      if (hasHash) {
+        const targetId = href.substring(href.indexOf('#'));
 
-        // Если это локальный якорь ОНЛАЙН на текущей странице статьи (например, содержание)
+        // Защита от пустого селектора "#"
+        if (targetId === '#') {
+          e.preventDefault();
+          closeMenu();
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+          });
+          return;
+        }
+
+        const targetSection = document.querySelector<HTMLElement>(targetId);
+
+        // Если секция найдена на текущей странице (плавный скролл)
         if (targetSection) {
           e.preventDefault();
           closeMenu();
-          const headerElement = document.querySelector<HTMLElement>('.header');
-          const headerOffset: number = headerElement
-            ? headerElement.offsetHeight
-            : 80;
-          const elementPosition: number =
-            targetSection.getBoundingClientRect().top;
-          const offsetPosition: number =
-            elementPosition + window.scrollY - headerOffset;
 
-          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-          return;
-        }
-
-        // 🔥 ЖЕСТКИЙ РЕДИРЕКТ НА ГЛАВНУЮ: Уходим из папки /blog/ в корень сайта!
-        e.preventDefault();
-        closeMenu();
-
-        // Перенаправляем строго на http://localhost:3000/#contacts (без index.html)
-        window.location.href = `${window.location.origin}/#${targetIdAnchor}`;
-        return;
-      }
-
-      // ОБЫЧНАЯ ЛОГИКА ДЛЯ ГЛАВНОЙ СТРАНИЦЫ
-      if (isAnchorLink) {
-        e.preventDefault();
-        closeMenu();
-
-        if (href === '#') {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          return;
-        }
-
-        const targetSection = document.querySelector<HTMLElement>(href);
-        if (targetSection) {
           const headerElement = document.querySelector<HTMLElement>('.header');
           const headerOffset = headerElement ? headerElement.offsetHeight : 80;
           const elementPosition = targetSection.getBoundingClientRect().top;
           const offsetPosition =
             elementPosition + window.scrollY - headerOffset;
 
-          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth',
+          });
+        }
+        // Если секции нет на странице (уходим из блога на главную)
+        else {
+          closeMenu();
         }
       } else {
+        // Обычные ссылки без якоря
         closeMenu();
       }
     });
   });
 
+  // Безопасное закрытие меню при клике вне области
   document.addEventListener('click', (e: MouseEvent) => {
     const target = e.target as HTMLElement;
+
     if (
-      menuElement.classList.contains('active') &&
+      menuElement.classList.contains('_active') &&
       !menuElement.contains(target) &&
-      !menuBtn.contains(target)
+      !menuBtn.contains(target) &&
+      target !== menuBtn
     ) {
       closeMenu();
     }
