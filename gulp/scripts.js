@@ -70,7 +70,22 @@ export function scripts() {
     },
     optimization: {
       minimize: isProd,
-      minimizer: [new TerserPlugin({ extractComments: false })],
+      minimizer: [
+        new TerserPlugin({
+          extractComments: false, // Отключает генерацию файлов .LICENSE.txt
+          terserOptions: {
+            compress: {
+              drop_console: isProd, // 🔥 Удаляет все console.log() строго на продакшене
+              drop_debugger: isProd, // Удаляет дебаггеры
+              dead_code: true, // Вырезает неиспользуемый код
+              passes: 2, // Повторный проход для максимального сжатия
+            },
+            format: {
+              comments: false, // Полностью удаляет комментарии из бандла
+            },
+          },
+        }),
+      ],
     },
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
   };
