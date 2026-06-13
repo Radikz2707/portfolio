@@ -3,11 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ES2022"
-    ],
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "allowJs": true,
     "checkJs": false,
     "noEmit": true,
@@ -26,12 +22,9 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "src/js/**/*.ts",
-    "src/components/**/*.ts"
+    // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Сборщик теперь видит абсолютно весь код,
+    // включая глобальные файлы деклараций типов (*.d.ts), где бы они ни лежали в src
+    "src/**/*"
   ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "archives"
-  ]
+  "exclude": ["node_modules", "dist", "archives"]
 }
