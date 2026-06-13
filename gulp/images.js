@@ -299,7 +299,7 @@ export function favsHtml() {
       new Transform({
         objectMode: true,
         transform(file, enc, cb) {
-          // Обрабатываем HTML-код ссылок
+          // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Пропускаем в src/parts/ ТЕКСТОВЫЙ файл ссылок
           if (file.path.endsWith('.html') && file.isBuffer()) {
             let content = file.contents.toString();
             content = content.replace(
@@ -307,10 +307,9 @@ export function favsHtml() {
               '$1images/favicons/',
             );
             file.contents = Buffer.from(content);
+            this.push(file); // Пушим только если это HTML
           }
-
-          this.push(file);
-          cb();
+          cb(); // Бинарные картинки уничтожаются здесь и не идут дальше
         },
       }),
     )
@@ -319,7 +318,6 @@ export function favsHtml() {
 
 // СТРОГИЙ ИЗОЛИРОВАННЫЙ ТАСК ДЛЯ КАРТИНОК (ПИШЕТ СТРОГО В DIST/)
 function favsImages() {
-  // 🔥 ГАРАНТИРОВАННОЕ СОЗДАНИЕ ПАПКИ НАЗНАЧЕНИЯ
   const faviconsDestPath = config.paths.favicons.dest;
   if (!fs.existsSync(faviconsDestPath)) {
     fs.mkdirSync(faviconsDestPath, { recursive: true });
@@ -330,6 +328,7 @@ function favsImages() {
       new Transform({
         objectMode: true,
         transform(file, enc, cb) {
+          // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Пропускаем в dist ТОЛЬКО картинки и манифест
           if (!file.path.endsWith('.html')) {
             this.push(file);
           }

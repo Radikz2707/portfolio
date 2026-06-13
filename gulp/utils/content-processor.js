@@ -184,29 +184,48 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   );
 
   // Асинхронно считываем фавиконки
-   // Асинхронно считываем фавиконки
-  const faviconLinksPath = path.join(config.srcFolder, 'parts', 'favicon-links.html');
+  // Асинхронно считываем фавиконки
+  const faviconLinksPath = path.join(
+    config.srcFolder,
+    'parts',
+    'favicon-links.html',
+  );
   let faviconLinksHtml = '';
   if (fs.existsSync(faviconLinksPath)) {
     faviconLinksHtml = await fsPromises.readFile(faviconLinksPath, 'utf-8');
   }
 
   // Считываем файлы шапки сайта
-  const headerPath = path.join(config.srcFolder, 'components', 'header', 'header.html');
+  const headerPath = path.join(
+    config.srcFolder,
+    'components',
+    'header',
+    'header.html',
+  );
   let headerHtml = '';
   if (fs.existsSync(headerPath)) {
     headerHtml = await fsPromises.readFile(headerPath, 'utf-8');
   }
 
   // Считываем файлы подвала сайта
-  const footerPath = path.join(config.srcFolder, 'components', 'footer', 'footer.html');
+  const footerPath = path.join(
+    config.srcFolder,
+    'components',
+    'footer',
+    'footer.html',
+  );
   let footerHtml = '';
   if (fs.existsSync(footerPath)) {
     footerHtml = await fsPromises.readFile(footerPath, 'utf-8');
   }
 
   // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Считываем файл меню навигации, чтобы убрать серый текст
-  const menuPath = path.join(config.srcFolder, 'components', 'menu', 'menu.html');
+  const menuPath = path.join(
+    config.srcFolder,
+    'components',
+    'menu',
+    'menu.html',
+  );
   let menuHtml = '';
   if (fs.existsSync(menuPath)) {
     menuHtml = await fsPromises.readFile(menuPath, 'utf-8');
@@ -223,52 +242,101 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
 
       if (ext === '.docx') {
         try {
-          const originalDocxPath = path.join(config.srcFolder, 'content', folderName, file);
+          const originalDocxPath = path.join(
+            config.srcFolder,
+            'content',
+            folderName,
+            file,
+          );
           if (fs.existsSync(originalDocxPath)) {
             const docBuffer = await fsPromises.readFile(originalDocxPath);
             const result = await mammoth.convertToHtml({ buffer: docBuffer });
             rawHtml = result.value || '';
           }
         } catch (err) {
-          console.error(`[Mammoth Error] Не удалось сконвертировать Word файл ${file}:`, err);
+          console.error(
+            `[Mammoth Error] Не удалось сконвертировать Word файл ${file}:`,
+            err,
+          );
           continue;
         }
       } else if (ext === '.html') {
-        rawHtml = await fsPromises.readFile(path.join(tempDestPath, file), 'utf-8');
+        rawHtml = await fsPromises.readFile(
+          path.join(tempDestPath, file),
+          'utf-8',
+        );
       } else {
         continue;
       }
 
       const pageTitle = cleanFileName.replace('.html', '').replace(/-/g, ' ');
-      const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
+      const capitalizedTitle =
+        pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
 
-      // Склеиваем переменные контента
+      // 1. Собираем финальную разметку из всех шаблонов и инклудов
       let finalPageHtml = articleTemplate
         .replace('@@title', capitalizedTitle)
         .replace('@@content', rawHtml)
         .replace('@@sidebar', sidebarHtml)
-        .replace(/@@include\s*\(\s*["']\s*parts\/favicon-links\.html\s*["']\s*\)/gi, faviconLinksHtml)
-        .replace(/@@include\s*\(\s*["']\s*components\/header\/header\.html\s*["']\s*\)/gi, headerHtml)
-        .replace(/@@include\s*\(\s*["']\s*components\/footer\/footer\.html\s*["']\s*\)/gi, footerHtml)
-        // 🔥 ДОБАВЛЕНО: Принудительно вырезаем сырой инклуд меню и вставляем готовую разметку ссылок навигации
-        .replace(/@@include\s*\(\s*["']\s*components\/menu\/menu\.html\s*["']\s*\)/gi, menuHtml)
-        .replace(/SITE_NAME/gi, config.siteName || 'Radik.Dev'); // Автозамена имени сайта в шапке статьи
+        .replace(
+          /@@include\s*\(\s*["']\s*parts\/favicon-links\.html\s*["']\s*\)/gi,
+          faviconLinksHtml,
+        )
+        .replace(
+          /@@include\s*\(\s*["']\s*components\/header\/header\.html\s*["']\s*\)/gi,
+          headerHtml,
+        )
+        .replace(
+          /@@include\s*\(\s*["']\s*components\/footer\/footer\.html\s*["']\s*\)/gi,
+          footerHtml,
+        )
+        .replace(
+          /@@include\s*\(\s*["']\s*components\/menu\/menu\.html\s*["']\s*\)/gi,
+          menuHtml,
+        )
+        .replace(/SITE_NAME/gi, config.siteName || 'Radik.Dev');
 
-      // 2. Корректируем ссылки меню с учётом текущей директории
+      // 2. Корректируем относительные ссылки навигационного меню
       const pathPrefix = '../';
       finalPageHtml = finalPageHtml
-        .replace(/href=["']\s*\/?GO_HOME\s*["']/gis, `href="${pathPrefix}index.html"`)
-        .replace(/href=["']\s*\/?GO_PROJECTS\s*["']/gis, `href="${pathPrefix}index.html#projects"`)
-        .replace(/href=["']\s*\/?GO_ABOUT\s*["']/gis, `href="${pathPrefix}index.html#about"`)
-        .replace(/href=["']\s*\/?GO_BLOG\s*["']/gis, `href="${pathPrefix}blog/index.html"`);
+        .replace(
+          /href=["']\s*\/?GO_HOME\s*["']/gis,
+          `href="${pathPrefix}index.html"`,
+        )
+        .replace(
+          /href=["']\s*\/?GO_PROJECTS\s*["']/gis,
+          `href="${pathPrefix}index.html#projects"`,
+        )
+        .replace(
+          /href=["']\s*\/?GO_ABOUT\s*["']/gis,
+          `href="${pathPrefix}index.html#about"`,
+        )
+        .replace(
+          /href=["']\s*\/?GO_BLOG\s*["']/gis,
+          `href="${pathPrefix}blog/index.html"`,
+        )
+        .replace(
+          /href=["']\s*\/?GO_CONTACTS?\s*["']/gis,
+          `href="${pathPrefix}index.html#contacts"`,
+        );
 
-      // 3. Корректируем относительные пути ресурсов
+      // 🔥 УЛЬТИМАТИВНЫЙ ПЕРЕХВАТ ПУТЕЙ ФАВИКОНОК ДЛЯ ВЛОЖЕННЫХ СТАТЕЙ
+      // Находит абсолютно любое упоминание images/favicons/ внутри href и превращает в ../images/favicons/
+      finalPageHtml = finalPageHtml.replace(
+        /href=["'](\.\/)?images\/favicons\//gi,
+        `href="${pathPrefix}images/favicons/`,
+      );
+
+      // 3. Корректируем относительные пути остальных картинок внутри контента статьи
       finalPageHtml = processHtmlContent(finalPageHtml, pathPrefix);
 
       const finalArticlePath = path.join(tempDestPath, cleanFileName);
       await fsPromises.writeFile(finalArticlePath, finalPageHtml, 'utf-8');
 
-      if (ext === '.docx' || path.basename(file, ext) !== cleanFileName.replace('.html', '')) {
+      if (
+        ext === '.docx' ||
+        path.basename(file, ext) !== cleanFileName.replace('.html', '')
+      ) {
         await fsPromises.unlink(path.join(tempDestPath, file));
       }
     }

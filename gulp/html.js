@@ -130,6 +130,11 @@ export function html() {
     ),
     replace(/href=["']\s*\/?GO_ABOUT\s*["']/gi, `href="index.html#about"`),
     replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, `href="blog/index.html"`),
+    replace(
+      /href=["']\s*\/?GO_CONTACTS?\s*["']/gi,
+      'href="../index.html#contacts"',
+    ),
+
     replace(/SITE_NAME/gi, config.siteName),
     replace(/SITE_AUTHOR/gi, config.repoPath),
   ];
@@ -179,8 +184,6 @@ export function html() {
 // =======================================================================
 export function blogIndex() {
   const srcPath = path.join(config.srcFolder, 'blog', '**', '*.html');
-  console.log('[blogIndex] srcPath:', srcPath);
-
   const blogContentDir = path.join(config.srcFolder, 'content', 'blog');
   let sidebarLinks = '';
 
@@ -213,31 +216,32 @@ export function blogIndex() {
       )
       .pipe(replace(/SITE_NAME/gi, config.siteName))
       .pipe(replace(/SITE_AUTHOR/gi, config.repoPath))
-      .pipe(replace(/href=["']\s*\/?GO_HOME\s*["']/gi, `href="../index.html"`))
+      .pipe(replace(/href=["']\s*\/?GO_HOME\s*["']/gi, 'href="../index.html"'))
       .pipe(
         replace(
           /href=["']\s*\/?GO_PROJECTS\s*["']/gi,
-          `href="../index.html#projects"`,
+          'href="../index.html#projects"',
         ),
       )
       .pipe(
         replace(
           /href=["']\s*\/?GO_ABOUT\s*["']/gi,
-          `href="../index.html#about"`,
+          'href="../index.html#about"',
         ),
       )
-      .pipe(replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, `href="index.html"`))
-      // Жесткая подстановка относительных путей для любых файлов внутри папки /blog/
-      .pipe(replace(/(href=["']\s*)\/?css\//gi, `$1../css/`))
-      .pipe(replace(/(src=["']\s*)\/?js\//gi, `$1../js/`))
-      .pipe(replace(/(href|src=["']\s*)\/?favicons\//gi, `$1../favicons/`))
+      .pipe(
+        replace(
+          /href=["']\s*\/?GO_CONTACTS\s*["']/gi,
+          'href="../index.html#contacts"',
+        ),
+      )
+
+      // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Удалены все ручные костыли путей.
+      // За всю адаптацию ресурсов (css, js, images, favicons) теперь отвечает ТОЛЬКО fixHtmlPaths()
       .pipe(fixHtmlPaths())
       .pipe(replace(/@@sidebar/g, sidebarLinks))
       .pipe(dest(path.join(config.buildFolder, 'blog')))
       .on('end', () => {
-        console.log(
-          '[blogIndex] Stream completed successfully for all articles',
-        );
         bs.reload();
       })
   );
