@@ -8,7 +8,7 @@
   "author": "Radik Zalalov",
   "license": "ISC",
   "scripts": {
-    "dev": "gulp cleandist && gulp",
+    "dev": "set NODE_NO_WARNINGS=1&&set G_MESSAGES_DEBUG=none&&gulp cleandist&&gulp",
     "build": "gulp cleandist && gulp build",
     "init": "gulp init",
     "create": "gulp create",
@@ -27,7 +27,6 @@
     "src/**/*.scss": "npx stylelint --fix"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.7",
     "@eslint/js": "^10.0.1",
     "@types/browser-sync": "^2.29.1",
     "@types/gulp": "^4.0.18",
@@ -41,10 +40,8 @@
     "gh-pages": "^6.3.0",
     "globals": "^17.6.0",
     "gulp": "^5.0.1",
-    "gulp-avif": "^1.1.1",
     "gulp-clean-css": "^4.3.0",
     "gulp-clone": "^2.0.1",
-    "gulp-favicons": "^4.0.2",
     "gulp-file-include": "^2.3.0",
     "gulp-filter": "^10.0.0",
     "gulp-flatten": "^0.4.0",
@@ -53,7 +50,6 @@
     "gulp-html-img-to-picture": "^1.0.3",
     "gulp-htmlhint": "^4.0.2",
     "gulp-if": "^3.0.0",
-    "gulp-imagemin": "^9.2.0",
     "gulp-markdown": "^8.0.0",
     "gulp-newer": "^1.4.0",
     "gulp-notify": "^5.0.0",
@@ -65,25 +61,23 @@
     "gulp-sourcemaps": "^3.0.0",
     "gulp-svg-sprite": "^2.0.3",
     "gulp-ttf2woff2": "^5.0.0",
-    "gulp-webp": "^5.1.0",
     "gulp-zip": "^6.1.0",
     "htmlhint-stylish": "^1.0.3",
     "husky": "^9.1.7",
-    "imagemin-mozjpeg": "^10.0.0",
-    "imagemin-optipng": "^8.0.0",
-    "imagemin-svgo": "^12.0.0",
     "lint-staged": "^17.0.7",
     "log-symbols": "^7.0.1",
     "mammoth": "^1.12.0",
     "postcss": "^8.5.15",
     "postcss-sort-media-queries": "^6.6.2",
     "sass": "^1.101.0",
+    "sharp": "^0.35.1",
     "stylelint": "^17.13.0",
     "stylelint-config-recess-order": "^7.7.0",
     "stylelint-config-standard-scss": "^17.0.0",
     "stylelint-formatter-pretty": "^4.0.1",
     "stylelint-order": "^8.1.1",
     "terser-webpack-plugin": "^5.6.1",
+    "through2": "^5.0.1",
     "ts-loader": "^9.6.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.0",
@@ -97,9 +91,6 @@
     "defaults",
     "not ie 11"
   ],
-  "dependencies": {
-    "sharp": "^0.35.1"
-  },
   "engines": {
     "node": ">=24.0.0"
   }

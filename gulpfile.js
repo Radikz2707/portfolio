@@ -90,13 +90,13 @@ const createDynamicContentTask = (folderName) => {
     const sourcePath = [
       path.join(config.srcFolder, 'content', folderName, '**', '*.{md,txt,rtf,docx}')
     ];
-    
+
     // 🔥 ИСКЛЮЧАЕМ ИНДЕКСНЫЕ ФАЙЛЫ (index.md, index.txt и т.д.)
     // Чтобы они не перезаписывали готовые index.html в dist/
     if (folderName === 'blog') {
       sourcePath.push('!' + path.join(config.srcFolder, 'content', folderName, 'index.{md,txt,rtf,docx}'));
     }
-    
+
     const tempDestPath = path.join(config.buildFolder, folderName);
 
     src(sourcePath, { allowEmpty: true, encoding: false })
@@ -180,16 +180,17 @@ export const build = series(
 
 export default series(
   help,
-  series(runTask('fonts'), runTask('fontsStyle')),
+  // 1. Сначала подготавливаем критические ресурсы: шрифты и фавиконки
+  series(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
+  // 2. Только после создания favicon-links.html запускаем параллельную сборку всего остального
   parallel(
     runTask('styles'),
     runTask('scripts'),
     runTask('imagesDev'),
     runTask('createWebp'),
     runTask('sprite'),
-    runTask('favs'),
     runTask('faviconsDev'),
-    runTask('html'),
+    runTask('html'), // Теперь этот плагин гарантированно найдет файл!
     blogIndex,
   ),
   runAllContentTasks,
@@ -208,3 +209,7 @@ export {
   lintJs,
   lintCss,
 };
+
+
+// Передаем ленивую обертку наружу для консоли Gulp
+export const favs = runTask('favs');
