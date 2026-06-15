@@ -24,17 +24,13 @@ const sass = gulpSass(dartSass);
 export const isProd = process.argv.includes('build');
 
 export function styles() {
-  // Настройка опций для src() в Gulp 5
-  // Если это разработка, включаем генерацию нативных карт кода
   const srcOptions = !isProd ? { sourcemaps: true } : {};
 
-  // Инициализируем пайплайн оригинальным методом, передавая опции в src
   const pipeline = [
     src(config.paths.styles.src, srcOptions),
     plumber({ errorHandler: onError }),
   ];
 
-  // Основные плагины трансформации (Sass + PostCSS)
   pipeline.push(
     sass({
       silenceDeprecations: ['import'],
@@ -42,37 +38,35 @@ export function styles() {
     }),
     postcss([
       sortMediaQueries({ sort: 'mobile-first' }),
-      webpInCss,
       autoprefixer({
         overrideBrowserslist: config.settings.autoprefixer,
-        grid: false,
+        grid: 'autoplace',
       }),
+      webpInCss,
     ]),
   );
 
-  // Сжатие стилей выполняется исключительно для продакшена
   if (isProd) {
     pipeline.push(
       cleancss({
         level: {
           1: {
-            all: true, // Базовое сжатие (удаление пробелов и комментариев)
-            transform: (name, value) => value, // Защита от опасных трансформаций
+            all: true,
+            transform: (name, value) => value,
           },
           2: {
-            all: true, // Глубокий рефакторинг структуры CSS
-            mergeMedia: true, // Слияние дублирующихся @media правил по всему итоговому файлу
-            mergeAdjacentRules: true, // Склеивание соседних одинаковых селекторов в один блок
-            removeDistinctSemicolons: true, // Удаление лишних точек с запятой
-            removeDuplicateRules: true, // Полное удаление дубликатов CSS-свойств
-            restructureRules: true, // Продвинутый рефакторинг селекторов для уменьшения веса
+            all: true,
+            mergeMedia: true,
+            mergeAdjacentRules: true,
+            removeDistinctSemicolons: true,
+            removeDuplicateRules: true,
+            restructureRules: false,
           },
         },
       }),
     );
   }
 
-  // Переименование результирующего файла
   pipeline.push(
     rename({
       basename: path
@@ -84,9 +78,7 @@ export function styles() {
 
   const destOptions = !isProd ? { sourcemaps: '.' } : {};
 
-  // Завершаем пайплайн записью на диск и обновлением браузера
   pipeline.push(dest(config.paths.styles.dest, destOptions), bs.stream());
 
-  // Ваш оригинальный нативный метод связки стримов через reduce
   return pipeline.reduce((stream, plugin) => stream.pipe(plugin));
 }
