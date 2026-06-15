@@ -74,7 +74,7 @@ export function sprite() {
   /* Оставляем как в прошлом шаге */
 }
 
-// 🔥 100% АВТОМАТИЗАЦИЯ ФАВИКОНОК НА SHARP БЕЗ РУЧНОЙ РАБОТЫ И БЕЗ БАГОВ
+// 🔥 100% АВТОМАТИЗАЦИЯ ФАВИКОНОК НА SHARP С КЭШИРОВАНИЕМ ВРЕМЕНИ МОДИФИКАЦИИ (БЕЗ ТОРМОЗОВ)
 export async function favs(done) {
   const srcFavicon = path.join(
     config.srcFolder,
@@ -89,7 +89,6 @@ export async function favs(done) {
     'favicon-links.html',
   );
 
-  // Если исходного favicon.png нет, просто выходим
   if (!fs.existsSync(srcFavicon)) {
     console.log(
       '⚠️ Исходный файл src/images/src/favicon.png не найден. Пропускаем генерацию.',
@@ -98,12 +97,24 @@ export async function favs(done) {
   }
 
   try {
-    // 1. Автоматически создаем папку для фавиконок, если её нет
+    // 🔥 НАЧАЛО БЛОКА КЭШ-КОНТРОЛЯ: Проверяем, нужно ли тратить ресурсы на ресайз
+    const checkFile = path.join(faviconsSrcDir, 'favicon-32.png');
+
+    if (fs.existsSync(checkFile) && fs.existsSync(partHtmlPath)) {
+      const srcStat = fs.statSync(srcFavicon);
+      const destStat = fs.statSync(checkFile);
+
+      // Если исходный favicon.png не менялся со времени последней генерации — мгновенно выходим
+      if (srcStat.mtimeMs <= destStat.mtimeMs) {
+        console.log('ℹ️ [Sharp-Favs] Исходный favicon.png не изменялся. Сборка пропущена (кэш).');
+        return done();
+      }
+    }
+
     if (!fs.existsSync(faviconsSrcDir)) {
       fs.mkdirSync(faviconsSrcDir, { recursive: true });
     }
 
-    // 2. Нарезаем иконки через быстрый sharp без ошибок colourspace
     const sharpInstance = sharp(srcFavicon);
 
     await sharpInstance
@@ -127,14 +138,12 @@ export async function favs(done) {
       .png()
       .toFile(path.join(faviconsSrcDir, 'icon-512.png'));
 
-    // 3. Автоматически пишем HTML-файл в папку parts
     const htmlContent = `<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">
 <link rel="manifest" href="images/favicons/manifest.webmanifest">`;
 
     fs.writeFileSync(partHtmlPath, htmlContent, 'utf8');
 
-    // 4. Автоматически пишем манифест приложения
     const manifestContent = {
       name: config.siteName || 'My Project',
       short_name: config.siteName || 'Project',
