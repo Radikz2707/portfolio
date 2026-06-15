@@ -6,7 +6,6 @@ import fsPromises from 'fs/promises';
 import plumber from 'gulp-plumber';
 import zip from 'gulp-zip';
 import sharp from 'sharp';
-import through2 from 'through2';
 import { onError } from './server.js';
 import { Transform } from 'stream';
 
@@ -37,22 +36,6 @@ export async function cleandist(done) {
     onError(err);
     done(err);
   }
-}
-
-// 🔤 2. СВЕРХБЫСТРОЕ ХИРУРГИЧЕСКОЕ КОПИРОВАНИЕ (БЕЗ ПОТЕРЬ ПАПКИ FAVICONS)
-export function buildcopy() {
-  return src(
-    [
-      `${config.srcFolder}/images/favicons/**/*`,
-      `${config.srcFolder}/*.*`,
-      `!${config.srcFolder}/*.html`,
-    ],
-    {
-      dot: true,
-      allowEmpty: true,
-      base: config.srcFolder,
-    },
-  ).pipe(dest(config.buildFolder));
 }
 
 // 📦 3. АРХИВИРОВАНИЕ СБОРКИ (ZIP)
@@ -112,7 +95,6 @@ export const sharpCompressor = (options = {}) => {
         file.contents = await pipeline.toBuffer();
         callback(null, file);
       } catch (err) {
-        // 🔥 Проверяем, запущен ли финальный билд (production)
         const isProd =
           process.env.NODE_ENV === 'production' ||
           process.argv.includes('--prod') ||
@@ -124,14 +106,12 @@ export const sharpCompressor = (options = {}) => {
         );
 
         if (isProd) {
-          // Жестко останавливаем билд продакшена, чтобы битая картинка не улетела на хостинг
           callback(
             new Error(
               `[Sharp] Сборка остановлена из-за поврежденного изображения: ${file.relative}`,
             ),
           );
         } else {
-          // В режиме разработки (dev) просто пропускаем файл, чтобы сервер не падал
           callback(null, file);
         }
       }
@@ -152,7 +132,6 @@ export const sharpToWebp = (options = {}) => {
         return callback(new Error('Стримы не поддерживаются!'));
 
       const ext = path.extname(file.path).toLowerCase();
-      // Если файл уже имеет расширение .webp, пропускаем его дальше по цепочке
       if (ext === '.webp') return callback(null, file);
       if (!['.png', '.jpg', '.jpeg'].includes(ext)) return callback(null, file);
 

@@ -25,21 +25,33 @@ export const onError = function (err) {
 // =========================================================================
 // 🌐 2. ИНИЦИАЛИЗАЦИЯ ЛОКАЛЬНОГО СЕРВЕРА BROWSER-SYNC (ИСПРАВЛЕНО)
 // =========================================================================
-export function browsersync(done) {
-  // 🔥 Вернули оригинальное имя функции
-  bs.init(
-    {
+export function browsersync() {
+  return new Promise((resolve) => {
+    bs.init({
       server: {
-        baseDir: config.buildFolder, // папка dist
+        baseDir: config.buildFolder,
       },
+      host: '127.0.0.1',
+      port: 8080,
+      ui: false,
+      watch: false,
       ghostMode: false,
       notify: false,
-      online: true,
-      port: 3000,
-      open: true, // Принудительно открывает браузер при старте
-    },
-    done,
-  ); // Передали done вторым аргументом, чтобы Gulp не бросал сокеты
+      online: false,
+      open: 'local',
+      // 🔥 НОВОЕ: Ограничители сетевых коллизий
+      reloadDelay: 500, // Ждем 500мс после изменений кода перед обновлением вкладки
+      reloadDebounce: 500, // Группируем пачку быстрых изменений в один единственный релоад
+      watchOptions: {
+        awaitWriteFinish: {
+          stabilityThreshold: 300, // Ждем, пока файл полностью допишется на диск (300мс тишины)
+          poll: 100,
+        },
+      },
+    });
+
+    resolve();
+  });
 }
 
 // Вспомогательный хелпер для ленивого запуска тасок внутри вотчера
@@ -64,96 +76,90 @@ const dynamicRun = (moduleName, functionName) => {
 // =========================================================================
 // 👁️ 3. СЛЕДИТЕЛЬ ЗА ИЗМЕНЕНИЯМИ (WATCHER ENGINE ДЛЯ GULP 5)
 // =========================================================================
-export function startwatch() {
-  const watchOptions = { delay: 300, queue: true };
+export function startwatch(done) {
+  const watchOptions = { delay: 500, queue: true, ignoreInitial: true };
 
-  // 1. Наблюдатель за стилями (SCSS)
-  const styleWatcher = watch(
-    [`${config.srcFolder}/**/*.${config.preprocessor}`],
-    watchOptions,
+  watch([`${config.srcFolder}/**/*.${config.preprocessor}`], watchOptions).on(
+    'change',
+    (filePath) => {
+      console.log(`✨ [Style Change] Изменен: ${path.basename(filePath)}`);
+      gulp.series('styles')();
+    },
   );
-  styleWatcher.on('change', (filePath) => {
-    console.log(`✨ [Style Change] Изменен: ${path.basename(filePath)}`);
-    series(dynamicRun('styles', 'styles'))();
-  });
 
-  // 2. Наблюдатель за скриптами (JS/TS) — ТЕПЕРЬ ПОЛНОСТЬЮ БЕЗОПАСНЫЙ И ЛИНЕЙНЫЙ
-  const scriptWatcher = watch(
-    [`${config.srcFolder}/**/*.{js,ts}`],
-    watchOptions,
+  watch([`${config.srcFolder}/**/*.{js,ts}`], watchOptions).on(
+    'change',
+    (filePath) => {
+      console.log(`✨ [Script Change] Изменен: ${path.basename(filePath)}`);
+      gulp.series('scripts')();
+    },
   );
-  scriptWatcher.on('change', (filePath) => {
-    console.log(`✨ [Script Change] Изменен: ${path.basename(filePath)}`);
-    series(dynamicRun('scripts', 'scripts'))();
-  });
 
-  // 3. Наблюдатель за глобальной разметкой (HTML-компоненты и инклуды)
-  const htmlWatcher = watch(
+  watch(
     [
       `${config.srcFolder}/*.html`,
       `${config.srcFolder}/components/**/*.html`,
       `${config.srcFolder}/parts/**/*.html`,
     ],
     watchOptions,
-  );
-  htmlWatcher.on('change', (filePath) => {
+  ).on('change', (filePath) => {
     console.log(`✨ [HTML Change] Изменен: ${path.basename(filePath)}`);
-    series(dynamicRun('html', 'html'))();
+    gulp.series('html')();
   });
 
-  // 4. Наблюдатель за текстовым контентом (Markdown / Word-статьи блога)
-  const contentWatcher = watch(
-    [`${config.srcFolder}/content/**/*`],
-    watchOptions,
-  );
-  contentWatcher.on('change', (filePath) => {
-    const relativePath = path.relative(
-      path.join(config.srcFolder, 'content'),
-      filePath,
-    );
-    const folder = relativePath.split(path.sep);
+  watch([`${config.srcFolder}/content/**/*`], watchOptions).on(
+    'change',
+    (filePath) => {
+      const relativePath = path.relative(
+        path.join(config.srcFolder, 'content'),
+        filePath,
+      );
+      const folder = relativePath.split(path.sep);
 
-    if (folder) {
-      console.log(`📝 [Content Update] Обновление секции блога: ${folder}`);
-      series(async (done) => {
-        const { wrapInMasterLayout } =
-          await import('./utils/content-processor.js');
-        const tempDestPath = path.join(
-          config.buildFolder,
-          folder.toLowerCase(),
+      if (folder && folder[0]) {
+        console.log(
+          `📝 [Content Update] Обновление секции блога: ${folder[0]}`,
         );
-
-        try {
-          await wrapInMasterLayout(tempDestPath, folder);
-          bs.reload();
-          done();
-        } catch (err) {
-          done(err);
-        }
-      })();
-    }
-  });
-
-  // 5. Наблюдатель за картинками компонентов
-  const componentImagesWatcher = watch(
-    [`${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,webp,gif}`],
-    watchOptions,
+        (async () => {
+          const { wrapInMasterLayout } =
+            await import('./utils/content-processor.js');
+          const tempDestPath = path.join(
+            config.buildFolder,
+            folder[0].toLowerCase(),
+          );
+          try {
+            await wrapInMasterLayout(tempDestPath, folder[0]);
+            bs.reload();
+          } catch (err) {
+            onError(err);
+          }
+        })();
+      }
+    },
   );
-  componentImagesWatcher.on('change', (filePath) => {
+
+  watch(
+    [
+      `${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,gif}`,
+      `!${config.srcFolder}/components/**/*.webp`,
+    ],
+    watchOptions,
+  ).on('change', (filePath) => {
     console.log(
       `🖼️ [Image Change] Добавлена картинка в компонент: ${path.basename(filePath)}`,
     );
-    series(dynamicRun('images', 'imagesDev'))();
+    gulp.series('imagesDev')();
   });
 
-  // 6. Наблюдатель за векторными иконками (SVG Sprite)
   if (config.paths?.images?.svg) {
-    const svgWatcher = watch([config.paths.images.svg], watchOptions);
-    svgWatcher.on('change', (filePath) => {
+    watch([config.paths.images.svg], watchOptions).on('change', (filePath) => {
       console.log(
         `🧬 [Sprite Change] Обновлена иконка: ${path.basename(filePath)}`,
       );
-      series(dynamicRun('images', 'sprite'))();
+      gulp.series('sprite')();
     });
   }
+
+  done();
 }
+

@@ -29,22 +29,19 @@ const imageSources = [
 
 // 1. Быстрое копирование обычных картинок в режиме Dev
 export function imagesDev() {
-  return new Promise((resolve, reject) => {
-    const pipeline = [
-      src(imageSources, gulp5Options),
-      plumber({ errorHandler: onError }),
-      newer(config.paths.images.dest), // Прямой быстрый кэш без кастомных map и задержек
-      flatten(),
-      dest(config.paths.images.dest),
-    ];
-    pipeline
-      .reduce((stream, plugin) => stream.pipe(plugin))
-      .on('end', () => {
-        bs.reload();
-        resolve();
-      })
-      .on('error', reject);
-  });
+  return src(imageSources, gulp5Options)
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(
+      newer({
+        dest: config.paths.images.dest,
+        map: (relative) => path.basename(relative),
+      }),
+    )
+    .pipe(flatten())
+    .pipe(dest(config.paths.images.dest))
+    .on('end', () => {
+      bs.reload();
+    });
 }
 
 // 2. Сборка для продакшена (использует ваш родной sharpCompressor)
@@ -127,21 +124,15 @@ export async function favs(done) {
   if (!fs.existsSync(srcFavicon)) return done();
 
   try {
-    const checkFile = path.join(faviconsSrcDir, 'favicon-32.png');
-    if (
-      fs.existsSync(checkFile) &&
-      fs.existsSync(partHtmlPath) &&
-      fs.existsSync(faviconsDestDir)
-    ) {
-      const srcStat = fs.statSync(srcFavicon);
-      const destStat = fs.statSync(checkFile);
-      if (srcStat.mtimeMs <= destStat.mtimeMs) return done();
-    }
-
     if (!fs.existsSync(faviconsSrcDir))
       fs.mkdirSync(faviconsSrcDir, { recursive: true });
+    // 🔥 НОВОЕ: Сразу создаем папку в dist, если её нет
+    if (!fs.existsSync(faviconsDestDir))
+      fs.mkdirSync(faviconsDestDir, { recursive: true });
+
     const sharpInstance = sharp(srcFavicon);
 
+    // Генерируем favicon-32.png
     await sharpInstance
       .clone()
       .resize(32, 32)
@@ -149,9 +140,23 @@ export async function favs(done) {
       .toFile(path.join(faviconsSrcDir, 'favicon-32.png'));
     await sharpInstance
       .clone()
+      .resize(32, 32)
+      .png()
+      .toFile(path.join(faviconsDestDir, 'favicon-32.png'));
+
+    // Apple-touch
+    await sharpInstance
+      .clone()
       .resize(180, 180)
       .png()
       .toFile(path.join(faviconsSrcDir, 'apple-touch-icon.png'));
+    await sharpInstance
+      .clone()
+      .resize(180, 180)
+      .png()
+      .toFile(path.join(faviconsDestDir, 'apple-touch-icon.png'));
+
+    // Icon 192
     await sharpInstance
       .clone()
       .resize(192, 192)
@@ -159,32 +164,54 @@ export async function favs(done) {
       .toFile(path.join(faviconsSrcDir, 'icon-192.png'));
     await sharpInstance
       .clone()
+      .resize(192, 192)
+      .png()
+      .toFile(path.join(faviconsDestDir, 'icon-192.png'));
+
+    // Icon 512
+    await sharpInstance
+      .clone()
       .resize(512, 512)
       .png()
       .toFile(path.join(faviconsSrcDir, 'icon-512.png'));
+    await sharpInstance
+      .clone()
+      .resize(512, 512)
+      .png()
+      .toFile(path.join(faviconsDestDir, 'icon-512.png'));
 
+    // HTML линки
     fs.writeFileSync(
       partHtmlPath,
       `<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">\n<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">\n<link rel="manifest" href="images/favicons/manifest.webmanifest">`,
       'utf8',
     );
+
+    // Манифест
+    const manifestContent = JSON.stringify(
+      {
+        name: config.siteName || 'Radik.Dev',
+        short_name: 'Radik',
+        icons: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
+      },
+      null,
+      2,
+    );
+
     fs.writeFileSync(
       path.join(faviconsSrcDir, 'manifest.webmanifest'),
-      JSON.stringify(
-        {
-          name: config.siteName || 'Radik.Dev',
-          short_name: 'Radik',
-          icons: [
-            { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-            { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
-          ],
-          theme_color: '#ffffff',
-          background_color: '#ffffff',
-          display: 'standalone',
-        },
-        null,
-        2,
-      ),
+      manifestContent,
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(faviconsDestDir, 'manifest.webmanifest'),
+      manifestContent,
       'utf8',
     );
 

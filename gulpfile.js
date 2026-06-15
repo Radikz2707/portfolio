@@ -21,7 +21,7 @@ import {
 // Импорты инфраструктуры сервера
 import { browsersync, startwatch, onError, isProd, bs } from './gulp/server.js';
 import { lintCss, lintJs } from './gulp/lint.js';
-import { cleandist, buildcopy, zipFiles } from './gulp/utils.js';
+import { cleandist, zipFiles } from './gulp/utils.js';
 
 // Импорты системных утилит
 import { create } from './gulp.create.js';
@@ -224,9 +224,11 @@ export const build = series(
     runTask('fontsStyle'),
     runTask('favs'),
     compileAssets,
+    blogIndex, // Перенесли сюда, теперь блог парсится одновременно со стилями и картинками
   ),
-  parallel(runTask('html'), blogIndex),
-  buildcopy,
+  parallel(
+    runTask('html'), // HTML собирается сразу, как только готовы ассеты и блог
+  ),
   zipFiles,
   (done) => {
     console.log(
@@ -239,8 +241,7 @@ export const build = series(
 const blogContent = createDynamicContentTask('blog');
 
 export default series(
-  cleandist,
-  parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
+  parallel(runTask('fonts'), runTask('fontsStyle')),
   parallel(
     runTask('html'),
     blogIndex,
@@ -253,8 +254,8 @@ export default series(
       createDynamicContentTask(folder),
     ),
   ),
-  buildcopy,
-  parallel(browsersync, startwatch),
+  browsersync,
+  startwatch,
 );
 
 export {
