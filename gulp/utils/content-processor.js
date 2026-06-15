@@ -316,8 +316,8 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
         );
 
       finalPageHtml = finalPageHtml.replace(
-        /href=["'](\.\/)?images\/favicons\//gi,
-        `href="${pathPrefix}images/favicons/"`,
+        /(href=["']\s*)images\/favicons\//gi,
+        `$1${pathPrefix}images/favicons/`,
       );
 
       finalPageHtml = processHtmlContent(finalPageHtml, pathPrefix);

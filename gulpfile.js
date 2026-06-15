@@ -7,6 +7,7 @@ import fileInclude from 'gulp-file-include';
 import htmlhint from 'gulp-htmlhint';
 import htmlBeautify from 'gulp-html-beautify';
 import rename from 'gulp-rename';
+import newer from 'gulp-newer';
 
 // Импорты процессоров контента
 import {
@@ -39,12 +40,18 @@ const loadedModules = {};
 // 📦 1. УМНЫЙ ДИСПЕТЧЕР ЛЕНИВОГО ИМПОРТА С ПОЛНОЙ МАРШРУТИЗАЦИЕЙ ФАЙЛОВ
 // =========================================================================
 const runTask = (taskName) => {
-  // Создаем именованную функцию-обертку вместо анонимной стрелочной
   const gulpTaskWrapper = async (done) => {
     try {
       let fileName = taskName;
+
       if (taskName === 'fontsStyle') {
         fileName = 'fonts';
+      } else if (taskName === 'blogIndex') {
+        fileName = 'html';
+      }
+      // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: если кто-то вызовет runTask('server'), перенаправляем в server.js
+      else if (taskName === 'server') {
+        fileName = 'server';
       } else if (
         ['imagesDev', 'createWebp', 'sprite', 'favs', 'faviconsDev'].includes(
           taskName,
@@ -58,7 +65,6 @@ const runTask = (taskName) => {
       }
 
       const taskModule = loadedModules[fileName];
-
       if (typeof taskModule[taskName] === 'function') {
         return taskModule[taskName](done);
       }
@@ -78,7 +84,6 @@ const runTask = (taskName) => {
     writable: false,
     configurable: true,
   });
-
   return gulpTaskWrapper;
 };
 
@@ -111,26 +116,24 @@ const createDynamicContentTask = (folderName) => {
 
     const tempDestPath = path.join(config.buildFolder, folderName);
 
-    // 🔥 ИСПРАВЛЕНО: Добавляем ключевое слово return, чтобы стрим нативно возвращался в Gulp-поток
-    return src(sourcePath, { allowEmpty: true, encoding: false })
-      .pipe(
-        plumber({
-          errorHandler: (err) => {
-            console.error(err);
-            done(err);
-          },
-        }),
-      )
-      .pipe(compileContentStream())
-      .pipe(dest(tempDestPath))
-      .on('end', () => {
-        wrapInMasterLayout(tempDestPath, folderName)
-          .then(() => {
-            bs.reload();
-            done(); // Сигнализируем об успешном асинхронном завершении рендеринга мастер-шаблона
-          })
-          .catch((err) => done(err));
-      });
+    return (
+      src(sourcePath, { allowEmpty: true, encoding: false })
+        .pipe(plumber({ errorHandler: onError }))
+
+        // 🔥 УМНАЯ ОПТИМИЗАЦИЯ: Пропускаем файлы, которые не редактировались в src/content/
+        .pipe(newer(tempDestPath))
+
+        .pipe(compileContentStream())
+        .pipe(dest(tempDestPath))
+        .on('end', () => {
+          wrapInMasterLayout(tempDestPath, folderName)
+            .then(() => {
+              bs.reload();
+              done();
+            })
+            .catch((err) => done(err));
+        })
+    );
   };
 };
 
@@ -141,19 +144,61 @@ const dynamicContentFolderNames = fs.existsSync(contentDir)
       .filter((f) => fs.statSync(path.join(contentDir, f)).isDirectory())
   : [];
 
-const runAllContentTasks = (done) => {
-  if (dynamicContentFolderNames.length === 0) return done();
+// 🔥 ОКОНЧАТЕЛЬНЫЙ СВЕРХБЫСТРЫЙ КЭШ (ИГНОРИРУЕТ МУСОРНЫЕ ФАЙЛЫ WORD)
+const runAllContentTasks = async (done) => {
+  const { wrapInMasterLayout } =
+    await import('./gulp/utils/content-processor.js');
+
+  const blogSrcDir = path.join(config.srcFolder, 'content', 'blog');
+  const cacheMarkerPath = path.join(
+    config.srcFolder,
+    'content',
+    '.blog-cache-marker',
+  );
+  const blogDestDir = path.join(config.buildFolder, 'blog');
+
+  if (!fs.existsSync(blogSrcDir)) return done();
 
   try {
-    // 🔥 ИСПРАВЛЕНО: Прямо маппим папки в готовые к исполнению Gulp-функции
-    const contentTasks = dynamicContentFolderNames.map((folderName) => {
-      return createDynamicContentTask(folderName);
+    // 🔥 ХИРУРГИЧЕСКИЙ КОНТРОЛЬ: Хэшируем ТОЛЬКО стабильные .md файлы, игнорируя .docx и временные файлы ~$
+    const files = fs.readdirSync(blogSrcDir).filter((f) => f.endsWith('.md'));
+    let currentDirStateString = '';
+
+    files.forEach((file) => {
+      const filePath = path.join(blogSrcDir, file);
+      const stat = fs.statSync(filePath);
+      currentDirStateString += `${file}:${stat.size};`;
     });
 
-    // Нативно запускаем параллельное выполнение, которое теперь четко знает, когда финиш
-    return parallel(...contentTasks)(done);
+    const currentHash = crypto
+      .createHash('md5')
+      .update(currentDirStateString)
+      .digest('hex');
+
+    let isCacheValid = false;
+    if (fs.existsSync(cacheMarkerPath)) {
+      const savedHash = fs.readFileSync(cacheMarkerPath, 'utf8').trim();
+      if (currentHash === savedHash) {
+        isCacheValid = true;
+      }
+    }
+
+    // Если папки dist нет ИЛИ изменились текстовые .md файлы — запускаем сборку
+    if (!isCacheValid || !fs.existsSync(blogDestDir)) {
+      console.log('📝 [Mammoth] Изменения зафиксированы. Сборка статей...');
+      await wrapInMasterLayout(blogDestDir, 'blog');
+
+      fs.writeFileSync(cacheMarkerPath, currentHash, 'utf8');
+      done();
+    } else {
+      // 🔥 ПОЛНЫЙ ПРОПУСК ТОРМОЗОВ ЗА 1 МИЛЛИСЕКУНДУ!
+      console.log(
+        'ℹ️ [Content-Cache] Статьи не изменялись. Тяжелый парсинг Word пропущен.',
+      );
+      done();
+    }
   } catch (err) {
-    console.error(`\x1b[31m[Content Tasks Error]: ${err.message}\x1b[0m`);
+    console.error('Ошибка в таске контента:', err);
     done(err);
   }
 };
@@ -174,7 +219,7 @@ export const build = series(
   cleandist,
   runTask('favs'),
   parallel(lintCss, lintJs, runTask('fonts'), runTask('fontsStyle')),
-  parallel(runTask('html'), blogIndex, runAllContentTasks),
+  parallel(runTask('html'), blogIndex), // 🔥 УДАЛИЛИ runAllContentTasks ОТСЮДА
   compileAssets,
   buildcopy,
   zipFiles,
@@ -186,28 +231,31 @@ export const build = series(
   },
 );
 
-export default series(
-  help,
-  // 1. Сначала подготавливаем критические ресурсы: шрифты и фавиконки
-  series(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
+const blogContent = createDynamicContentTask('blog');
 
-  // 2. 🔥 ИСПРАВЛЕНО ПОД МАКСИМАЛЬНЫМ КОНТРОЛЕМ:
-  // Запускаем ВСЕ задачи генерации страниц, картинок и копирования в едином параллельном пуле.
-  // Это полностью уничтожает блокировку диска (I/O Deadlock) между тасками!
+// 🔥 ЭТАЛОННЫЙ СВЕРХБЫСТРЫЙ ДЕФОЛТНЫЙ СЦЕНАРИЙ (БЕЗ КОНФЛИКТОВ И ЗАДЕРЖЕК)
+export default series(
+  cleandist,
+  // 1. Быстро собираем шрифты и фавиконки в src
+  parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
+
+  // 2. Запускаем компиляцию всего фронтенда
   parallel(
+    runTask('html'),
+    blogIndex,
     runTask('styles'),
     runTask('scripts'),
     runTask('imagesDev'),
     runTask('createWebp'),
     runTask('sprite'),
-    runTask('faviconsDev'),
-    runTask('html'),
-    blogIndex,
-    runAllContentTasks, // Перенесли внутрь параллельного пула
-    buildcopy, // Перенесли внутрь параллельного пула
+    ...dynamicContentFolderNames.map((folder) =>
+      createDynamicContentTask(folder),
+    ),
   ),
 
-  // 3. И только когда вся сборка на 100% завершена — поднимаем сервер и включаем вотчеры
+  buildcopy,
+
+  // 3. Открываем сервер
   parallel(browsersync, startwatch),
 );
 

@@ -1,36 +1,37 @@
+// === ОБНОВЛЕННЫЙ GULP/SCRIPTS.JS ===
 import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import plumber from 'gulp-plumber';
-
 import { createRequire } from 'module';
+
 const require = createRequire(import.meta.url);
 const webpackStream = require('webpack-stream');
-import webpack from 'webpack';
-import TerserPlugin from 'terser-webpack-plugin';
+const webpack = require('webpack');
+const TerserPlugin = require('terser-webpack-plugin');
 
 import { onError, isProd, bs } from './server.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
 const { src, dest } = gulp;
 
 export function scripts() {
   const webpackConfig = {
     mode: isProd ? 'production' : 'development',
-    target: ['web', 'es2015'], // 🔥 Исправлено: Гарантирует кроссбраузерность и работу JS на старых iOS/Android
+    target: ['web', 'es2015'],
     watch: false,
     performance: { hints: false },
     entry: {
       app: path.resolve(config.paths.scripts.src),
     },
     output: {
-      filename: config.paths.scripts.output,
+      // Поддерживаем динамическое имя в зависимости от чанка
+      filename: '[name].min.js',
       chunkFilename: 'js/chunks/chunk-[name].js',
-      publicPath: '/', // 🔥 Исправлено: Защищает динамические чанки от поломки путей внутри страниц блога
+      publicPath: '/',
     },
     resolve: {
       alias: {
@@ -65,6 +66,7 @@ export function scripts() {
         },
       ],
     },
+    // 🔥 КРИТИЧЕСКИЙ БЛОК: ОПТИМИЗАЦИЯ И РАЗДЕЛЕНИЕ КОДА
     optimization: {
       minimize: isProd,
       minimizer: [
@@ -77,12 +79,24 @@ export function scripts() {
               dead_code: true,
               passes: 2,
             },
-            format: {
-              comments: false,
-            },
+            format: { comments: false },
           },
         }),
       ],
+      // Настройка автоматического разделения кода
+      splitChunks: {
+        cacheGroups: {
+          // Выносим все сторонние зависимости из node_modules в vendor
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendor',
+            chunks: 'all',
+            enforce: true,
+            minSize: 0,
+            minChunks: 1,
+          },
+        },
+      },
     },
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
   };
@@ -91,16 +105,11 @@ export function scripts() {
     src(config.paths.scripts.src, { encoding: false }),
     plumber({ errorHandler: onError }),
     webpackStream(webpackConfig, webpack, function (err, stats) {
-      // 🔥 Важно: заменили стрелочную функцию => на обычную function()
       if (err) return;
       if (stats.hasErrors()) {
         console.error(stats.toString('minimal'));
         if (typeof onError === 'function') {
-          // 🔥 Исправлено: передаем контекст текущего стрима Gulp во избежание ошибки TypeError
-          onError.call(
-            this,
-            new Error('Webpack compilation failed. Check terminal output.'),
-          );
+          onError.call(this, new Error('Webpack compilation failed.'));
         }
       }
     }),

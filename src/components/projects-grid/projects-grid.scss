@@ -23,7 +23,7 @@
   &__subtitle {
     margin-bottom: 60px;
     font-size: 16px;
-    color: v.$color-text-muted; // 🔥 Исправлено: плавно подстроится под тему
+    color: v.$color-text-muted;
     text-align: center;
     transition: color 0.3s ease;
   }

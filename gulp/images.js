@@ -2,63 +2,60 @@ import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
 import fs from 'fs';
-import plumber from 'gulp-plumber';
+import sharp from 'sharp';
 import flatten from 'gulp-flatten';
-import svgSprite from 'gulp-svg-sprite';
+import plumber from 'gulp-plumber';
 import newer from 'gulp-newer';
-import sharp from 'sharp'; // Прямая нативная генерация
+import svgSprite from 'gulp-svg-sprite';
 import { onError, bs } from './server.js';
-import { sharpCompressor } from './utils.js';
+
+// 🔥 ИМПОРТИРУЕМ ВАШИ ОПТИМИЗИРОВАННЫЕ ПЛАГИНЫ ИЗ UTILS.JS
+import { sharpCompressor, sharpToWebp } from './utils.js';
 
 const { src, dest } = gulp;
 
+const gulp5Options = { allowEmpty: true, encoding: false };
 const imageSources = [
-  // 🔥 Направляем Gulp строго на контентные картинки корня, игнорируя служебные подпапки
-  `${config.srcFolder}/images/*.*`,
-  // 🔥 Разрешаем заходить в любые другие папки контента (например, images/blog, images/projects), кроме системных
-  `${config.srcFolder}/images/!(src|favicons)/**/*`,
-  // Компоненты верстки оставляем без изменений
+  `${config.srcFolder}/images/**/*`,
+  `!${config.srcFolder}/images/svg/**/*`,
+  `!${config.srcFolder}/images/favicons/**/*`,
   `${config.srcFolder}/components/**/img/**/*.{jpg,jpeg,png,svg,webp,gif}`,
 ];
 
-const gulp5Options = { encoding: false };
+// =========================================================================
+// 🖼️ ТАСКИ ОБРАБОТКИ ГРАФИКИ (ПОЛНАЯ СИНХРОНИЗАЦИЯ АРХИТЕКТУРЫ)
+// =========================================================================
 
-export function images() {
-  return new Promise((resolve, reject) => {
-    const pipeline = [
-      src(imageSources, gulp5Options),
-      plumber({ errorHandler: onError }),
-      newer({
-        dest: config.paths.images.dest,
-        map: (relative) => path.basename(relative),
-      }),
-      sharpCompressor({
-        jpegQuality: config.settings.imagemin?.jpeg || 75,
-        webpQuality: config.settings.webpQuality || 70,
-      }),
-      flatten(),
-      dest(config.paths.images.dest),
-    ];
-    pipeline
-      .reduce((stream, plugin) => stream.pipe(plugin))
-      .on('end', () => {
-        bs.reload();
-        resolve();
-      })
-      .on('error', reject);
-  });
-}
-
+// 1. Быстрое копирование обычных картинок в режиме Dev
 export function imagesDev() {
   return new Promise((resolve, reject) => {
     const pipeline = [
       src(imageSources, gulp5Options),
       plumber({ errorHandler: onError }),
-      // 🔥 Исправлено под максимальным контролем: кэшируем картинки в режиме dev,
-      // чтобы на диск копировались только новые или измененные изображения
-      newer({
-        dest: config.paths.images.dest,
-        map: (relative) => path.basename(relative),
+      newer(config.paths.images.dest), // Прямой быстрый кэш без кастомных map и задержек
+      flatten(),
+      dest(config.paths.images.dest),
+    ];
+    pipeline
+      .reduce((stream, plugin) => stream.pipe(plugin))
+      .on('end', () => {
+        bs.reload();
+        resolve();
+      })
+      .on('error', reject);
+  });
+}
+
+// 2. Сборка для продакшена (использует ваш родной sharpCompressor)
+export function images() {
+  return new Promise((resolve, reject) => {
+    const pipeline = [
+      src(imageSources, gulp5Options),
+      plumber({ errorHandler: onError }),
+      newer(config.paths.images.dest),
+      sharpCompressor({
+        webpQuality: config.settings.imagemin?.webp || 70,
+        jpegQuality: config.settings.imagemin?.jpeg || 75,
       }),
       flatten(),
       dest(config.paths.images.dest),
@@ -73,55 +70,80 @@ export function imagesDev() {
   });
 }
 
+// 🔥 СВЕРХБЫСТРАЯ И ИСПРАВЛЕННАЯ ГЕНЕРАЦИЯ WEBP С ЖЕСТКИМ КОНТРОЛЕМ БАЗЫ
 export function createWebp() {
-  /* Оставляем как в прошлом шаге */
+  const webpSources = [
+    // 1. Берем только те картинки, которые реально лежат в корне src/images/ и подпапках компонентов
+    path.join(config.srcFolder, 'images', '**', '*.{jpg,jpeg,png}'),
+    path.join(config.srcFolder, 'components', '**', 'img', '**', '*.{jpg,jpeg,png}'),
+
+    // 2. Глухо изолируем и полностью запрещаем трогать системную папку фавиконок
+    '!' + path.join(config.srcFolder, 'images', 'favicons', '**', '*'),
+  ];
+
+  return src(webpSources, {
+    allowEmpty: true,
+    encoding: false,
+    // 🔥 ЖЕСТКИЙ ФИКС БАЗЫ: заставляем Gulp считать корнем папку src/
+    // Это полностью уничтожит появление папок "src/" внутри dist!
+    base: config.srcFolder
+  })
+    .pipe(plumber({ errorHandler: onError }))
+
+    // Быстрый кэш, чтобы не пересобирать то, что уже скомпилировано
+    .pipe(newer({ dest: config.paths.images.dest, ext: '.webp' }))
+
+    // Ваш кастомный нативный плагин на базе Sharp
+    .pipe(sharpToWebp({ quality: config.settings.webpQuality || 70 }))
+
+    // Отправляем все готовые файлы строго в плоскую или системную dist/images/
+    // С использованием плагина flatten(), если вы хотите свалить все в корень:
+    .pipe(flatten())
+    .pipe(dest(config.paths.images.dest))
+    .pipe(bs.stream());
 }
 
+// 4. Сборка векторного SVG-спрайта
 export function sprite() {
-  /* Оставляем как в прошлом шаге */
+  return src(config.paths.images.svg, gulp5Options)
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(
+      svgSprite({
+        mode: {
+          stack: {
+            sprite: '../sprite.svg', // Складываем в dist/images/sprite.svg
+            example: false,
+          },
+        },
+      }),
+    )
+    .pipe(dest(config.paths.images.dest))
+    .pipe(bs.stream());
 }
 
-// 🔥 100% АВТОМАТИЗАЦИЯ ФАВИКОНОК НА SHARP С КЭШИРОВАНИЕМ ВРЕМЕНИ МОДИФИКАЦИИ (БЕЗ ТОРМОЗОВ)
+// 5. Автоматизация фавиконок (с защитой от cleandist)
 export async function favs(done) {
-  const srcFavicon = path.join(
-    config.srcFolder,
-    'images',
-    'src',
-    'favicon.png',
-  );
+  const srcFavicon = config.paths.favicons.src;
+  const faviconsDestDir = config.paths.favicons.dest;
+  const partHtmlPath = config.paths.favicons.htmlOutput;
   const faviconsSrcDir = path.join(config.srcFolder, 'images', 'favicons');
-  const partHtmlPath = path.join(
-    config.srcFolder,
-    'parts',
-    'favicon-links.html',
-  );
 
-  if (!fs.existsSync(srcFavicon)) {
-    console.log(
-      '⚠️ Исходный файл src/images/src/favicon.png не найден. Пропускаем генерацию.',
-    );
-    return done();
-  }
+  if (!fs.existsSync(srcFavicon)) return done();
 
   try {
-    // 🔥 НАЧАЛО БЛОКА КЭШ-КОНТРОЛЯ: Проверяем, нужно ли тратить ресурсы на ресайз
     const checkFile = path.join(faviconsSrcDir, 'favicon-32.png');
-
-    if (fs.existsSync(checkFile) && fs.existsSync(partHtmlPath)) {
+    if (
+      fs.existsSync(checkFile) &&
+      fs.existsSync(partHtmlPath) &&
+      fs.existsSync(faviconsDestDir)
+    ) {
       const srcStat = fs.statSync(srcFavicon);
       const destStat = fs.statSync(checkFile);
-
-      // Если исходный favicon.png не менялся со времени последней генерации — мгновенно выходим
-      if (srcStat.mtimeMs <= destStat.mtimeMs) {
-        console.log('ℹ️ [Sharp-Favs] Исходный favicon.png не изменялся. Сборка пропущена (кэш).');
-        return done();
-      }
+      if (srcStat.mtimeMs <= destStat.mtimeMs) return done();
     }
 
-    if (!fs.existsSync(faviconsSrcDir)) {
+    if (!fs.existsSync(faviconsSrcDir))
       fs.mkdirSync(faviconsSrcDir, { recursive: true });
-    }
-
     const sharpInstance = sharp(srcFavicon);
 
     await sharpInstance
@@ -145,56 +167,34 @@ export async function favs(done) {
       .png()
       .toFile(path.join(faviconsSrcDir, 'icon-512.png'));
 
-    const htmlContent = `<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">
-<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">
-<link rel="manifest" href="images/favicons/manifest.webmanifest">`;
-
-    fs.writeFileSync(partHtmlPath, htmlContent, 'utf8');
-
-    const manifestContent = {
-      name: config.siteName || 'My Project',
-      short_name: config.siteName || 'Project',
-      icons: [
-        { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-        { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
-      ],
-      theme_color: '#ffffff',
-      background_color: '#ffffff',
-      display: 'standalone',
-    };
-
+    fs.writeFileSync(
+      partHtmlPath,
+      `<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">\n<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">\n<link rel="manifest" href="images/favicons/manifest.webmanifest">`,
+      'utf8',
+    );
     fs.writeFileSync(
       path.join(faviconsSrcDir, 'manifest.webmanifest'),
-      JSON.stringify(manifestContent, null, 2),
+      JSON.stringify(
+        {
+          name: config.siteName || 'Radik.Dev',
+          short_name: 'Radik',
+          icons: [
+            { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          ],
+          theme_color: '#ffffff',
+          background_color: '#ffffff',
+          display: 'standalone',
+        },
+        null,
+        2,
+      ),
       'utf8',
     );
 
-    console.log(
-      '✅ [Sharp-Favs] Все иконки, манифест и HTML-парт сгенерированы автоматически!',
-    );
     done();
   } catch (err) {
     onError(err);
     done(err);
   }
-}
-
-export function faviconsDev(done) {
-  done();
-}
-
-// 6. Очистка каталогов графики
-export function cleanimg(done) {
-  if (fs.existsSync(config.paths.images.dest)) {
-    const files = fs.readdirSync(config.paths.images.dest);
-    files.forEach((file) => {
-      if (file !== 'favicons') {
-        fs.rmSync(path.join(config.paths.images.dest, file), {
-          recursive: true,
-          force: true,
-        });
-      }
-    });
-  }
-  done();
 }

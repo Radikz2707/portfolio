@@ -23,18 +23,23 @@ export const onError = function (err) {
 };
 
 // =========================================================================
-// 🌐 2. ИНИЦИАЛИЗАЦИЯ ЛОКАЛЬНОГО СЕРВЕРА BROWSER-SYNC
+// 🌐 2. ИНИЦИАЛИЗАЦИЯ ЛОКАЛЬНОГО СЕРВЕРА BROWSER-SYNC (ИСПРАВЛЕНО)
 // =========================================================================
-export function browsersync() {
-  bs.init({
-    server: {
-      baseDir: config.buildFolder,
+export function browsersync(done) {
+  // 🔥 Вернули оригинальное имя функции
+  bs.init(
+    {
+      server: {
+        baseDir: config.buildFolder, // папка dist
+      },
+      ghostMode: false,
+      notify: false,
+      online: true,
+      port: 3000,
+      open: true, // Принудительно открывает браузер при старте
     },
-    startPath: '/',
-    open: 'local',
-    notify: false,
-    online: true,
-  });
+    done,
+  ); // Передали done вторым аргументом, чтобы Gulp не бросал сокеты
 }
 
 // Вспомогательный хелпер для ленивого запуска тасок внутри вотчера

@@ -4,6 +4,9 @@
 // ПОДКЛЮЧЕНИЕ КОНФИГУРАЦИИ И ПЕРЕМЕННЫХ
 @use './base/vars' as v;
 
+// 🔥 Подключаем стили сторонних библиотек (Исправлено на @use)
+@use './base/vendors';
+
 // КОМПОНЕНТЫ СТРУКТУРЫ САЙТА
 @use '../components/header/header';
 @use '../components/hero/hero';
@@ -21,6 +24,8 @@
 // ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
 @use '../js/modules/scroll-to-top/scroll-to-top' as *;
 @use '../js/modules/theme-toggle/theme-toggle' as themeToggle;
+
+// 🔥 Подключаем шрифты (Перенесено ниже всех @use по правилам Sass)
 @import 'base/fonts';
 
 body {

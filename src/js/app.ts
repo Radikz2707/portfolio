@@ -1,5 +1,7 @@
 import { modal } from '../components/modal/modal';
 import { blogPage } from '../components/blog-page/blog-page';
+import AOS from 'aos';
+
 // 1. ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ХЕЛПЕРОВ
 import { isWebp } from './modules/isWebp';
 
@@ -30,25 +32,34 @@ footer();
 main();
 scrollToTop();
 
+// Инициализация вендорной библиотеки AOS из vendor.min.js
+AOS.init({
+  duration: 800,
+  once: true,
+});
+
 // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Определяем, где находится пользователь
 const isBlogPage =
   window.location.pathname.includes('/blog/') ||
   document.body.classList.contains('page-blog');
 
-if (isBlogPage) {
-  // 📑 Запускаем скрипты СТРОГО на страницах блога и статей
-  blogArticle();
-  blogSidebar();
-  blogPage();
-  console.log('Скрипты блога успешно инициализированы.');
-} else {
-  // 🚀 Запускаем скрипты СТРОГО на ГЛАВНОЙ странице портфолио
-  hero();
-  projectsGrid();
-  aboutMe();
-  contacts();
-  console.log('Скрипты главных разделов портфолио успешно инициализированы.');
-}
+// Асинхронная обёртка для ленивой загрузки динамических чанков страниц
+(async () => {
+  if (isBlogPage) {
+    // 📑 Запускаем скрипты СТРОГО на страницах блога и статей
+    blogArticle();
+    blogSidebar();
+    blogPage();
+    console.log('Скрипты блога успешно инициализированы.');
+  } else {
+    // 🚀 Запускаем скрипты СТРОГО на ГЛАВНОЙ странице портфолио
+    hero();
+    projectsGrid();
+    aboutMe();
+    contacts();
+    console.log('Скрипты главных разделов портфолио успешно инициализированы.');
+  }
+})();
 
 console.log('TypeScript успешно запущен!');
 

@@ -3,14 +3,10 @@
 
 .blog-article {
   min-height: 100vh;
-  padding: 140px 0 80px; // Верхний отступ защищает заголовок от наплыва фиксированной шапки [01:11:48]
-
-  // Локальный щит для страницы блога: полностью уничтожает боковой скролл,
-  // если в статье встретится слишком длинная строка кода [01:11:48]
+  padding: 140px 0 80px;
   overflow-x: hidden;
-  background-color: v.$bg-deep-blue; // Наша переменная глубокого синего фона (#0f172a) [01:11:48]
+  background-color: v.$bg-deep-blue; // Автоматически меняется: #0f172a 🔄 #f8fafc
 
-  // Компактная контентная зона статьи + сайдбара [01:11:48]
   &__container {
     width: 100%;
     max-width: 1100px;
@@ -18,163 +14,144 @@
     margin: 0 auto;
   }
 
-  // ЧИСТАЯ АДАПТИВНАЯ GRID-МАТРИЦА СЕТКИ (БЕЗ КОСТЫЛЕЙ !IMPORTANT) [01:11:48]
   &__layout {
     display: grid;
-    grid-template-areas:
-      'sidebar'
-      'main';
-
-    // 📱 СМАРТФОНЫ (По умолчанию): блоки выстраиваются в 1 колонку [01:11:48]
-    // Область "sidebar" принудительно встает НАД текстовой областью "main" [01:11:48]
+    grid-template-areas: 'sidebar' 'main';
     grid-template-columns: 1fr;
     gap: 40px;
-    place-items: start center; // Автоматически центрирует сайдбар на экранах телефонов
+    place-items: start center;
 
-    // 📐 ПЛАНШЕТЫ (От 769px до 1100px): встают в ряд, контент занимает всё свободное место [01:11:48]
     @media (min-width: 769px) {
       grid-template-areas: 'main sidebar';
       grid-template-columns: 1fr 300px;
       justify-items: stretch;
     }
 
-    // 🖥️ ДЕСКТОПЫ (От 1101px): жесткие журнальные пропорции [01:11:48]
     @media (min-width: 1101px) {
       grid-template-areas: 'main sidebar';
       grid-template-columns: 740px 300px;
-      gap: 0; // Сбрасываем фиксированный gap
-
-      // Идеально расталкивает статью и сайдбар по краям контейнера 1100px [01:11:48]
+      gap: 0;
       justify-content: space-between;
       justify-items: stretch;
     }
   }
 
-  // Левая колонка с контентом: зажата, чтобы длина строки была комфортна для глаз [01:11:48]
   &__main-content {
     grid-area: main;
     width: 100%;
-    min-width: 0; // Ключевая защита Grid-сетки от выпирания блоков кода наружу [01:11:48]
+    min-width: 0;
     max-width: 740px;
+
+    // Ссылка возврата на главную страницу
+    .blog-article__back-link {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 40px;
+      font-size: 16px;
+      font-weight: 500;
+      color: v.$color-accent;
+      text-decoration: none;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: v.$color-purple;
+      }
+    }
+
+    // =======================================================================
+    // 📝 ИЗОЛИРОВАННОЕ ОФОРМЛЕНИЕ HTML-ТЕГОВ СТАТЬИ (ИЗ MARKDOWN)
+    // =======================================================================
+
+    h1, h2, h3 {
+      font-family: inherit;
+      line-height: 1.3;
+      color: v.$color-text-main; // Автоматически меняется: #f8fafc 🔄 #0f172a
+    }
+
+    h1 {
+      margin-top: 1rem;
+      margin-bottom: 32px;
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 48px;
+      margin-bottom: 20px;
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 700;
+    }
+
+    p {
+      margin-bottom: 24px;
+      font-size: 18px;
+      line-height: 1.8;
+      color: v.$color-text-muted; // Автоматически меняется: #94a3b8 🔄 #64748b
+    }
+
+    strong {
+      font-weight: 600;
+      color: v.$color-text-main;
+    }
+
+    ul, ol {
+      padding-left: 24px;
+      margin-bottom: 32px;
+
+      li {
+        margin-bottom: 12px;
+        font-size: 17px;
+        line-height: 1.6;
+        color: v.$color-text-muted;
+      }
+    }
+
+    ul li {
+      list-style-type: disc;
+
+      &::marker {
+        color: v.$color-accent;
+      }
+    }
+
+    // 💾 БЛОК КОДА С АВТОПЕРЕНОСОМ СТРОК
+    pre {
+      width: 100%;
+      max-width: 740px;
+      padding: 24px;
+      margin: 32px 0;
+      overflow-x: auto;
+      background-color: v.$bg-card; // Автоматически меняется: #1e293b 🔄 #ffffff
+      border: 1px solid rgba(v.$color-text-muted, 0.2);
+      border-radius: 8px;
+
+      code {
+        font-family: 'Fira Code', Consolas, 'Courier New', Courier, monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        color: v.$color-text-main; // 🔥 ИСПРАВЛЕНО: Код теперь темный на светлой теме!
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
+      }
+    }
+
+    // Короткий инлайновый код внутри обычных абзацев
+    p code, li code {
+      padding: 3px 6px;
+      font-family: 'Fira Code', Consolas, monospace;
+      font-size: 14px;
+      color: v.$color-text-main; // 🔥 ИСПРАВЛЕНО: Текст не сливается с блеклым фоном
+      overflow-wrap: break-word;
+      white-space: normal;
+      background-color: v.$bg-dark; // 🔥 ИСПРАВЛЕНО: Теперь подложка станет #f1f5f9 на светлой теме
+      border-radius: 4px;
+    }
   }
 
-  // Правая колонка: сайдбар меню (чистый контейнер позиционирования) [01:11:48]
   &__sidebar {
     grid-area: sidebar;
     width: 100%;
     max-width: 300px;
-  }
-
-  // Ссылка возврата на главную страницу [01:11:48]
-  &__back-link {
-    display: inline-flex;
-    align-items: center;
-    margin-bottom: 40px;
-    font-size: 16px;
-    font-weight: 500;
-    color: v.$color-accent; // Наша переменная индиго (#6366f1) [01:11:48]
-    text-decoration: none;
-    transition: color 0.2s ease;
-
-    &:hover {
-      color: v.$color-purple; // При наведении плавно меняется на пурпурный (#a855f7) [01:11:48]
-    }
-  }
-
-  // =========================================================================
-  // 📝 ОФОРМЛЕНИЕ HTML-ТЕГОВ СТАТЬИ (ГЕНЕРИРУЮТСЯ ИЗ MARKDOWN)
-  // =========================================================================
-
-  // 🔥 Исправлено: Заголовки теперь будут темными на светлой теме и белыми на темной
-  h1,
-  h2,
-  h3 {
-    font-family: inherit;
-    line-height: 1.3;
-    color: v.$color-text-main;
-  }
-
-  h1 {
-    margin-top: 1rem;
-    margin-bottom: 32px;
-    font-size: clamp(28px, 4vw, 40px);
-    font-weight: 800;
-    text-align: center;
-  }
-
-  h2 {
-    margin-top: 48px;
-    margin-bottom: 20px;
-    font-size: clamp(22px, 3vw, 28px);
-    font-weight: 700;
-  }
-
-  // 🔥 Исправлено: Основной текст статьи динамически меняет цвет
-  p {
-    margin-bottom: 24px;
-    font-size: 18px;
-    line-height: 1.8;
-    color: v.$color-text-muted;
-  }
-
-  strong {
-    font-weight: 600;
-    color: v.$color-text-main;
-  }
-
-  // Списки внутри статей
-  ul,
-  ol {
-    padding-left: 24px;
-    margin-bottom: 32px;
-
-    li {
-      margin-bottom: 12px;
-      font-size: 17px;
-      line-height: 1.6;
-      color: v.$color-text-muted; // 🔥 Исправлено для пунктов списков
-    }
-  }
-
-  ul li {
-    list-style-type: disc;
-
-    &::marker {
-      color: v.$color-accent;
-    }
-  }
-
-  // 🗜️ БЛОК КОДА С АВТОПЕРЕНОСОМ СТРОК (Полное уничтожение горизонтального скролла сайта) [01:12:02]
-  pre {
-    width: 100%;
-    max-width: 740px;
-    padding: 24px;
-    margin: 32px 0;
-    overflow-x: auto; // Резервный скролл, если слово внутри кода слишком длинное [01:12:02]
-    background-color: v.$bg-card; // 🔥 Теперь подложка кода станет красивого контрастного цвета!
-    border: 1px solid rgba(v.$color-text-muted, 0.2);
-    border-radius: 8px;
-
-    code {
-      font-family: 'Fira Code', Consolas, 'Courier New', Courier, monospace;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #e2e8f0;
-      overflow-wrap: break-word; // Предотвращает выпирание кода [01:12:02]
-      white-space: pre-wrap; // Заставляет длинные строки кода аккуратно переноситься [01:12:02]
-    }
-  }
-
-  // Короткий инлайновый код внутри обычных абзацев и списков [01:12:02]
-  p code,
-  li code {
-    padding: 3px 6px;
-    font-family: 'Fira Code', Consolas, monospace;
-    font-size: 14px;
-    color: #f43f5e; // Красивый розово-красный акцент для кода в тексте [01:12:02]
-    overflow-wrap: break-word;
-    white-space: normal;
-    background-color: v.$bg-card; // Подложка цвета карточек (#1e293b) [01:12:02]
-    border-radius: 4px;
   }
 }

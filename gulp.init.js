@@ -40,6 +40,7 @@ table { border-collapse: collapse; border-spacing: 0; }
 @@include('components/main/main.html')
 @@include('components/footer/footer.html')
 
+<script src="js/vendor.min.js"></script>
 <script src="js/app.min.js"></script>
 </body>
 </html>`;
