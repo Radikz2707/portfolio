@@ -19,11 +19,9 @@ const __dirname = dirname(__filename);
 const { src, dest } = gulp;
 
 export function scripts() {
-  // Базовая конфигурация Webpack, общая для обоих режимов
   const webpackConfig = {
     mode: isProd ? 'production' : 'development',
-    // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ ДЛЯ GULP 5: Отключаем встроенный watch вебпака в dev-режиме,
-    // так как за пересборку теперь полностью отвечает наш стабильный файловый watcher из server.js
+    target: ['web', 'es2015'], // 🔥 Исправлено: Гарантирует кроссбраузерность и работу JS на старых iOS/Android
     watch: false,
     performance: { hints: false },
     entry: {
@@ -32,6 +30,7 @@ export function scripts() {
     output: {
       filename: config.paths.scripts.output,
       chunkFilename: 'js/chunks/chunk-[name].js',
+      publicPath: '/', // 🔥 Исправлено: Защищает динамические чанки от поломки путей внутри страниц блога
     },
     resolve: {
       alias: {
@@ -51,11 +50,9 @@ export function scripts() {
               loader: 'ts-loader',
               options: {
                 configFile: path.resolve(__dirname, '../tsconfig.json'),
-                // transpileOnly гарантирует молниеносную скорость в режиме разработки,
-                // отключая тяжелую проверку типов на каждом сохранении (её делает npm run lint)
                 transpileOnly: !isProd,
                 compilerOptions: {
-                  noEmit: false, // Принудительно разрешаем генерацию кода для потока Webpack
+                  noEmit: false,
                 },
               },
             },
@@ -72,16 +69,16 @@ export function scripts() {
       minimize: isProd,
       minimizer: [
         new TerserPlugin({
-          extractComments: false, // Отключает генерацию файлов .LICENSE.txt
+          extractComments: false,
           terserOptions: {
             compress: {
-              drop_console: isProd, // 🔥 Удаляет все console.log() строго на продакшене
-              drop_debugger: isProd, // Удаляет дебаггеры
-              dead_code: true, // Вырезает неиспользуемый код
-              passes: 2, // Повторный проход для максимального сжатия
+              drop_console: isProd,
+              drop_debugger: isProd,
+              dead_code: true,
+              passes: 2,
             },
             format: {
-              comments: false, // Полностью удаляет комментарии из бандла
+              comments: false,
             },
           },
         }),
@@ -90,22 +87,24 @@ export function scripts() {
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
   };
 
-  // Инициализируем пайплайн. В Gulp 5 для скриптов тоже отключаем кодировку строк ({ encoding: false }),
-  // чтобы минифицированный JS и бинарные карты кода (.map) не повредились при потоковой записи.
   const pipeline = [
     src(config.paths.scripts.src, { encoding: false }),
     plumber({ errorHandler: onError }),
-    // Передаем кастомный логгер в коллбэк webpack-stream для вывода статистики компиляции
     webpackStream(webpackConfig, webpack, (err, stats) => {
       if (err) return;
       if (stats.hasErrors()) {
         console.error(stats.toString('minimal'));
+        // 🔥 Исправлено: Оповещаем plumber об ошибке, предотвращая зависание файлового вотчера
+        if (typeof onError === 'function') {
+          onError(
+            new Error('Webpack compilation failed. Check terminal output.'),
+          );
+        }
       }
     }),
     dest(config.paths.scripts.dest),
   ];
 
-  // Склеиваем стримы черезreduce и триггерим обновление браузера
   return pipeline
     .reduce((stream, plugin) => stream.pipe(plugin))
     .on('end', () => {
