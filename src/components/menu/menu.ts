@@ -1,5 +1,4 @@
 export function menu(): void {
-  // 🔥 ИСПРАВЛЕНО: Ищем кнопку по реальному классу .menu-icon из вашей разметки
   const menuBtn = document.querySelector<HTMLElement>('.menu-icon');
   const menuElement = document.querySelector<HTMLElement>('.menu');
   const menuLinks =
@@ -7,16 +6,30 @@ export function menu(): void {
 
   if (!menuBtn || !menuElement) return;
 
-  // Используем БЭМ-классы с нижним подчеркиванием из вашего SCSS
+  // 🔥 Флаг блокировки дребезга кликов
+  let isTransitioning = false;
+
+  // Защита: сбрасываем флаг, когда шторка меню полностью закончила движение в CSS
+  menuElement.addEventListener('transitionend', (e: TransitionEvent) => {
+    if (e.target === menuElement) {
+      isTransitioning = false;
+    }
+  });
+
   const closeMenu = (): void => {
     menuBtn.classList.remove('_active');
     menuElement.classList.remove('_active');
     document.body.classList.remove('_lock');
   };
 
-  // Переключение гамбургера с защитой от всплытия событий
+  // Переключение гамбургера с защитой от race condition
   menuBtn.addEventListener('click', (e: MouseEvent) => {
     e.stopPropagation();
+
+    // 🔥 Если анимация еще идет — полностью игнорируем клик
+    if (isTransitioning) return;
+
+    isTransitioning = true;
     menuBtn.classList.toggle('_active');
     menuElement.classList.toggle('_active');
     document.body.classList.toggle('_lock');
@@ -32,7 +45,6 @@ export function menu(): void {
       if (hasHash) {
         const targetId = href.substring(href.indexOf('#'));
 
-        // Защита от пустого селектора "#"
         if (targetId === '#') {
           e.preventDefault();
           closeMenu();
@@ -45,34 +57,36 @@ export function menu(): void {
 
         const targetSection = document.querySelector<HTMLElement>(targetId);
 
-        // Если секция найдена на текущей странице (плавный скролл)
         if (targetSection) {
           e.preventDefault();
+
+          // 🔥 Сначала закрываем интерфейс меню, но даем Safari 50мс на корректный запуск smooth scroll
           closeMenu();
 
-          const headerElement = document.querySelector<HTMLElement>('.header');
-          const headerOffset = headerElement ? headerElement.offsetHeight : 80;
-          const elementPosition = targetSection.getBoundingClientRect().top;
-          const offsetPosition =
-            elementPosition + window.scrollY - headerOffset;
+          setTimeout(() => {
+            const headerElement =
+              document.querySelector<HTMLElement>('.header');
+            const headerOffset = headerElement
+              ? headerElement.offsetHeight
+              : 80;
+            const elementPosition = targetSection.getBoundingClientRect().top;
+            const offsetPosition =
+              elementPosition + window.scrollY - headerOffset;
 
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth',
-          });
-        }
-        // Если секции нет на странице (уходим из блога на главную)
-        else {
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth',
+            });
+          }, 50);
+        } else {
           closeMenu();
         }
       } else {
-        // Обычные ссылки без якоря
         closeMenu();
       }
     });
   });
 
-  // Безопасное закрытие меню при клике вне области
   document.addEventListener('click', (e: MouseEvent) => {
     const target = e.target as HTMLElement;
 
