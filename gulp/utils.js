@@ -40,42 +40,19 @@ export async function cleandist(done) {
 }
 
 // 🔤 2. СВЕРХБЫСТРОЕ ХИРУРГИЧЕСКОЕ КОПИРОВАНИЕ (БЕЗ ПОТЕРЬ ПАПКИ FAVICONS)
-export function buildcopy(done) {
-  const finalDest = config.buildFolder || 'dist';
-  const streams = [];
-
-  // 1. Поток шрифтов: копируем файлы woff/woff2 в dist/fonts/
-  const fontsPath = path.join(config.srcFolder, 'fonts');
-  if (fs.existsSync(fontsPath)) {
-    streams.push(
-      src(path.join(fontsPath, '*.{woff,woff2}'), { allowEmpty: true, encoding: false })
-        .pipe(plumber({ errorHandler: onError }))
-        .pipe(dest(path.join(finalDest, 'fonts')))
-    );
-  }
-
-  // 2. 🔥 ПОТОК ФАВИКОНОК: копируем файлы прямо в dist/images/favicons/
-  const faviconsPath = path.join(config.srcFolder, 'images', 'favicons');
-  if (fs.existsSync(faviconsPath)) {
-    streams.push(
-      src(path.join(faviconsPath, '*.*'), { allowEmpty: true, encoding: false })
-        .pipe(plumber({ errorHandler: onError }))
-        // 🔥 ЯВНО УКАЗЫВАЕМ ПАПКУ НАЗНАЧЕНИЯ, ЧТОБЫ ПАПКА FAVICONS РОДИЛАСЬ В DIST!
-        .pipe(dest(path.join(finalDest, 'images', 'favicons')))
-    );
-  }
-
-  // Если копировать нечего — мгновенно выходим
-  if (streams.length === 0) return done();
-
-  // Синхронизируем закрытие потоков
-  let mergedCount = 0;
-  streams.forEach(stream => {
-    stream.on('end', () => {
-      mergedCount++;
-      if (mergedCount === streams.length) done();
-    });
-  });
+export function buildcopy() {
+  return src(
+    [
+      `${config.srcFolder}/images/favicons/**/*`,
+      `${config.srcFolder}/*.*`,
+      `!${config.srcFolder}/*.html`,
+    ],
+    {
+      dot: true,
+      allowEmpty: true,
+      base: config.srcFolder,
+    },
+  ).pipe(dest(config.buildFolder));
 }
 
 // 📦 3. АРХИВИРОВАНИЕ СБОРКИ (ZIP)

@@ -217,10 +217,15 @@ const compileAssets = parallel(
 
 export const build = series(
   cleandist,
-  runTask('favs'),
-  parallel(lintCss, lintJs, runTask('fonts'), runTask('fontsStyle')),
-  parallel(runTask('html'), blogIndex), // 🔥 УДАЛИЛИ runAllContentTasks ОТСЮДА
-  compileAssets,
+  parallel(
+    lintCss,
+    lintJs,
+    runTask('fonts'),
+    runTask('fontsStyle'),
+    runTask('favs'),
+    compileAssets,
+  ),
+  parallel(runTask('html'), blogIndex),
   buildcopy,
   zipFiles,
   (done) => {
@@ -233,13 +238,9 @@ export const build = series(
 
 const blogContent = createDynamicContentTask('blog');
 
-// 🔥 ЭТАЛОННЫЙ СВЕРХБЫСТРЫЙ ДЕФОЛТНЫЙ СЦЕНАРИЙ (БЕЗ КОНФЛИКТОВ И ЗАДЕРЖЕК)
 export default series(
   cleandist,
-  // 1. Быстро собираем шрифты и фавиконки в src
   parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
-
-  // 2. Запускаем компиляцию всего фронтенда
   parallel(
     runTask('html'),
     blogIndex,
@@ -252,10 +253,7 @@ export default series(
       createDynamicContentTask(folder),
     ),
   ),
-
   buildcopy,
-
-  // 3. Открываем сервер
   parallel(browsersync, startwatch),
 );
 

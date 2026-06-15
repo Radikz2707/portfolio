@@ -8,6 +8,7 @@ import plumber from 'gulp-plumber';
 import newer from 'gulp-newer';
 import svgSprite from 'gulp-svg-sprite';
 import { onError, bs } from './server.js';
+import cache from 'gulp-cache';
 
 // 🔥 ИМПОРТИРУЕМ ВАШИ ОПТИМИЗИРОВАННЫЕ ПЛАГИНЫ ИЗ UTILS.JS
 import { sharpCompressor, sharpToWebp } from './utils.js';
@@ -48,26 +49,21 @@ export function imagesDev() {
 
 // 2. Сборка для продакшена (использует ваш родной sharpCompressor)
 export function images() {
-  return new Promise((resolve, reject) => {
-    const pipeline = [
-      src(imageSources, gulp5Options),
-      plumber({ errorHandler: onError }),
-      newer(config.paths.images.dest),
-      sharpCompressor({
-        webpQuality: config.settings.imagemin?.webp || 70,
-        jpegQuality: config.settings.imagemin?.jpeg || 75,
-      }),
-      flatten(),
-      dest(config.paths.images.dest),
-    ];
-    pipeline
-      .reduce((stream, plugin) => stream.pipe(plugin))
-      .on('end', () => {
-        bs.reload();
-        resolve();
-      })
-      .on('error', reject);
-  });
+  return src(imageSources, gulp5Options)
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(
+      cache(
+        sharpCompressor({
+          webpQuality: config.settings.imagemin?.webp || 70,
+          jpegQuality: config.settings.imagemin?.jpeg || 75,
+        }),
+      ),
+    )
+    .pipe(flatten())
+    .pipe(dest(config.paths.images.dest))
+    .on('end', () => {
+      bs.reload();
+    });
 }
 
 // 🔥 СВЕРХБЫСТРАЯ И ИСПРАВЛЕННАЯ ГЕНЕРАЦИЯ WEBP С ЖЕСТКИМ КОНТРОЛЕМ БАЗЫ
