@@ -132,7 +132,7 @@ export function html() {
     replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, `href="blog/index.html"`),
     replace(
       /href=["']\s*\/?GO_CONTACTS?\s*["']/gi,
-      'href="../index.html#contacts"',
+      'href="index.html#contacts"',
     ),
 
     replace(/SITE_NAME/gi, config.siteName),
