@@ -90,13 +90,15 @@ export function scripts() {
   const pipeline = [
     src(config.paths.scripts.src, { encoding: false }),
     plumber({ errorHandler: onError }),
-    webpackStream(webpackConfig, webpack, (err, stats) => {
+    webpackStream(webpackConfig, webpack, function (err, stats) {
+      // 🔥 Важно: заменили стрелочную функцию => на обычную function()
       if (err) return;
       if (stats.hasErrors()) {
         console.error(stats.toString('minimal'));
-        // 🔥 Исправлено: Оповещаем plumber об ошибке, предотвращая зависание файлового вотчера
         if (typeof onError === 'function') {
-          onError(
+          // 🔥 Исправлено: передаем контекст текущего стрима Gulp во избежание ошибки TypeError
+          onError.call(
+            this,
             new Error('Webpack compilation failed. Check terminal output.'),
           );
         }

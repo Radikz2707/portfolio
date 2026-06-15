@@ -1,6 +1,9 @@
+@use './base/vars' as v;
+
 .about-me {
   padding: 100px 0;
-  background-color: #0f172a;
+  color: v.$color-text-main;
+  background-color: v.$bg-deep-blue; // 🔥 Автоматически посветлеет на светлой теме!
 
   &__grid {
     display: flex;
@@ -31,14 +34,14 @@
     margin-bottom: 24px;
     font-size: clamp(28px, 4vw, 42px);
     font-weight: 700;
-    color: #f8fafc;
+    color: v.$color-text-main;
   }
 
   &__text {
     margin-bottom: 16px;
     font-size: 16px;
     line-height: 1.7;
-    color: #94a3b8;
+    color: v.$color-text-muted;
 
     &:last-child {
       margin-bottom: 0;

@@ -1,14 +1,14 @@
 // src/components/blog-article/blog-article.scss
-@use "../../scss/base/vars" as v;
+@use '../../scss/base/vars' as v;
 
 .blog-article {
   min-height: 100vh;
   padding: 140px 0 80px; // Верхний отступ защищает заголовок от наплыва фиксированной шапки [01:11:48]
-  
+
   // Локальный щит для страницы блога: полностью уничтожает боковой скролл,
   // если в статье встретится слишком длинная строка кода [01:11:48]
   overflow-x: hidden;
-  background-color: v.$bg-deep-blue; // Наша переменная глубокого синего фона (#0f172a) [01:11:48] 
+  background-color: v.$bg-deep-blue; // Наша переменная глубокого синего фона (#0f172a) [01:11:48]
 
   // Компактная контентная зона статьи + сайдбара [01:11:48]
   &__container {
@@ -21,9 +21,9 @@
   // ЧИСТАЯ АДАПТИВНАЯ GRID-МАТРИЦА СЕТКИ (БЕЗ КОСТЫЛЕЙ !IMPORTANT) [01:11:48]
   &__layout {
     display: grid;
-    grid-template-areas: 
-      "sidebar"
-      "main";
+    grid-template-areas:
+      'sidebar'
+      'main';
 
     // 📱 СМАРТФОНЫ (По умолчанию): блоки выстраиваются в 1 колонку [01:11:48]
     // Область "sidebar" принудительно встает НАД текстовой областью "main" [01:11:48]
@@ -33,19 +33,19 @@
 
     // 📐 ПЛАНШЕТЫ (От 769px до 1100px): встают в ряд, контент занимает всё свободное место [01:11:48]
     @media (min-width: 769px) {
-      grid-template-areas: "main sidebar";
+      grid-template-areas: 'main sidebar';
       grid-template-columns: 1fr 300px;
       justify-items: stretch;
     }
 
     // 🖥️ ДЕСКТОПЫ (От 1101px): жесткие журнальные пропорции [01:11:48]
     @media (min-width: 1101px) {
-      grid-template-areas: "main sidebar";
+      grid-template-areas: 'main sidebar';
       grid-template-columns: 740px 300px;
       gap: 0; // Сбрасываем фиксированный gap
-      
+
       // Идеально расталкивает статью и сайдбар по краям контейнера 1100px [01:11:48]
-      justify-content: space-between; 
+      justify-content: space-between;
       justify-items: stretch;
     }
   }
@@ -82,14 +82,16 @@
   }
 
   // =========================================================================
-  // 📝 ОФОРМЛЕНИЕ HTML-ТЕГОВ СТАТЬИ (ГЕНЕРИРУЮТСЯ ИЗ MARKDOWN) [01:11:48]
-  // Благодаря вложенности в .blog-article, эти стили имеют высший приоритет
+  // 📝 ОФОРМЛЕНИЕ HTML-ТЕГОВ СТАТЬИ (ГЕНЕРИРУЮТСЯ ИЗ MARKDOWN)
   // =========================================================================
 
-  h1, h2, h3 {
+  // 🔥 Исправлено: Заголовки теперь будут темными на светлой теме и белыми на темной
+  h1,
+  h2,
+  h3 {
     font-family: inherit;
     line-height: 1.3;
-    color: #ffffff;
+    color: v.$color-text-main;
   }
 
   h1 {
@@ -107,20 +109,22 @@
     font-weight: 700;
   }
 
+  // 🔥 Исправлено: Основной текст статьи динамически меняет цвет
   p {
     margin-bottom: 24px;
     font-size: 18px;
     line-height: 1.8;
-    color: #cbd5e1; // Комфортный для чтения светло-серый текст [01:11:48]
+    color: v.$color-text-muted;
   }
 
   strong {
     font-weight: 600;
-    color: #ffffff;
+    color: v.$color-text-main;
   }
 
-  // Списки внутри статей [01:12:02]
-  ul, ol {
+  // Списки внутри статей
+  ul,
+  ol {
     padding-left: 24px;
     margin-bottom: 32px;
 
@@ -128,7 +132,7 @@
       margin-bottom: 12px;
       font-size: 17px;
       line-height: 1.6;
-      color: #cbd5e1;
+      color: v.$color-text-muted; // 🔥 Исправлено для пунктов списков
     }
   }
 
@@ -136,7 +140,7 @@
     list-style-type: disc;
 
     &::marker {
-      color: v.$color-accent; // Индиго маркеры списков [01:12:02]
+      color: v.$color-accent;
     }
   }
 
@@ -147,12 +151,12 @@
     padding: 24px;
     margin: 32px 0;
     overflow-x: auto; // Резервный скролл, если слово внутри кода слишком длинное [01:12:02]
-    background-color: v.$bg-dark; // Контрастный темный фон подложки (#0b0f19) [01:12:02]
-    border: 1px solid #334155;
+    background-color: v.$bg-card; // 🔥 Теперь подложка кода станет красивого контрастного цвета!
+    border: 1px solid rgba(v.$color-text-muted, 0.2);
     border-radius: 8px;
 
     code {
-      font-family: "Fira Code", Consolas, "Courier New", Courier, monospace;
+      font-family: 'Fira Code', Consolas, 'Courier New', Courier, monospace;
       font-size: 14px;
       line-height: 1.6;
       color: #e2e8f0;
@@ -162,9 +166,10 @@
   }
 
   // Короткий инлайновый код внутри обычных абзацев и списков [01:12:02]
-  p code, li code {
+  p code,
+  li code {
     padding: 3px 6px;
-    font-family: "Fira Code", Consolas, monospace;
+    font-family: 'Fira Code', Consolas, monospace;
     font-size: 14px;
     color: #f43f5e; // Красивый розово-красный акцент для кода в тексте [01:12:02]
     overflow-wrap: break-word;
@@ -173,4 +178,3 @@
     border-radius: 4px;
   }
 }
-

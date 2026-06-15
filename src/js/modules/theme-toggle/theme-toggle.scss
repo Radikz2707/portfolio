@@ -1,0 +1,58 @@
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--text-main-raw);
+  cursor: pointer;
+  background-color: var(--bg-card-raw);
+  border: 1px solid rgb(var(--text-muted-raw), 0.15);
+  border-radius: 50%;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+
+  &:hover {
+    color: var(--accent-raw);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// 🌓 Управление видимостью и анимацией иконок на основе класса html
+.theme-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+
+  // По умолчанию (на ТЕМНОЙ теме)
+  &--sun {
+    position: absolute;
+    opacity: 0;
+    transform: rotate(90deg) scale(0);
+  }
+
+  &--moon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+// Переключение состояний при активации СВЕТЛОЙ темы
+html._light-theme {
+  .theme-icon {
+    &--sun {
+      position: static;
+      opacity: 1;
+      transform: rotate(0deg) scale(1);
+    }
+
+    &--moon {
+      position: absolute;
+      opacity: 0;
+      transform: rotate(-90deg) scale(0);
+    }
+  }
+}

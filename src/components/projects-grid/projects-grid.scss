@@ -1,7 +1,10 @@
+@use "../../scss/base/vars" as v;
+
 // Секция сетки проектов
 .projects-grid {
   padding: 100px 0;
-  background-color: #0b0f19; // Чуть темнее, чем hero, для красивого контраста секций
+  background-color: v.$bg-dark; // 🔥 Исправлено: Сменит цвет с #0b0f19 на Slate 100
+  transition: background-color 0.3s ease;
 
   &__container {
     display: flex;
@@ -13,22 +16,21 @@
     margin-bottom: 16px;
     font-size: clamp(28px, 4vw, 42px);
     font-weight: 700;
-    color: #f8fafc;
+    color: v.$color-text-main; // 🔥 Исправлено: станет контрастным темным на светлой теме
+    transition: color 0.3s ease;
   }
 
   &__subtitle {
     margin-bottom: 60px;
     font-size: 16px;
-    color: #64748b;
+    color: v.$color-text-muted; // 🔥 Исправлено: плавно подстроится под тему
     text-align: center;
+    transition: color 0.3s ease;
   }
 
   &__wrapper {
     display: grid;
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(320px, 1fr)
-    ); // Авто-подстройка колонок под экран
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 30px;
     width: 100%;
     max-width: 1100px;
@@ -39,20 +41,14 @@
 .card-project {
   display: flex;
   flex-direction: column;
-  background-color: #1e293b; // Светло-серый/синий цвет карточки
-  border: 1px solid #334155;
+  background-color: v.$bg-card; // 🔥 Исправлено: Карточка станет БЕЛОЙ в светлой теме!
+  border: 1px solid rgba(v.$color-text-muted, 0.2); // 🔥 Исправлено: аккуратная адаптивная рамка
   border-radius: 12px;
+  transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s ease, background-color 0.3s ease;
 
-  // 🔥 ИСПРАВЛЕНО: Объединили transition для плавной анимации появления и для эффекта ховера
-  transition:
-    transform 0.3s ease,
-    border-color 0.3s ease,
-    opacity 0.8s ease;
-
-  // Эффект ховера срабатывает только тогда, когда карточка уже ПОЯВИЛАСЬ (есть класс _active)
   &._active:hover {
-    border-color: #6366f1;
-    transform: translateY(-6px); // Приподнимаем карточку при наведении
+    border-color: v.$color-accent; // Используем переменную индиго
+    transform: translateY(-6px);
   }
 
   &__body {
@@ -68,10 +64,10 @@
     margin-bottom: 16px;
     font-size: 12px;
     font-weight: 500;
-    color: #818cf8;
+    color: v.$color-accent;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background-color: rgb(99 102 241 / 10%);
+    background-color: rgba(v.$color-accent, 0.1); // Полупрозрачный фон тега
     border-radius: 4px;
   }
 
@@ -79,7 +75,8 @@
     margin-bottom: 12px;
     font-size: 22px;
     font-weight: 600;
-    color: #f1f5f9;
+    color: v.$color-text-main; // 🔥 Исправлено: Текст названия проекта станет темным на светлой теме
+    transition: color 0.3s ease;
   }
 
   &__text {
@@ -87,7 +84,8 @@
     margin-bottom: 24px;
     font-size: 15px;
     line-height: 1.6;
-    color: #94a3b8;
+    color: v.$color-text-muted; // 🔥 Исправлено: Текст описания станет читаемым серым
+    transition: color 0.3s ease;
   }
 
   &__tech {
@@ -99,22 +97,22 @@
     span {
       padding: 4px 8px;
       font-size: 12px;
-      color: #cbd5e1;
-      background-color: #0f172a;
+      color: v.$color-text-muted; // 🔥 Исправлено для маленьких плашек технологий
+      background-color: v.$bg-dark; // 🔥 Исправлено: подложка плашек будет контрастной фону секции
+      border: 1px solid rgba(v.$color-text-muted, 0.1);
       border-radius: 4px;
+      transition: color 0.3s ease, background-color 0.3s ease;
     }
   }
 
   &__link {
-    // 🔥 ИСПРАВЛЕНО: Безопасный сброс дефолтных стилей кнопки браузера
-    // Позволяет тегу <button> выглядеть и вести себя как нативная текстовая ссылка
     display: inline-block;
     align-self: flex-start;
     padding: 0;
-    font-family: inherit; // Чтобы шрифт наследовался от карточки, а не от системы
+    font-family: inherit;
     font-size: 15px;
     font-weight: 600;
-    color: #6366f1;
+    color: v.$color-accent;
     text-align: left;
     text-decoration: none;
     cursor: pointer;
@@ -123,11 +121,11 @@
     transition: color 0.2s ease;
 
     &:hover:not(&--disabled) {
-      color: #a855f7;
+      color: v.$color-purple;
     }
 
     &--disabled {
-      color: #64748b;
+      color: v.$color-text-muted;
       cursor: not-allowed;
     }
   }
@@ -136,9 +134,7 @@
   .element-reveal {
     opacity: 0;
     transform: translateY(40px);
-    transition:
-      opacity 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1),
-      transform 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
+    transition: opacity 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
     will-change: opacity, transform;
 
     &._active {

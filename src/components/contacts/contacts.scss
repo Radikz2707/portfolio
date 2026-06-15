@@ -1,12 +1,14 @@
+@use './base/vars' as v;
+
 .contacts {
   padding: 100px 0;
-  background-color: #0b0f19;
+  background-color: v.$bg-dark; // 🔥 Станет Slate 100
 
   // 🔥 ИСПРАВЛЕНО: Центрируем форму и заголовок внутри контейнера
   &__container {
     display: flex;
     flex-direction: column;
-    align-items: center; 
+    align-items: center;
   }
 
   // 🔥 ИСПРАВЛЕНО: Делаем заголовок белым, крупным и центрированным
@@ -14,7 +16,7 @@
     margin-bottom: 40px;
     font-size: clamp(28px, 4vw, 42px);
     font-weight: 700;
-    color: #f8fafc;
+    color: v.$color-text-main;
     text-align: center;
   }
 }
@@ -37,27 +39,32 @@
   &__label {
     font-size: 14px;
     font-weight: 500;
-    color: #94a3b8;
+    color: v.$color-text-muted; // 🔥 Исправлено: Адаптивный цвет лейбла инпута
   }
 
   &__input {
     width: 100%;
     padding: 14px 16px;
     font-size: 15px;
-    color: #f8fafc;
+    color: v.$color-text-main; // 🔥 Исправлено: Вводимый текст станет темным на светлой теме!
     outline: none;
-    background-color: #1e293b;
-    border: 1px solid #334155;
+    background-color: v.$bg-card; // 🔥 Исправлено: Поле станет БЕЛЫМ на светлой теме!
+    border: 1px solid rgba(v.$color-text-muted, 0.2); // 🔥 Исправлено: Адаптивная аккуратная рамка
     border-radius: 8px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.3s ease,
+      color 0.3s ease;
 
     &::placeholder {
-      color: #64748b;
+      color: v.$color-text-muted; // 🔥 Исправлено: Цвет подсказки подстроится под тему
+      opacity: 0.7;
     }
 
     &:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 2px rgb(99 102 241 / 20%);
+      border-color: v.$color-accent;
+      box-shadow: 0 0 0 2px rgba(v.$color-accent, 0.2);
     }
 
     &--textarea {
@@ -78,7 +85,10 @@
     font-size: 13px;
     color: #f43f5e;
     opacity: 0;
-    transition: max-height 0.2s ease, opacity 0.2s ease, margin-top 0.2s ease;
+    transition:
+      max-height 0.2s ease,
+      opacity 0.2s ease,
+      margin-top 0.2s ease;
 
     ._has-error & {
       max-height: 20px;
@@ -92,13 +102,15 @@
     padding: 14px 28px;
     font-size: 15px;
     font-weight: 600;
-    color: #fff;
+    color: #fff; // Цвет текста на кнопке всегда белый, так как градиент остается ярким
     cursor: pointer;
     outline: none;
-    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    background: linear-gradient(135deg, v.$color-accent 0%, v.$color-purple 100%); // Перевели градиент на переменные
     border: none;
     border-radius: 8px;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      opacity 0.2s ease;
 
     &:hover {
       opacity: 0.9;

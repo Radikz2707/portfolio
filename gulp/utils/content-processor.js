@@ -156,6 +156,8 @@ export const compileContentStream = () => {
 
 export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   const folderName = rawFolderName.toLowerCase();
+
+  // 🔥 ОПТИМИЗАЦИЯ №1: Генерируем сайдбар и ссылки строго ОДИН РАЗ до начала цикла по файлам
   const sidebarLinks = await generateSidebarLinks(folderName);
 
   const sidebarComponentPath = path.join(
@@ -225,6 +227,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
     menuHtml = await fsPromises.readFile(menuPath, 'utf-8');
   }
 
+  // 🔥 ОПТИМИЗАЦИЯ №2: Теперь цикл работает исключительно в памяти с готовыми шаблонами
   if (fs.existsSync(tempDestPath)) {
     const files = await fsPromises.readdir(tempDestPath);
     for (const file of files) {
@@ -321,7 +324,6 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
       const finalArticlePath = path.join(tempDestPath, cleanFileName);
       await fsPromises.writeFile(finalArticlePath, finalPageHtml, 'utf-8');
 
-      // 🔥 Исправлено: Безопасное точечное удаление только временных файлов .docx без риска задеть системный кэш
       if (ext === '.docx') {
         const tempFilePath = path.join(tempDestPath, file);
         if (fs.existsSync(tempFilePath)) {

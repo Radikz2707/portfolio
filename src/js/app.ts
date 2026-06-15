@@ -15,6 +15,7 @@ import { blogSidebar } from '../components/blog-sidebar/blog-sidebar';
 import { contacts } from '../components/contacts/contacts';
 import { footer } from '../components/footer/footer';
 import { main } from '../components/main/main';
+import { themeToggle } from './modules/theme-toggle/theme-toggle';
 
 // ==========================================
 // ВЫЗОВЫ ФУНКЦИЙ (В порядке их инициализации)
@@ -63,3 +64,5 @@ document.addEventListener('keydown', (e: KeyboardEvent): void => {
     e.preventDefault();
   }
 });
+
+themeToggle();

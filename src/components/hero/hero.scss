@@ -21,7 +21,7 @@
     font-size: clamp(32px, 5vw, 56px); // Адаптивный размер шрифта
     font-weight: 800;
     line-height: 1.2;
-    color: #f8fafc; // Белоснежный цвет
+     color: v.$color-text-muted;
   }
 
   &__subtitle {

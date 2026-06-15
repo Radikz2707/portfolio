@@ -87,20 +87,32 @@ const runTask = (taskName) => {
 // =========================================================================
 const createDynamicContentTask = (folderName) => {
   return (done) => {
-    // 🔥 ИСПРАВЛЕНО: Используем массив путей для поддержки исключающих масок
     const sourcePath = [
-      path.join(config.srcFolder, 'content', folderName, '**', '*.{md,txt,rtf,docx}')
+      path.join(
+        config.srcFolder,
+        'content',
+        folderName,
+        '**',
+        '*.{md,txt,rtf,docx}',
+      ),
     ];
 
-    // 🔥 ИСКЛЮЧАЕМ ИНДЕКСНЫЕ ФАЙЛЫ (index.md, index.txt и т.д.)
-    // Чтобы они не перезаписывали готовые index.html в dist/
     if (folderName === 'blog') {
-      sourcePath.push('!' + path.join(config.srcFolder, 'content', folderName, 'index.{md,txt,rtf,docx}'));
+      sourcePath.push(
+        '!' +
+          path.join(
+            config.srcFolder,
+            'content',
+            folderName,
+            'index.{md,txt,rtf,docx}',
+          ),
+      );
     }
 
     const tempDestPath = path.join(config.buildFolder, folderName);
 
-    src(sourcePath, { allowEmpty: true, encoding: false })
+    // 🔥 ИСПРАВЛЕНО: Добавляем ключевое слово return, чтобы стрим нативно возвращался в Gulp-поток
+    return src(sourcePath, { allowEmpty: true, encoding: false })
       .pipe(
         plumber({
           errorHandler: (err) => {
@@ -115,7 +127,7 @@ const createDynamicContentTask = (folderName) => {
         wrapInMasterLayout(tempDestPath, folderName)
           .then(() => {
             bs.reload();
-            done();
+            done(); // Сигнализируем об успешном асинхронном завершении рендеринга мастер-шаблона
           })
           .catch((err) => done(err));
       });
@@ -133,17 +145,12 @@ const runAllContentTasks = (done) => {
   if (dynamicContentFolderNames.length === 0) return done();
 
   try {
+    // 🔥 ИСПРАВЛЕНО: Прямо маппим папки в готовые к исполнению Gulp-функции
     const contentTasks = dynamicContentFolderNames.map((folderName) => {
-      return (taskDone) => {
-        try {
-          createDynamicContentTask(folderName)(taskDone);
-        } catch (err) {
-          console.error(`\x1b[31m[Content Task Error] ${folderName}: ${err.message}\x1b[0m`);
-          taskDone(err);
-        }
-      };
+      return createDynamicContentTask(folderName);
     });
 
+    // Нативно запускаем параллельное выполнение, которое теперь четко знает, когда финиш
     return parallel(...contentTasks)(done);
   } catch (err) {
     console.error(`\x1b[31m[Content Tasks Error]: ${err.message}\x1b[0m`);
@@ -183,7 +190,10 @@ export default series(
   help,
   // 1. Сначала подготавливаем критические ресурсы: шрифты и фавиконки
   series(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
-  // 2. Только после создания favicon-links.html запускаем параллельную сборку всего остального
+
+  // 2. 🔥 ИСПРАВЛЕНО ПОД МАКСИМАЛЬНЫМ КОНТРОЛЕМ:
+  // Запускаем ВСЕ задачи генерации страниц, картинок и копирования в едином параллельном пуле.
+  // Это полностью уничтожает блокировку диска (I/O Deadlock) между тасками!
   parallel(
     runTask('styles'),
     runTask('scripts'),
@@ -191,11 +201,13 @@ export default series(
     runTask('createWebp'),
     runTask('sprite'),
     runTask('faviconsDev'),
-    runTask('html'), // Теперь этот плагин гарантированно найдет файл!
+    runTask('html'),
     blogIndex,
+    runAllContentTasks, // Перенесли внутрь параллельного пула
+    buildcopy, // Перенесли внутрь параллельного пула
   ),
-  runAllContentTasks,
-  buildcopy,
+
+  // 3. И только когда вся сборка на 100% завершена — поднимаем сервер и включаем вотчеры
   parallel(browsersync, startwatch),
 );
 
@@ -210,7 +222,6 @@ export {
   lintJs,
   lintCss,
 };
-
 
 // Передаем ленивую обертку наружу для консоли Gulp
 export const favs = runTask('favs');

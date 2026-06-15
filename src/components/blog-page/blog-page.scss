@@ -1,10 +1,16 @@
-@use '../../scss/base/vars' as v;
+@use "../../scss/base/vars" as v;
 
+// Главный класс страницы блога
 .page-blog {
-  color: #f8fafc !important;
-  background-color: #0f172a !important;
-  background-image: radial-gradient(circle at top right, rgb(99 102 241 / 7%), transparent 600px),
-                    radial-gradient(circle at bottom left, rgb(168 85 247 / 4%), transparent 600px) !important;
+  color: v.$color-text-main; // 🔥 Исправлено: Автоматически меняет цвет текста
+  background-color: v.$bg-deep-blue; // 🔥 Исправлено: Станет светлым Slate 50 на светлой теме
+
+  // Сохраняем ваши красивые фирменные радиальные градиенты на фоне
+  background-image:
+    radial-gradient(circle at top right, rgb(99 102 241 / 7%), transparent 600px),
+    radial-gradient(circle at bottom left, rgb(168 85 247 / 4%), transparent 600px);
+
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .blog-page {
@@ -13,44 +19,43 @@
   padding-bottom: 60px;
 
   &__container {
-    // Стили, которые мы убрали из инлайна контейнера
     width: 100%;
     padding: 0 15px;
   }
 
   &__layout {
-    // Стили центрирования сетки
     display: flex;
     gap: 30px;
     justify-content: center;
   }
 
   &__main-content {
-    // Ограничение ширины карточки, чтобы она не растягивалась на весь монитор
     flex: 1;
     width: 100%;
     max-width: 800px;
   }
 }
 
-// Премиальные стили самой карточки публикаций
+// Премиальные стили карточки списка публикаций
 .blog-sidebar {
   display: block;
   width: 100%;
   padding: 40px;
-  background: rgb(30 41 59 / 70%);
-  border: 1px solid rgb(255 255 255 / 5%);
+  background: v.$bg-card; // 🔥 Исправлено: Карточка станет БЕЛОЙ в светлой теме!
+  border: 1px solid rgba(v.$color-text-muted, 0.15); // Адаптивная аккуратная рамка
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgb(0 0 0 / 30%);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 15%); // Смягчили тень для светлой темы
   backdrop-filter: blur(12px);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 
   &__title {
     margin-bottom: 25px;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #fff;
+    color: v.$color-text-main; // 🔥 Исправлено: Заголовок "ВCЕ ПУБЛИКАЦИИ" станет темным
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    transition: color 0.3s ease;
   }
 
   &__list {
@@ -73,18 +78,18 @@
     padding: 20px 24px;
     overflow: hidden;
     font-size: 1.1rem;
-    font-weight: 500;
-    color: #e2e8f0;
+    font-weight: 700;
+    color: v.$color-text-main; // 🔥 Исправлено: Названия статей в обычном состоянии будут серыми
     text-decoration: none;
-    background: rgb(255 255 255 / 2%);
-    border: 1px solid rgb(255 255 255 / 3%);
+    background: v.$bg-dark; // 🔥 Исправлено: Строка статьи будет контрастной подложке
+    border: 1px solid rgba(v.$color-text-main, 0.1);
     border-radius: 12px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     &::after {
       position: absolute;
       right: 24px;
-      color: #6366f1;
+      color: v.$color-accent;
       content: '→';
       opacity: 0;
       transform: translateX(-10px);
@@ -93,7 +98,7 @@
 
     &:hover {
       padding-left: 32px;
-      color: #fff;
+      color: v.$color-accent; // 🔥 Исправлено: Текст станет сочным и читаемым при ховере
       background: rgb(99 102 241 / 8%);
       border-color: rgb(99 102 241 / 40%);
       box-shadow: 0 8px 20px rgb(99 102 241 / 15%);
