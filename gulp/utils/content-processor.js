@@ -10,7 +10,6 @@ import { Transform } from 'stream';
 
 const { src } = gulp;
 
-// Асинхронное чтение первой строчки файла (без блокировки потока)
 const getFirstLineOfFile = async (filePath) => {
   try {
     const fileStream = fs.createReadStream(filePath, 'utf-8');
@@ -38,9 +37,6 @@ export const parsePlainText = (content) => {
   return content.replace(/<?[^>]+(>|$)/g, '').trim();
 };
 
-// =========================================================================
-// 📑 1. АСИНХРОННАЯ ГЕНЕРАЦИЯ ССЫЛОК САЙДБАРА (БЕЗ БЛОКИРОВКИ EVENT LOOP)
-// =========================================================================
 export const generateSidebarLinks = async (folderName) => {
   const dirPath = path.join(config.srcFolder, 'content', folderName);
   if (!fs.existsSync(dirPath)) return '';
@@ -79,12 +75,12 @@ export const generateSidebarLinks = async (folderName) => {
       title = title.charAt(0).toUpperCase() + title.slice(1);
     }
 
-    linksHtml += ` <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
+    linksHtml += `  <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
   }
   return linksHtml;
 };
 
-// Экранирование специальных HTML-символов внутри блоков pre и code
+// 🔥 Исправлено: Корректное регулярное выражение [\s\S]*? и замена на HTML-мнемоники &lt; и &gt;
 const escapeCodeBlocks = (html) => {
   if (!html) return '';
   return html
@@ -107,17 +103,12 @@ const escapeCodeBlocks = (html) => {
 export const processHtmlContent = (html, pathPrefix) => {
   if (!html) return '';
   let processedHtml = html
-    // 🔥 Исправлено: Экранируем точку и слэш \.\/ чтобы искать строку src="./"
     .replace(/src="\.\//gi, `src="${pathPrefix}images/`)
-    // 🔥 Исправлено: Экранируем слэш \/ чтобы искать строку src="images/"
     .replace(/src="images\//gi, `src="${pathPrefix}images/`);
   processedHtml = escapeCodeBlocks(processedHtml);
   return processedHtml;
 };
 
-// =========================================================================
-// ⚙️ 2. КОМПИЛЯТОР КОНТЕНТА (NATIVE GULP 5 TRANSFORM)
-// =========================================================================
 export const compileContentStream = () => {
   return new Transform({
     objectMode: true,
@@ -127,9 +118,19 @@ export const compileContentStream = () => {
         if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
           try {
             const stream = markdown();
+
+            // 🔥 Исправлено: Перехватываем ошибки самого компилятора, чтобы не вешать watcher Gulp
+            stream.on('error', (err) => {
+              console.error(
+                `[Markdown Сritical Error] ${file.relative}:`,
+                err.message,
+              );
+              callback(null, file);
+            });
+
             stream.on('data', (updatedFile) => {
               file.contents = updatedFile.contents;
-              file.path = file.path.replace(/\.(md|txt|rtf)$/i, '.html');
+              file.path = file.path.replace(/\.(md|txt|rtf)/i, '.html');
             });
             stream.on('end', () => {
               callback(null, file);
@@ -153,9 +154,6 @@ export const compileContentStream = () => {
   });
 };
 
-// =========================================================================
-// 🎨 3. ОБЕРТКА СТАТЕЙ В ШАБЛОН С ПОЛНЫМ ИМПОРТОМ ХЕДЕРА И ФУТЕРА
-// =========================================================================
 export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   const folderName = rawFolderName.toLowerCase();
   const sidebarLinks = await generateSidebarLinks(folderName);
@@ -184,8 +182,6 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
     'utf-8',
   );
 
-  // Асинхронно считываем фавиконки
-  // Асинхронно считываем фавиконки
   const faviconLinksPath = path.join(
     config.srcFolder,
     'parts',
@@ -196,7 +192,6 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
     faviconLinksHtml = await fsPromises.readFile(faviconLinksPath, 'utf-8');
   }
 
-  // Считываем файлы шапки сайта
   const headerPath = path.join(
     config.srcFolder,
     'components',
@@ -208,7 +203,6 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
     headerHtml = await fsPromises.readFile(headerPath, 'utf-8');
   }
 
-  // Считываем файлы подвала сайта
   const footerPath = path.join(
     config.srcFolder,
     'components',
@@ -220,7 +214,6 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
     footerHtml = await fsPromises.readFile(footerPath, 'utf-8');
   }
 
-  // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Считываем файл меню навигации, чтобы убрать серый текст
   const menuPath = path.join(
     config.srcFolder,
     'components',
@@ -270,11 +263,10 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
         continue;
       }
 
-      const pageTitle = cleanFileName.replace('.html', '').replace(/-/g, ' ');
+      const pageTitle = path.basename(file, ext).replace(/-/g, ' ');
       const capitalizedTitle =
         pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
 
-      // 1. Собираем финальную разметку из всех шаблонов и инклудов
       let finalPageHtml = articleTemplate
         .replace('@@title', capitalizedTitle)
         .replace('@@content', rawHtml)
@@ -297,7 +289,6 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
         )
         .replace(/SITE_NAME/gi, config.siteName || 'Radik.Dev');
 
-      // 2. Корректируем относительные ссылки навигационного меню
       const pathPrefix = '../';
       finalPageHtml = finalPageHtml
         .replace(
@@ -321,24 +312,21 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
           `href="${pathPrefix}index.html#contacts"`,
         );
 
-      // 🔥 УЛЬТИМАТИВНЫЙ ПЕРЕХВАТ ПУТЕЙ ФАВИКОНОК ДЛЯ ВЛОЖЕННЫХ СТАТЕЙ
-      // Находит абсолютно любое упоминание images/favicons/ внутри href и превращает в ../images/favicons/
       finalPageHtml = finalPageHtml.replace(
         /href=["'](\.\/)?images\/favicons\//gi,
-        `href="${pathPrefix}images/favicons/`,
+        `href="${pathPrefix}images/favicons/"`,
       );
 
-      // 3. Корректируем относительные пути остальных картинок внутри контента статьи
       finalPageHtml = processHtmlContent(finalPageHtml, pathPrefix);
-
       const finalArticlePath = path.join(tempDestPath, cleanFileName);
       await fsPromises.writeFile(finalArticlePath, finalPageHtml, 'utf-8');
 
-      if (
-        ext === '.docx' ||
-        path.basename(file, ext) !== cleanFileName.replace('.html', '')
-      ) {
-        await fsPromises.unlink(path.join(tempDestPath, file));
+      // 🔥 Исправлено: Безопасное точечное удаление только временных файлов .docx без риска задеть системный кэш
+      if (ext === '.docx') {
+        const tempFilePath = path.join(tempDestPath, file);
+        if (fs.existsSync(tempFilePath)) {
+          await fsPromises.unlink(tempFilePath);
+        }
       }
     }
   }
