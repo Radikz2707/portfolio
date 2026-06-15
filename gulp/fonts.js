@@ -18,54 +18,71 @@ export function fonts(done) {
     return done();
   }
 
-  return (
-    src(config.paths.fonts.src, { encoding: false, allowEmpty: true })
-      .pipe(plumber({ errorHandler: onError }))
-      .pipe(fonter({ formats: ['woff'] }))
-      .pipe(dest(config.paths.fonts.dest))
-      // 🔥 Исправлено: Динамически берем путь к TTF из gulp.config.js вместо хардкода папки
-      .pipe(src(config.paths.fonts.src, { encoding: false, allowEmpty: true }))
-      .pipe(ttf2woff2())
-      .pipe(dest(config.paths.fonts.dest))
-      .on('end', () => {
-        bs.reload();
-        done();
-      })
-      .on('error', (err) => {
-        console.error('Ошибка при обработке шрифтов:', err);
-        bs.reload();
-        done();
-      })
-  );
+  return src(config.paths.fonts.src, { encoding: false, allowEmpty: true })
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(fonter({ formats: ['woff'] }))
+    .pipe(dest(config.paths.fonts.dest))
+    .pipe(src(config.paths.fonts.src, { encoding: false, allowEmpty: true }))
+    .pipe(ttf2woff2())
+    .pipe(dest(config.paths.fonts.dest))
+    .on('end', () => {
+      bs.reload();
+      done();
+    })
+    .on('error', (err) => {
+      console.error('Ошибка при обработке шрифтов:', err);
+      bs.reload();
+      done();
+    });
 }
 
 export function fontsStyle(done) {
-  const extension = config.preprocessor === 'sass' ? 'sass' : 'scss';
+  const rawProcessor = (config.preprocessor || 'scss').toLowerCase();
+
+  let stylesDirName = rawProcessor;
+  if (
+    rawProcessor === 'sass' &&
+    fs.existsSync(path.join(config.srcFolder, 'scss'))
+  ) {
+    stylesDirName = 'scss';
+  }
+
+  const extension = stylesDirName;
   const fontsFile = path.join(
     config.srcFolder,
-    config.preprocessor,
+    stylesDirName,
     'base',
     `_fonts.${extension}`,
   );
+  const mainStyleFile = path.join(
+    config.srcFolder,
+    stylesDirName,
+    `style.${extension}`,
+  );
 
-  if (!fs.existsSync(config.paths.fonts.dest)) return done();
+  const sourceFontsDir = path
+    .dirname(config.paths.fonts.src)
+    .replace(/\*\*$/, '');
+  if (!fs.existsSync(sourceFontsDir)) return done();
 
   const files = fs
-    .readdirSync(config.paths.fonts.dest)
-    .filter((file) => file.endsWith('.woff2'));
+    .readdirSync(sourceFontsDir)
+    .filter((file) => file.endsWith('.ttf'));
   if (files.length === 0) return done();
+
+  const baseDir = path.dirname(fontsFile);
+  if (!fs.existsSync(baseDir)) {
+    fs.mkdirSync(baseDir, { recursive: true });
+  }
 
   fs.writeFileSync(fontsFile, '');
 
   files.forEach((file) => {
     const fontFileName = path.basename(file, path.extname(file));
-
-    // 🔥 Исправлено: Улучшенное регулярное выражение для корректного сохранения составных имен вроде "Open-Sans" или "Ubuntu-Condensed"
     const fontName = fontFileName.replace(
       /-(thin|extralight|light|regular|medium|semibold|bold|extrabold|heavy|black|italic)/gi,
       '',
     );
-
     const fontInfo = fontFileName.toLowerCase();
 
     let fontWeight = 400;
@@ -86,5 +103,40 @@ export function fontsStyle(done) {
   });
 
   console.log(`📝 Файл _fonts.${extension} успешно обновлен.`);
+
+  // 🔥 АВТОМАТИЗАЦИЯ ИМПОРТА С УЧЕТОМ ТОТАЛЬНОГО ПРИОРИТЕТА @USE
+  if (fs.existsSync(mainStyleFile)) {
+    let mainStyleContent = fs.readFileSync(mainStyleFile, 'utf-8');
+    const importDirective = `@import "base/fonts";`;
+
+    if (
+      !mainStyleContent.includes(importDirective) &&
+      !mainStyleContent.includes('base/fonts')
+    ) {
+      const lines = mainStyleContent.split('\n');
+      let lastUseIndex = -1;
+
+      // 🔥 Находим индекс САМОЙ ПОСЛЕДНЕЙ строки @use в файле, включая компоненты
+      lines.forEach((line, index) => {
+        if (line.trim().startsWith('@use')) {
+          lastUseIndex = index;
+        }
+      });
+
+      if (lastUseIndex !== -1) {
+        // Вставляем импорт шрифтов строго под самым последним @use на сайте
+        lines.splice(lastUseIndex + 1, 0, importDirective);
+        mainStyleContent = lines.join('\n');
+      } else {
+        mainStyleContent = `${importDirective}\n${mainStyleContent}`;
+      }
+
+      fs.writeFileSync(mainStyleFile, mainStyleContent);
+      console.log(
+        `🚀 Импорт _fonts.${extension} автоматически добавлен после всех правил @use в style.${extension}`,
+      );
+    }
+  }
+
   done();
 }
