@@ -39,50 +39,26 @@ export async function cleandist(done) {
   }
 }
 
-// 🔤 2. БЕЗОПАСНОЕ КОПИРОВАНИЕ ШРИФТОВ В DIST С ПОЛНЫМ КОНТРОЛЕМ PROMISE
+// 🔤 2. БЕЗОПАСНОЕ КОПИРОВАНИЕ ШРИФТОВ В DIST (БЕЗ ТЯЖЕЛЫХ ИСХОДНИКОВ TTF)
 export function buildcopy(done) {
-  const srcFontsFolder = path.join(config.srcFolder, 'fonts');
+  // 🔥 Направляем Gulp строго на готовые скомпилированные шрифты, полностью минуя папку src/
+  const srcFontsFolder = path.join(config.srcFolder, 'fonts', '*.{woff,woff2}');
   const srcList = [];
 
-  if (fs.existsSync(srcFontsFolder)) {
-    srcList.push(path.join(srcFontsFolder, '**', '*'));
+  if (fs.existsSync(path.join(config.srcFolder, 'fonts'))) {
+    srcList.push(srcFontsFolder);
   }
 
-  // 🔥 ОПТИМИЗАЦИЯ ПОД МАКСИМАЛЬНЫМ КОНТРОЛЕМ:
-  // Сначала асинхронно создаем служебный файл .nojekyll через встроенные промисы Node.js
-  return fs.promises
-    .mkdir(config.buildFolder, { recursive: true })
-    .then(() =>
-      fs.promises.writeFile(path.join(config.buildFolder, '.nojekyll'), ''),
-    )
-    .then(() => {
-      // Только после того, как файл успешно записался на диск, запускаем Gulp-стрим копирования
-      if (srcList.length === 0) {
-        // Если шрифтов нет — просто сигнализируем Gulp о завершении
-        return Promise.resolve();
-      }
+  // Если готовых шрифтов нет — мгновенно выходим без задержек
+  if (srcList.length === 0) return done();
 
-      return new Promise((resolve, reject) => {
-        const pipeline = [
-          src(srcList, {
-            allowEmpty: true,
-            encoding: false,
-            base: config.srcFolder,
-          }),
-          plumber({ errorHandler: onError }),
-          dest(config.buildFolder),
-        ];
+  const pipeline = [
+    src(srcList, { allowEmpty: true, encoding: false, base: config.srcFolder }),
+    plumber({ errorHandler: onError }),
+    dest(config.buildFolder),
+  ];
 
-        pipeline
-          .reduce((stream, plugin) => stream.pipe(plugin))
-          .on('end', resolve) // Нативно разрешаем Promise при завершении стрима
-          .on('error', reject); // Перехватываем ошибки
-      });
-    })
-    .catch((err) => {
-      console.error('Ошибка в таске buildcopy:', err);
-      done();
-    });
+  return pipeline.reduce((stream, plugin) => stream.pipe(plugin));
 }
 
 // 📦 3. АРХИВИРОВАНИЕ СБОРКИ (ZIP)
