@@ -20,10 +20,10 @@
 
 // ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
 @use '../js/modules/scroll-to-top/scroll-to-top' as *;
-@import "base/fonts";
+@import 'base/fonts';
 
 body {
-   font-family: v.$font-main;
+  font-family: v.$font-main;
   user-select: none;
   background-color: v.$bg-dark;
 }
