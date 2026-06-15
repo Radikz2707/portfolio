@@ -126,11 +126,28 @@ export const sharpCompressor = (options = {}) => {
         file.contents = await pipeline.toBuffer();
         callback(null, file);
       } catch (err) {
+        // 🔥 Проверяем, запущен ли финальный билд (production)
+        const isProd =
+          process.env.NODE_ENV === 'production' ||
+          process.argv.includes('--prod') ||
+          process.argv.includes('build');
+
         console.error(
-          `[Sharp Error] Ошибка файла ${file.relative}:`,
+          `\x1b[31m[Sharp Critical Error] Ошибка файла ${file.relative}:\x1b[0m`,
           err.message,
         );
-        callback(null, file);
+
+        if (isProd) {
+          // Жестко останавливаем билд продакшена, чтобы битая картинка не улетела на хостинг
+          callback(
+            new Error(
+              `[Sharp] Сборка остановлена из-за поврежденного изображения: ${file.relative}`,
+            ),
+          );
+        } else {
+          // В режиме разработки (dev) просто пропускаем файл, чтобы сервер не падал
+          callback(null, file);
+        }
       }
     },
   });
