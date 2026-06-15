@@ -5,9 +5,12 @@ export const header = (): void => {
   if (!headerElement) return;
 
   const toggleHeaderScroll = (): void => {
-    if (window.scrollY > 20) {
+    const isScrolled = window.scrollY > 20;
+
+    // 🔥 Исправлено: Мутируем DOM только в момент реального изменения состояния
+    if (isScrolled && !headerElement.classList.contains('_scroll')) {
       headerElement.classList.add('_scroll');
-    } else {
+    } else if (!isScrolled && headerElement.classList.contains('_scroll')) {
       headerElement.classList.remove('_scroll');
     }
   };
