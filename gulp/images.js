@@ -13,10 +13,11 @@ import { sharpCompressor } from './utils.js';
 const { src, dest } = gulp;
 
 const imageSources = [
-  `${config.srcFolder}/images/**/*`,
-  `!${config.srcFolder}/images/src/favicon.png`,
-  `!${config.srcFolder}/images/favicon.png`,
-  `!${config.srcFolder}/images/favicons/**/*`,
+  // 🔥 Направляем Gulp строго на контентные картинки корня, игнорируя служебные подпапки
+  `${config.srcFolder}/images/*.*`,
+  // 🔥 Разрешаем заходить в любые другие папки контента (например, images/blog, images/projects), кроме системных
+  `${config.srcFolder}/images/!(src|favicons)/**/*`,
+  // Компоненты верстки оставляем без изменений
   `${config.srcFolder}/components/**/img/**/*.{jpg,jpeg,png,svg,webp,gif}`,
 ];
 
@@ -53,6 +54,12 @@ export function imagesDev() {
     const pipeline = [
       src(imageSources, gulp5Options),
       plumber({ errorHandler: onError }),
+      // 🔥 Исправлено под максимальным контролем: кэшируем картинки в режиме dev,
+      // чтобы на диск копировались только новые или измененные изображения
+      newer({
+        dest: config.paths.images.dest,
+        map: (relative) => path.basename(relative),
+      }),
       flatten(),
       dest(config.paths.images.dest),
     ];
