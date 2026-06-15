@@ -107,9 +107,10 @@ const escapeCodeBlocks = (html) => {
 export const processHtmlContent = (html, pathPrefix) => {
   if (!html) return '';
   let processedHtml = html
+    // 🔥 Исправлено: Экранируем точку и слэш \.\/ чтобы искать строку src="./"
     .replace(/src="\.\//gi, `src="${pathPrefix}images/`)
+    // 🔥 Исправлено: Экранируем слэш \/ чтобы искать строку src="images/"
     .replace(/src="images\//gi, `src="${pathPrefix}images/`);
-
   processedHtml = escapeCodeBlocks(processedHtml);
   return processedHtml;
 };

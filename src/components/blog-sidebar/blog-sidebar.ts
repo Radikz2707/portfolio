@@ -2,7 +2,9 @@ export const blogSidebar = (): void => {
   console.log('Компонент боковой панели (TS) успешно инициализирован');
 
   // Находим все ссылки на статьи внутри нашего сайдбара
-  const sidebarLinks = document.querySelectorAll<HTMLElement>('.blog-sidebar__link');
+  const sidebarLinks = document.querySelectorAll<HTMLElement>(
+    '.blog-sidebar__link',
+  );
 
   // Получаем только имя текущего открытого HTML-файла (например, "why-gulp-ts.html")
   const currentFileName =
@@ -20,13 +22,18 @@ export const blogSidebar = (): void => {
       // 1. Подсвечиваем активную статью фиолетовым цветом и делаем жирнее
       link.style.color = '#6366f1';
       link.style.fontWeight = '700';
-
       // 2. БЛОКИРОВКА КЛИКА: меняем курсор на обычный и полностью отключаем кликабельность
       link.style.cursor = 'default';
       link.style.pointerEvents = 'none';
 
-      // На всякий случай удаляем сам href, чтобы ссылку нельзя было активировать с клавиатуры
-      link.removeAttribute('href');
+      // 🔥 Исправлено: Сохраняем фокус, блокируя переход программно
+      link.setAttribute('tabindex', '0');
+      link.addEventListener('click', (e) => e.preventDefault());
+      link.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+        }
+      });
 
       // 3. Добавляем атрибут для доступности
       link.setAttribute('aria-current', 'page');

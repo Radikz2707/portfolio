@@ -76,6 +76,7 @@ const runTask = (taskName) => {
   Object.defineProperty(gulpTaskWrapper, 'name', {
     value: taskName,
     writable: false,
+    configurable: true,
   });
 
   return gulpTaskWrapper;
