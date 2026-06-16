@@ -128,7 +128,7 @@ export function html() {
       `href="index.html#projects"`,
     ),
     replace(/href=["']\s*\/?GO_ABOUT\s*["']/gi, `href="index.html#about"`),
-    replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, `href="blog/index.html"`),
+    replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, `href="/blog/index.html"`),
     replace(
       /href=["']\s*\/?GO_CONTACTS?\s*["']/gi,
       'href="index.html#contacts"',

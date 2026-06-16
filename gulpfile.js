@@ -226,6 +226,8 @@ const compileAssets = parallel(
   runTask('sprite'),
 );
 
+const blogContent = createDynamicContentTask('blog');
+
 export const build = series(
   cleandist,
   parallel(
@@ -236,7 +238,9 @@ export const build = series(
     runTask('favs'),
     compileAssets,
   ),
-  // Сначала собираем ассеты, затем генерируем блог‑контент
+  // Сначала собираем контент блога из markdown
+  blogContent,
+  // Затем генерируем структуру блога (сайдбар и ссылки)
   blogIndex,
   // После готового контента собираем HTML
   parallel(runTask('html')),
@@ -249,7 +253,7 @@ export const build = series(
   },
 );
 
-const blogContent = createDynamicContentTask('blog');
+/* removed invalid comment */
 
 export default series(
   parallel(runTask('fonts'), runTask('fontsStyle')),
