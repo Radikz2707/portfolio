@@ -1,4 +1,5 @@
 import { config } from './gulp.config.js';
+import crypto from 'crypto';
 import gulp from 'gulp';
 import fs from 'fs';
 import path from 'path';
@@ -65,13 +66,23 @@ const runTask = (taskName) => {
       }
 
       const taskModule = loadedModules[fileName];
-      if (typeof taskModule[taskName] === 'function') {
-        return taskModule[taskName](done);
-      }
-      if (typeof taskModule.default === 'function') {
-        return taskModule.default(done);
-      }
-      done();
+if (typeof taskModule[taskName] === 'function') {
+  try {
+    return taskModule[taskName](done);
+  } catch (err) {
+    console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
+    return done(err);
+  }
+}
+if (typeof taskModule.default === 'function') {
+  try {
+    return taskModule.default(done);
+  } catch (err) {
+    console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
+    return done(err);
+  }
+}
+done();
     } catch (err) {
       console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
       done(err);
@@ -218,17 +229,17 @@ const compileAssets = parallel(
 export const build = series(
   cleandist,
   parallel(
-    lintCss,
-    lintJs,
+    // Запускаем линтеры только в продакшн‑режиме
+    ...(isProd ? [lintCss, lintJs] : []),
     runTask('fonts'),
     runTask('fontsStyle'),
     runTask('favs'),
     compileAssets,
-    blogIndex, // Перенесли сюда, теперь блог парсится одновременно со стилями и картинками
   ),
-  parallel(
-    runTask('html'), // HTML собирается сразу, как только готовы ассеты и блог
-  ),
+  // Сначала собираем ассеты, затем генерируем блог‑контент
+  blogIndex,
+  // После готового контента собираем HTML
+  parallel(runTask('html')),
   zipFiles,
   (done) => {
     console.log(

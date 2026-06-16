@@ -19,6 +19,7 @@ archives/
 *.log
 .DS_Store
 Thumbs.db
+.clinerules
 
 # Настройки локальных редакторов кода
 .vscode/

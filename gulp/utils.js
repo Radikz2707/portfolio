@@ -8,6 +8,8 @@ import zip from 'gulp-zip';
 import sharp from 'sharp';
 import { onError } from './server.js';
 import { Transform } from 'stream';
+import { createRequire } from 'module';
+import { exec } from 'node:child_process';
 
 const { src, dest } = gulp;
 
@@ -40,27 +42,35 @@ export async function cleandist(done) {
 
 // 📦 3. АРХИВИРОВАНИЕ СБОРКИ (ZIP)
 export function zipFiles() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const fileName = `dist_${year}-${month}-${day}_${hours}-${minutes}.zip`;
-  const pipeline = [
-    src(path.join(config.buildFolder, '**', '*'), {
-      allowEmpty: true,
-      encoding: false,
-    }),
-    plumber({ errorHandler: onError }),
-    zip(fileName),
-    dest('archives/'),
-  ];
-  return pipeline
-    .reduce((stream, plugin) => stream.pipe(plugin))
-    .on('end', () => {
-      console.log(`\n📦 [Gulp 5] Архив успешно создан: archives/${fileName}\n`);
-    });
+  return new Promise((resolve, reject) => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const fileName = `dist_${year}-${month}-${day}_${hours}-${minutes}.zip`;
+
+    const archiveDir = path.resolve('archives');
+    if (!fs.existsSync(archiveDir)) {
+      fs.mkdirSync(archiveDir, { recursive: true });
+    }
+
+    const srcPath = path.join(config.buildFolder, '**', '*');
+    src(srcPath, { allowEmpty: true })
+      .pipe(zip(fileName))
+      .pipe(dest(archiveDir))
+      .on('end', () => {
+        console.log(
+          `\n📦 [Gulp 5] Нативный архив успешно создан: archives/${fileName}\n`,
+        );
+        resolve();
+      })
+      .on('error', (err) => {
+        onError(err);
+        reject(err);
+      });
+  });
 }
 
 // 🛠️ 4. ПЛАГИН НА БАЗЕ SHARP ДЛЯ СЖАТИЯ И ОПТИМИЗАЦИИ

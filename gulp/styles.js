@@ -2,6 +2,7 @@ import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
 import plumber from 'gulp-plumber';
+import newer from 'gulp-newer';
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -29,6 +30,8 @@ export function styles() {
   const pipeline = [
     src(config.paths.styles.src, srcOptions),
     plumber({ errorHandler: onError }),
+    // Кешируем только изменённые файлы SCSS
+    newer({ dest: config.paths.styles.dest, ext: '.css' }),
   ];
 
   pipeline.push(

@@ -7,7 +7,7 @@ import fs from 'fs';
 const { watch, series } = gulp;
 export const bs = browserSync.create();
 
-export const isProd = process.argv.includes('build');
+export const isProd = process.env.NODE_ENV === 'production';
 
 // =========================================================================
 // 🎛️ 1. БЕЗОПАСНЫЙ ОБРАБОТЧИК ОШИБОК ДЛЯ ПОТОКОВ GULP 5 (STREAMX)
