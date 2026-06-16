@@ -53,16 +53,10 @@ function fixHtmlPaths() {
 
       // 🔥 ИСПРАВЛЕНО: Удаляем ведущий слэш у фавиконок на ВСЕХ страницах, включая главную!
       // Регулярное выражение ловит и /favicons/, и favicons/ и делает пути относительными
-      content = content.replace(
-        /(href=["']\s*)\/?images\/favicons\//gi,
-        (match, p1) => {
-          // Удаляем ведущий слэш и добавляем pathPrefix если нужно
-          // Если pathPrefix пустой (главная страница), путь будет "images/favicons/"
-          // Если в блоге, pathPrefix будет "../", путь станет "../images/favicons/"
-          const prefix = pathPrefix ? pathPrefix : '';
-          return `${p1}${prefix}images/favicons/`;
-        },
-      );
+content = content.replace(
+  /(href=["']\s*)\/?images\/favicons\//gi,
+  (match, p1) => `${p1}${pathPrefix}images/favicons/`,
+);
 
       file.contents = Buffer.from(content);
       cb(null, file);
