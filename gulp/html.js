@@ -23,40 +23,45 @@ function fixHtmlPaths() {
         return cb(null, file);
       }
 
+      // Вычисляем относительный префикс от текущего файла к корню src
       const srcRoot = config.srcFolder || 'src';
       const relativePath = path.relative(
         path.dirname(file.path),
         path.resolve(srcRoot),
       );
-      const pathPrefix = relativePath
-        ? relativePath.replace(/\\/g, '/') + '/'
-        : '';
+      const pathPrefix = relativePath ? relativePath.replace(/\\/g, '/') + '/' : '';
 
       let content = file.contents.toString();
 
-      const hasPrefix = (match, p1, p2) =>
-        p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`;
+      // Функция добавления префикса, если путь ещё не содержит его
+const addPrefix = (match, p1, p2) => {
+  // Для шаблонов статей (components/blog-article) всегда использовать ../
+  if (file.path.includes('components/blog-article')) {
+    const articlePrefix = '../';
+    return p2.startsWith(articlePrefix) ? match : `${p1}${articlePrefix}${p2}`;
+  }
+  return p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`;
+};
 
+      // Обрабатываем ссылки на CSS, JS и изображения
       content = content.replace(
         /(href=["']\s*)(css\/[^"']+\.css(?:\?[^"']*)?)/gi,
-        hasPrefix,
+        addPrefix,
       );
       content = content.replace(
         /(src=["']\s*)(js\/[^"']+\.js(?:\?[^"']*)?)/gi,
-        hasPrefix,
+        addPrefix,
       );
       content = content.replace(
         /((?:src|srcset)=["']\s*)(images\/[^"']+\.(?:png|jpg|jpeg|webp|svg|gif|ico))/gi,
-        (match, p1, p2) =>
-          p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`,
+        addPrefix,
       );
 
-      // 🔥 ИСПРАВЛЕНО: Удаляем ведущий слэш у фавиконок на ВСЕХ страницах, включая главную!
-      // Регулярное выражение ловит и /favicons/, и favicons/ и делает пути относительными
-content = content.replace(
-  /(href=["']\s*)\/?images\/favicons\//gi,
-  (match, p1) => `${p1}${pathPrefix}images/favicons/`,
-);
+      // Корректируем пути к фавиконам, делая их относительными
+      content = content.replace(
+        /(href=["']\s*)\/?images\/favicons\//gi,
+        (match, p1) => `${p1}${pathPrefix}images/favicons/`,
+      );
 
       file.contents = Buffer.from(content);
       cb(null, file);
