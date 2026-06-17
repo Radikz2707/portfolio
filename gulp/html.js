@@ -29,19 +29,23 @@ function fixHtmlPaths() {
         path.dirname(file.path),
         path.resolve(srcRoot),
       );
-      const pathPrefix = relativePath ? relativePath.replace(/\\/g, '/') + '/' : '';
+      const pathPrefix = relativePath
+        ? relativePath.replace(/\\/g, '/') + '/'
+        : '';
 
       let content = file.contents.toString();
 
       // Функция добавления префикса, если путь ещё не содержит его
-const addPrefix = (match, p1, p2) => {
-  // Для шаблонов статей (components/blog-article) всегда использовать ../
-  if (file.path.includes('components/blog-article')) {
-    const articlePrefix = '../';
-    return p2.startsWith(articlePrefix) ? match : `${p1}${articlePrefix}${p2}`;
-  }
-  return p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`;
-};
+      const addPrefix = (match, p1, p2) => {
+        // Для шаблонов статей (components/blog-article) всегда использовать ../
+        if (file.path.includes('components/blog-article')) {
+          const articlePrefix = '../';
+          return p2.startsWith(articlePrefix)
+            ? match
+            : `${p1}${articlePrefix}${p2}`;
+        }
+        return p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`;
+      };
 
       // Обрабатываем ссылки на CSS, JS и изображения
       content = content.replace(
@@ -107,7 +111,6 @@ const fixPictureTags = () => {
 // 🚀 3. ОСНОВНАЯ ТАСКА СБОРКИ HTML КОД КОРНЯ САЙТА
 // =======================================================================
 export function html() {
-  // Конвейер плагинов главной страницы (без лишних мутаций путей)
   const pipeline = [
     src([
       `${config.srcFolder}/*.html`,
@@ -116,21 +119,21 @@ export function html() {
       `!${config.srcFolder}/blog/**/*.html`,
     ]),
     plumber({ errorHandler: onError }),
-    fileInclude({
-      prefix: '@@',
-      basepath: 'src',
-      filters: {},
-      indent: true,
-    }),
-    replace(/href=["']\s*\/?GO_HOME\s*["']/gi, `href="index.html"`),
+    fileInclude({ prefix: '@@', basepath: 'src', filters: {}, indent: true }),
+
+    // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Новые всеядные регулярные выражения (символ слэша сделан необязательным)
+    replace(/href=["']\s*\/?\s*GO_HOME\s*["']/gi, 'href="index.html"'),
     replace(
-      /href=["']\s*\/?GO_PROJECTS\s*["']/gi,
-      `href="index.html#projects"`,
+      /href=["']\s*\/?\s*GO_PROJECTS\s*["']/gi,
+      'href="index.html#projects"',
     ),
-    replace(/href=["']\s*\/?GO_ABOUT\s*["']/gi, `href="index.html#about"`),
-    replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, `href="/blog/index.html"`),
+    replace(/href=["']\s*\/?\s*GO_ABOUT\s*["']/gi, 'href="index.html#about"'),
+
+    // Идеальный относительный путь, ловит и "/GO_BLOG", и "GO_BLOG"
+    replace(/href=["']\s*\/?\s*GO_BLOG\s*["']/gi, 'href="blog/index.html"'),
+
     replace(
-      /href=["']\s*\/?GO_CONTACTS?\s*["']/gi,
+      /href=["']\s*\/?\s*GO_CONTACTS?\s*["']/gi,
       'href="index.html#contacts"',
     ),
 

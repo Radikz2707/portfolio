@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Radik.Dev</title>
+    <link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">
+    <link rel="manifest" href="images/favicons/manifest.webmanifest">
+    <link rel="stylesheet" href="css/app.min.css" />
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <div class="header__container container">
+          <a href="../index.html" class="header__logo">Radik.Dev</a>
+
+          <!-- 🔥 ДОБАВЛЕНА СЕМАНТИЧЕСКАЯ КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМ ОФОРМЛЕНИЯ -->
+          <button class="theme-toggle-btn" aria-label="Включить светлую тему">
+            <!-- Иконка Луны (для темной темы) -->
+            <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <!-- Иконка Солнца (для светлой темы) -->
+            <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+
+          <!-- Выходим из папки header на уровень вверх к components/menu -->
+          <nav class="menu">
+            <div class="menu__body">
+              <ul class="menu__list">
+                <li class="menu__item">
+                  <a href="index.html" class="menu__link">Главная</a>
+                </li>
+                <li class="menu__item">
+                  <a href="index.html#projects" class="menu__link">Проекты</a>
+                </li>
+                <li class="menu__item">
+                  <a href="index.html#about" class="menu__link">Обо мне</a>
+                </li>
+                <li class="menu__item">
+                  <a href="/blog/index.html" class="menu__link">Блог</a>
+                </li>
+                <li class="menu__item">
+                  <a href="index.html#contacts" class="menu__link">Контакты</a>
+                </li>
+              </ul>
+            </div>
+          </nav>
+
+          <button type="button" class="menu__icon menu-icon" aria-label="Открыть меню">
+            <span></span>
+          </button>
+
+        </div>
+      </header>
+
+      <main class="main">
+        <section class="hero" id="hero">
+          <div class="hero__container container">
+            <h1 class="hero__title">Привет! Я Радик, Frontend Разработчик</h1>
+            <p class="hero__subtitle">
+              Создаю сверхбыстрые модульные сайты на Gulp 5, TypeScript и
+              БЭМ-архитектуре.
+            </p>
+            <a href="blog/why-gulp-ts.html" class="hero__btn">Читать мой блог</a>
+          </div>
+        </section>
+
+        <section class="projects-grid" id="projects">
+          <div class="projects-grid__container container">
+            <!-- Заголовок и подзаголовок секции -->
+            <h2 class="projects-grid__title element-reveal">Мои проекты</h2>
+            <p class="projects-grid__subtitle element-reveal">
+              Проекты, которые я разработал, используя современный стек технологий
+            </p>
+
+            <div class="projects-grid__wrapper">
+
+              <!-- ================================================================= -->
+              <!-- КАРТОЧКА ПРОЕКТА №1 (Для копирования) -->
+              <!-- ИНСТРУКЦИЯ ДЛЯ КОПИРОВАНИЯ: -->
+              <!-- 1. Скопируйте весь блок <article> ниже. -->
+              <!-- 2. Измените текст заголовка, тегов и технологий под новый проект. -->
+              <!-- 3. В атрибуте data-modal-trigger="..." укажите уникальный ID новой модалки (например: case-modal-3) -->
+              <!-- ================================================================= -->
+              <article class="projects-grid__card card-project element-reveal">
+                <div class="card-project__body">
+                  <span class="card-project__tag">Gulp + TS Stack</span>
+                  <h3 class="card-project__name">Личный Блог-Портфолио</h3>
+                  <p class="card-project__text">
+                    Сверхбыстрый статический сайт с автоматической генерацией страниц из
+                    Markdown и встроенным ИИ-помощником.
+                  </p>
+                  <div class="card-project__tech">
+                    <span>Gulp 5</span>
+                    <span>TypeScript</span>
+                    <span>BEM SCSS</span>
+                    <span>Webpack</span>
+                  </div>
+                  <!-- Менять data-modal-trigger при копировании под ID вашей модалки из modal.html -->
+                  <button type="button" data-modal-trigger="case-modal-1" class="card-project__link">
+                    Смотреть кейс &rarr;
+                  </button>
+                </div>
+              </article>
+
+              <!-- КАРТОЧКА ПРОЕКТА №2 (Унифицирована под общий стандарт тегов) -->
+              <article class="projects-grid__card card-project element-reveal">
+                <div class="card-project__body">
+                  <span class="card-project__tag">Landing Page</span>
+                  <h3 class="card-project__name">Адаптивная промо-страница</h3>
+                  <p class="card-project__text">
+                    Чистая семантическая верстка коммерческого проекта с идеальными
+                    показателями производительности Google PageSpeed.
+                  </p>
+                  <div class="card-project__tech">
+                    <span>HTML5</span>
+                    <span>SCSS</span>
+                    <span>JavaScript</span>
+                    <span>Pixel Perfect</span>
+                  </div>
+                  <!-- Если проект готов, замените data-modal-trigger на ID нужной модалки -->
+                  <button type="button" data-modal-trigger="case-modal-2" class="card-project__link">
+                    Смотреть кейс &rarr;
+                  </button>
+                </div>
+              </article>
+
+              <!-- ТУТ БУДЕТ ВАША КАРТОЧКА №3 (Просто вставьте скопированный блок сюда) -->
+
+            </div>
+          </div>
+        </section>
+
+        <section class="about-me" id="about">
+          <div class="about-me__container container">
+            <div class="about-me__grid">
+              <!-- Левая колонка: Текст о себе (выезжает слева) -->
+              <div class="about-me__content element-reveal-left">
+                <h2 class="about-me__title">О себе</h2>
+                <p class="about-me__text">
+                  Я занимаюсь Frontend-разработкой и специализируюсь на создании
+                  быстрых, чистых и архитектурно правильных интерфейсов. В работе
+                  использую компонентный подход и автоматизацию, что позволяет сдавать
+                  проекты вовремя и с идеальным качеством кода.
+                </p>
+                <p class="about-me__text">
+                  Этот сайт-портфолио я собрал на базе собственного кастомного
+                  Gulp-шаблона, полностью автоматизировав работу со статичным контентом
+                  и Markdown.
+                </p>
+              </div>
+
+              <!-- Правая колонка: Фото и стек технологий (заголовок выезжает снизу) -->
+              <div class="about-me__photo-wrapper element-reveal">
+                <img src="images/photo.jpg" alt="Radik" class="about-me__photo" />
+              </div>
+
+              <div class="about-me__skills skills-list element-reveal">
+                <h3 class="skills-list__title">Технологический стек</h3>
+                <div class="skills-list__items">
+                  <span class="skills-list__badge element-reveal">HTML5 & CSS3</span>
+                  <span class="skills-list__badge element-reveal">SCSS / SASS</span>
+                  <span class="skills-list__badge element-reveal">TypeScript</span>
+                  <span class="skills-list__badge element-reveal">JavaScript (ES6+)</span>
+                  <span class="skills-list__badge element-reveal">Gulp 5</span>
+                  <span class="skills-list__badge element-reveal">Webpack 5</span>
+                  <span class="skills-list__badge element-reveal">БЭМ</span>
+                  <span class="skills-list__badge element-reveal">Git / GitHub</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="contacts" id="contacts">
+          <div class="contacts__container container element-reveal">
+            <h2 class="contacts__title">Связаться со мной</h2>
+
+            <form class="contacts__form form" id="contact-form" novalidate>
+              <!-- Поле: Имя -->
+              <div class="form__group">
+                <label for="form-name" class="form__label">Ваше имя</label>
+                <input type="text" id="form-name" class="form__input" placeholder="Иван" autocomplete="name" />
+                <span class="form__error">Имя должно содержать не менее 2 символов</span>
+              </div>
+
+              <!-- Поле: Выбор способа связи (Трендовая фича в РФ) -->
+              <div class="form__group">
+                <label for="form-method" class="form__label">Удобный способ связи</label>
+                <select id="form-method" class="form__input form__select">
+                  <option value="telegram">Telegram (@username или ссылка)</option>
+                  <option value="phone">Телефон (Звонок / WhatsApp / Viber)</option>
+                  <option value="email">Электронная почта (Email)</option>
+                </select>
+              </div>
+
+              <!-- Поле: Контактные данные (динамическое) -->
+              <div class="form__group">
+                <label id="contact-label" for="form-contact" class="form__label">Ваш Telegram</label>
+                <input type="text" id="form-contact" class="form__input" placeholder="@username" />
+                <span class="form__error" id="contact-error">Введите корректный никнейм Telegram (начиная с @)</span>
+              </div>
+
+              <!-- Поле: Сообщение -->
+              <div class="form__group">
+                <label for="form-message" class="form__label">Суть проекта или предложение</label>
+                <textarea id="form-message" class="form__input form__input--textarea" placeholder="Привет! Нужен адаптивный лендинг..."></textarea>
+                <span class="form__error">Сообщение должно быть длиннее 10 символов</span>
+              </div>
+
+              <button type="submit" class="form__button">Отправить сообщение</button>
+            </form>
+          </div>
+        </section>
+
+      </main>
+
+      <footer class="footer">
+        <div class="container">
+          <div class="footer__wrapper">
+
+            <!-- Левая часть: Копирайт -->
+            <div class="footer__left">
+              <span class="footer__copy">&copy; 2026 Radik.Dev — Портфолио. Все права защищены.</span>
+              <p class="footer__subtitle">Создано с душой на Gulp 5, TypeScript и БЭМ.</p>
+            </div>
+
+            <!-- Правая часть: Ссылки на соцсети -->
+            <div class="footer__social social-links">
+              <ul class="social-links__list">
+                <li class="social-links__item">
+                  <!-- 🔥 ИСПРАВЛЕНО: Укажите вашу точную ссыл��у на Telegram-аккаунт или канал -->
+                  <a href="https://t.me" target="_blank" rel="noopener noreferrer" class="social-links__link">Telegram</a>
+                </li>
+                <li class="social-links__item">
+                  <!-- 🔥 ИСПРАВЛЕНО: Ссылка на профиль GitHub будет автоматически подставлена из config.repoName -->
+                  <a href="https://github.com/Radik/portfolio" target="_blank" rel="noopener noreferrer" class="social-links__link">GitHub</a>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </footer>
+
+    </div>
+
+    <section id="case-modal-1" class="modal" aria-hidden="true">
+      <!-- Оверлей (затемнение фона) ставим ПЕРЕД контейнером, чтобы размытие шло по всему экрану -->
+      <div class="modal__overlay" data-close></div>
+
+      <div class="modal__container container">
+        <div class="modal__window">
+          <!-- Кнопка Закрыть (Крестик) -->
+          <button type="button" class="modal__close" data-close aria-label="Закрыть окно">
+            <span></span>
+          </button>
+
+          <!-- Контент кейса портфолио -->
+          <div class="modal__content">
+            <h3 class="modal__title">Кейс: Разработка Radik.Dev</h3>
+            <p class="modal__text">
+              Собственное портфолио и блог, построенные на базе кастомного
+              модульного сборщика. В проекте реализована автоматическая генерация
+              страниц из Markdown, продвинутый роутинг якорных ссылок и сквозная
+              продакшен-оптимизация ресурсов.
+            </p>
+
+            <!-- Технологический стек -->
+            <div class="modal__tags">
+              <span class="modal__tag">Gulp 5</span>
+              <span class="modal__tag">TypeScript</span>
+              <span class="modal__tag">Webpack</span>
+              <span class="modal__tag">SCSS (BEM)</span>
+            </div>
+
+            <div class="modal__actions">
+              <a href="https://github.com/Radikz2707/portfolio" target="_blank" rel="noopener noreferrer" class="modal__btn modal__btn--primary">
+                Смотреть код на GitHub
+              </a>
+              <button type="button" class="modal__btn modal__btn--secondary" data-close>
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="js/vendor.min.js"></script>
+    <script src="js/app.min.js"></script>
+  </body>
+</html>

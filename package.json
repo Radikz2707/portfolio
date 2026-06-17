@@ -18,7 +18,9 @@
     "clean": "gulp cleandist",
     "update-modules": "npx npm-check-updates -i --no-cache && npm install --legacy-peer-deps",
     "prepare": "husky",
-    "deploy": "npm run build && npx gh-pages -d dist --dotfiles",
+    "push:main": "git add . && git commit -m \"Updates: $(date '+%Y-%m-%d %H:%M')\" && git push origin main",
+    "deploy:gh": "npm run build && npx gh-pages -d dist --dotfiles -f",
+    "deploy:hosting": "cross-env DEPLOY_TARGET=hosting npm run build && gulp deploy",
     "create-post": "node create-post.js",
     "audit": "node -e \"const fs = require('fs'); const path = require('path'); const glob = require('glob'); if (!fs.existsSync('.audit')) fs.mkdirSync('.audit'); const files = glob.sync('src/components/**/*.ts').concat(['gulpfile.js', 'gulp.config.js', 'gulp.create.js', 'gulp.init.js', 'gulp.module.js', 'gulp.remove.js', 'gulp.help.js', ...glob.sync('gulp/**/*.js')]); let result = ''; files.forEach(f => { if (fs.existsSync(f) && fs.statSync(f).isFile()) { result += `\\n=== FILE: ${f} ===\\n` + fs.readFileSync(f, 'utf8') + '\\n'; } }); fs.writeFileSync('.audit/audit.md', result, 'utf8');\"",
     "blueprint": "node -e \"const fs = require('fs'); const path = require('path'); const dir = path.join('.audit', 'project-blueprint'); if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); const ignore = new Set(['node_modules', 'dist', '.git', '.audit', 'archives', '.cache', '.tmp']); function buildTree(currentDir, prefix = '') { let output = ''; const files = fs.readdirSync(currentDir); const filtered = files.filter(f => !ignore.has(f)); filtered.forEach((file, index) => { const isLast = index === filtered.length - 1; const filePath = path.join(currentDir, file); const stat = fs.statSync(filePath); const marker = isLast ? '└── ' : '├── '; output += prefix + marker + file + '\\n'; if (stat.isDirectory()) { output += buildTree(filePath, prefix + (isLast ? '    ' : '│   ')); } }); return output; } const treeText = buildTree('.'); const mdContent = '# 🗺️ Архитектурный чертеж проекта Radik.Dev\\n\\n```text\\n. (root)\\n' + treeText + '```\\n'; fs.writeFileSync(path.join(dir, 'structure.md'), mdContent, 'utf8'); console.log('✅ Схема структуры успешно сгенерирована в .audit/project-blueprint/structure.md');\""
@@ -36,6 +38,7 @@
     "aos": "^2.3.4",
     "autoprefixer": "^10.5.0",
     "browser-sync": "^3.0.4",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "eslint": "10.5.0",
     "eslint-config-prettier": "^10.1.8",
