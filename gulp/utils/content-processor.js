@@ -56,14 +56,19 @@ export const generateSidebarLinks = async (folderName) => {
 
     if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
       title = await getFirstLineOfFile(filePath);
-    } else if (ext === '.docx') {
+    }
+    // 🔥 ИСПРАВЛЕНО: Парсим первую строчку из Word для генерации ссылки в сайдбаре
+    else if (ext === '.docx') {
       try {
         const docBuffer = await fsPromises.readFile(filePath);
         const result = await mammoth.extractRawText({ buffer: docBuffer });
         const textValue = result.value || '';
+
+        // 🔥 Строки отладки [DEBUG] удалены, чтобы не засорять терминал
         const firstLine = textValue
           .split(/\r?\n/)
           .find((line) => line.trim() !== '');
+
         if (firstLine) title = firstLine.trim();
       } catch (err) {
         console.log(`⚠️ Ошибка чтения заголовка DOCX ${file}:`, err);
@@ -75,6 +80,7 @@ export const generateSidebarLinks = async (folderName) => {
       title = title.charAt(0).toUpperCase() + title.slice(1);
     }
 
+    // 🔥 Оставляем ваш оригинальный HTML-шаблон ссылки со Страницы 2 без изменений
     linksHtml += `  <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
   }
   return linksHtml;
@@ -237,6 +243,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
       const cleanFileName = path.basename(file, ext) + '.html';
       let rawHtml = '';
 
+      // 🔥 ИСПРАВЛЕНО: Обрабатываем строго оригинальные .docx файлы контента
       if (ext === '.docx') {
         try {
           const originalDocxPath = path.join(
@@ -247,7 +254,15 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
           );
           if (fs.existsSync(originalDocxPath)) {
             const docBuffer = await fsPromises.readFile(originalDocxPath);
-            const result = await mammoth.convertToHtml({ buffer: docBuffer });
+
+            const options = {
+              styleMap: ['p:first-child => h1:fresh'],
+            };
+
+            const result = await mammoth.convertToHtml(
+              { buffer: docBuffer },
+              options,
+            );
             rawHtml = result.value || '';
           }
         } catch (err) {
@@ -258,11 +273,24 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
           continue;
         }
       } else if (ext === '.html') {
-        rawHtml = await fsPromises.readFile(
+        // 🔥 Читаем HTML-код статьи, скомпилированный из Markdown
+        const fileContent = await fsPromises.readFile(
           path.join(tempDestPath, file),
           'utf-8',
         );
+
+        // КРИТИЧЕСКАЯ ЗАЩИТА: Если файл уже содержит каркас (например, тег <body),
+        // значит он был собран ранее. Пропускаем его, чтобы избежать дублирования ссылок!
+        if (
+          fileContent.includes('<body') ||
+          fileContent.includes('blog-article')
+        ) {
+          continue;
+        }
+
+        rawHtml = fileContent;
       } else {
+        // Любые другие файлы (.gitkeep, картинки) просто пропускаем
         continue;
       }
 
@@ -272,7 +300,8 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
 
       let finalPageHtml = articleTemplate
         .replace('@@title', capitalizedTitle)
-        .replace('@@content', rawHtml)
+        // 🔥 ИСПРАВЛЕНО: Колбэк-функция защищает разметку от ложных срабатываний спецсимволов ($&) в тексте
+        .replace('@@content', () => rawHtml)
         .replace('@@sidebar', sidebarHtml)
         .replace(
           /@@include\s*\(\s*["']\s*parts\/favicon-links\.html\s*["']\s*\)/gi,

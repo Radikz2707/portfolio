@@ -9,6 +9,7 @@ import replace from 'gulp-replace';
 import path from 'path';
 import { onError, isProd, bs } from './server.js';
 import { Transform } from 'stream';
+import { generateSidebarLinks } from './utils/content-processor.js';
 
 const { src, dest } = gulp;
 
@@ -184,82 +185,49 @@ export function html() {
 // =======================================================================
 // 📑 4. СБОРКА ВСЕХ СТРАНИЦ БЛОГА С КОРРЕКТНЫМИ ОТНОСИТЕЛЬНЫМИ ПУТЯМИ
 // =======================================================================
-export function blogIndex() {
+export async function blogIndex() {
   const srcPath = path.join(config.srcFolder, 'blog', '**', '*.html');
-  const blogContentDir = path.join(config.srcFolder, 'content', 'blog');
-  let sidebarLinks = '';
+  const folderName = 'blog'; // Имя вашей папки с контентом
 
-  if (fs.existsSync(blogContentDir)) {
-    const files = fs.readdirSync(blogContentDir);
-    for (const file of files) {
-      const ext = path.extname(file).toLowerCase();
-      if (file.toLowerCase().startsWith('index.')) continue;
-      if (!['.md', '.txt', '.rtf', '.docx'].includes(ext)) continue;
+  // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Вместо ломающегося ручного цикла
+  // берем готовые отлаженные русские ссылки из процессора контента!
+  const sidebarLinks = await generateSidebarLinks(folderName);
 
-      const slug = path.basename(file, ext).toLowerCase();
-      // Попытка взять заголовок из первого заголовка Markdown‑файла
-      let title = (() => {
-        try {
-          const mdPath = path.join(blogContentDir, `${slug}${ext}`);
-          const mdContent = fs.readFileSync(mdPath, 'utf-8');
-          const firstLine = mdContent.split('\n')[0];
-          const match = firstLine.match(/^#\s+(.*)/);
-          if (match) {
-            return match[1].trim();
-          }
-        } catch (e) {
-          // Если чтение не удалось, будем использовать fallback
-        }
-        // fallback: генерировать из slug
-        const fallback = slug.replace(/-/g, ' ');
-        return fallback.charAt(0).toUpperCase() + fallback.slice(1);
-      })();
-      sidebarLinks += ` <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
-    }
-  }
-
-  return (
-    src([path.join(config.srcFolder, 'blog', '**', '*.html')], {
-      allowEmpty: true,
-    })
-      .pipe(plumber({ errorHandler: onError }))
-      .pipe(
-        fileInclude({
-          prefix: '@@',
-          basepath: 'src',
-          filters: {},
-          indent: true,
-        }),
-      )
-      .pipe(replace(/SITE_NAME/gi, config.siteName))
-      .pipe(replace(/SITE_AUTHOR/gi, config.repoPath))
-      .pipe(replace(/href=["']\s*\/?GO_HOME\s*["']/gi, 'href="../index.html"'))
-      .pipe(
-        replace(
-          /href=["']\s*\/?GO_PROJECTS\s*["']/gi,
-          'href="../index.html#projects"',
-        ),
-      )
-      .pipe(
-        replace(
-          /href=["']\s*\/?GO_ABOUT\s*["']/gi,
-          'href="../index.html#about"',
-        ),
-      )
-      .pipe(
-        replace(
-          /href=["']\s*\/?GO_CONTACTS\s*["']/gi,
-          'href="../index.html#contacts"',
-        ),
-      )
-
-      // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Удалены все ручные костыли путей.
-      // За всю адаптацию ресурсов (css, js, images, favicons) теперь отвечает ТОЛЬКО fixHtmlPaths()
-      .pipe(fixHtmlPaths())
-      .pipe(replace(/@@sidebar/g, sidebarLinks))
-      .pipe(dest(path.join(config.buildFolder, 'blog')))
-      .on('end', () => {
-        bs.reload();
-      })
-  );
+  // Оставляем ваш оригинальный рабочий поток с Гитхаба в полной неприкосновенности!
+  return src([path.join(config.srcFolder, 'blog', '**', '*.html')], {
+    allowEmpty: true,
+  })
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(
+      fileInclude({
+        prefix: '@@',
+        basepath: 'src',
+        filters: {},
+        indent: true,
+      }),
+    )
+    .pipe(replace(/SITE_NAME/gi, config.siteName))
+    .pipe(replace(/SITE_AUTHOR/gi, config.repoPath))
+    .pipe(replace(/href=["']\s*\/?GO_HOME\s*["']/gi, 'href="../index.html"'))
+    .pipe(
+      replace(
+        /href=["']\s*\/?GO_PROJECTS\s*["']/gi,
+        'href="../index.html#projects"',
+      ),
+    )
+    .pipe(
+      replace(/href=["']\s*\/?GO_ABOUT\s*["']/gi, 'href="../index.html#about"'),
+    )
+    .pipe(
+      replace(
+        /href=["']\s*\/?GO_CONTACTS\s*["']/gi,
+        'href="../index.html#contacts"',
+      ),
+    )
+    .pipe(fixHtmlPaths())
+    .pipe(replace(/@@sidebar/g, sidebarLinks)) // Вклеиваем русские ссылки
+    .pipe(dest(path.join(config.buildFolder, 'blog')))
+    .on('end', () => {
+      bs.reload();
+    });
 }

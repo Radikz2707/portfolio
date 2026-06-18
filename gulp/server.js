@@ -79,22 +79,25 @@ const dynamicRun = (moduleName, functionName) => {
 export function startwatch(done) {
   const watchOptions = { delay: 500, queue: true, ignoreInitial: true };
 
+  // Слежение за SCSS/CSS (Исправлено через dynamicRun)
   watch([`${config.srcFolder}/**/*.${config.scssExtension}`], watchOptions).on(
     'change',
     (filePath) => {
       console.log(`✨ [Style Change] Изменен: ${path.basename(filePath)}`);
-      gulp.series('styles')();
+      dynamicRun('styles', 'styles')(() => {});
     },
   );
 
+  // Слежение за Скриптами (Исправлено через dynamicRun)
   watch([`${config.srcFolder}/**/*.{js,ts}`], watchOptions).on(
     'change',
     (filePath) => {
       console.log(`✨ [Script Change] Изменен: ${path.basename(filePath)}`);
-      gulp.series('scripts')();
+      dynamicRun('scripts', 'scripts')(() => {});
     },
   );
 
+  // Слежение за HTML (Исправлено: вызывает blogIndex из html.js, релоадит вкладку и не падает!)
   watch(
     [
       `${config.srcFolder}/*.html`,
@@ -104,9 +107,15 @@ export function startwatch(done) {
     watchOptions,
   ).on('change', (filePath) => {
     console.log(`✨ [HTML Change] Изменен: ${path.basename(filePath)}`);
-    gulp.series('html')();
+    dynamicRun(
+      'html',
+      'blogIndex',
+    )(() => {
+      bs.reload();
+    });
   });
 
+  // Слежение за контентом Markdown / Word (Оставляем ваш оригинальный рабочий блок)
   watch([`${config.srcFolder}/content/**/*`], watchOptions).on(
     'change',
     (filePath) => {
@@ -138,6 +147,7 @@ export function startwatch(done) {
     },
   );
 
+  // Слежение за картинками (Исправлено)
   watch(
     [
       `${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,gif}`,
@@ -148,15 +158,16 @@ export function startwatch(done) {
     console.log(
       `🖼️ [Image Change] Добавлена картинка в компонент: ${path.basename(filePath)}`,
     );
-    gulp.series('imagesDev')();
+    dynamicRun('images', 'imagesDev')(() => {});
   });
 
+  // Слежение за SVG-спрайтами (Исправлено)
   if (config.paths?.images?.svg) {
     watch([config.paths.images.svg], watchOptions).on('change', (filePath) => {
       console.log(
         `🧬 [Sprite Change] Обновлена иконка: ${path.basename(filePath)}`,
       );
-      gulp.series('sprite')();
+      dynamicRun('images', 'sprite')(() => {});
     });
   }
 
