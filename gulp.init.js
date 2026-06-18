@@ -4,7 +4,7 @@ import { config } from './gulp.config.js';
 
 export function createStructure(done) {
   const srcFolder = config.srcFolder || 'src';
-  const preprocessor = config.preprocessor || 'scss';
+  const scssExtension = config.scssExtension || 'scss';
   const struct = config.structure;
 
   const zeroContent = `/* Обнуление (Zero Styles) */
@@ -62,7 +62,7 @@ console.log("Gulp + TypeScript работает!");`;
 
   const folders = [
     srcFolder,
-    path.join(srcFolder, preprocessor, 'base'),
+    path.join(srcFolder, scssExtension, 'base'),
     struct.components,
     struct.modules,
     struct.plugins,
@@ -83,11 +83,16 @@ console.log("Gulp + TypeScript работает!");`;
     { path: path.join(srcFolder, 'index.html'), content: indexHTML },
     { path: path.join(srcFolder, 'js', 'app.ts'), content: appJsContent },
     {
-      path: path.join(srcFolder, preprocessor, `style.${preprocessor}`),
+      path: path.join(srcFolder, scssExtension, `style.${scssExtension}`),
       content: styleSCSS,
     },
     {
-      path: path.join(srcFolder, preprocessor, 'base', `_zero.${preprocessor}`),
+      path: path.join(
+        srcFolder,
+        scssExtension,
+        'base',
+        `_zero.${scssExtension}`,
+      ),
       content: zeroContent,
     },
 
@@ -100,7 +105,7 @@ console.log("Gulp + TypeScript работает!");`;
 </header>`,
     },
     {
-      path: path.join(struct.components, 'header', `header.${preprocessor}`),
+      path: path.join(struct.components, 'header', `header.${scssExtension}`),
       content: '.header { padding: 20px; background: #f4f4f4; }',
     },
     {
@@ -119,7 +124,7 @@ console.log("Gulp + TypeScript работает!");`;
 </main>`,
     },
     {
-      path: path.join(struct.components, 'main', `main.${preprocessor}`),
+      path: path.join(struct.components, 'main', `main.${scssExtension}`),
       content: '.main { flex: 1 1 auto; padding: 40px 0; }',
     },
     {
@@ -138,7 +143,7 @@ console.log("Gulp + TypeScript работает!");`;
 </footer>`,
     },
     {
-      path: path.join(struct.components, 'footer', `footer.${preprocessor}`),
+      path: path.join(struct.components, 'footer', `footer.${scssExtension}`),
       content: '.footer { padding: 20px; background: #333; color: #fff; }',
     },
     {

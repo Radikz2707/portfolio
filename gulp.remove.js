@@ -67,7 +67,7 @@ const cleanStyleScss = (filePath, blockName) => {
     });
     return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n');
   });
-  console.log(`✂️ Стили удалены из style.${config.preprocessor}`);
+  console.log(`✂️ Стили удалены из style.${config.scssExtension}`);
 };
 
 const cleanIndexHtml = (filePath, blockName) => {
@@ -115,8 +115,8 @@ export const remove = (done) => {
   const mainJsPath = config.paths.scripts.src; // ИСПРАВЛЕНО: Динамический путь из конфигурации
   const mainScssPath = path.join(
     config.srcFolder,
-    config.preprocessor,
-    `style.${config.preprocessor}`,
+    config.scssExtension,
+    `style.${config.scssExtension}`,
   );
   const indexHtmlPath = path.join(config.srcFolder, 'index.html');
 

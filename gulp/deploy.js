@@ -2,15 +2,13 @@ import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
 import ftp from 'vinyl-ftp';
-import dotenv from 'dotenv'; // 🔥 ДОБАВЛЕНО: Для чтения файла .env
+import dotenv from 'dotenv';
 import { onError } from './server.js';
 
-// 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Активируем чтение переменных окружения
 dotenv.config();
 
 const { src } = gulp;
 
-// Настройки FTP со строгим сопоставлением с вашим файлом .env
 const ftpConfig = {
   host: process.env.FTP_HOST || 'your-hosting.com',
   user: process.env.FTP_USER || 'your_ftp_username',
@@ -19,7 +17,6 @@ const ftpConfig = {
 };
 
 export function deploy(done) {
-  // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Перехватываем дефолтные заглушки до старта сети
   const isNotConfigured =
     ftpConfig.host.includes('your-hosting.com') ||
     ftpConfig.host.includes('your-ftp-host.com') ||
@@ -40,7 +37,7 @@ export function deploy(done) {
   console.log(
     'Выгрузка ресурсов в dist/ завершена локально. Деплой на хостинг пропущен.',
   );
-  done(); // Безопасно завершаем задачу без зависания консоли
+  done();
   return;
 }
 
@@ -57,7 +54,7 @@ const conn = ftp.create({
 return src(path.join(config.buildFolder, '**', '*'), {
   base: config.buildFolder,
   buffer: false,
-  encoding: false, // Защита Gulp 5 от повреждения бинарных файлов (картинок) при передаче
+  encoding: false,
 })
   .pipe(conn.dest(ftpConfig.remotePath))
   .on('error', onError)

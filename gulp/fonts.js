@@ -37,7 +37,7 @@ export function fonts(done) {
 }
 
 export function fontsStyle(done) {
-  const rawProcessor = (config.preprocessor || 'scss').toLowerCase();
+  const rawProcessor = (config.scssExtension || 'scss').toLowerCase();
 
   let stylesDirName = rawProcessor;
   if (

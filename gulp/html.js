@@ -197,8 +197,23 @@ export function blogIndex() {
       if (!['.md', '.txt', '.rtf', '.docx'].includes(ext)) continue;
 
       const slug = path.basename(file, ext).toLowerCase();
-      let title = slug.replace(/-/g, ' ');
-      title = title.charAt(0).toUpperCase() + title.slice(1);
+      // Попытка взять заголовок из первого заголовка Markdown‑файла
+      let title = (() => {
+        try {
+          const mdPath = path.join(blogContentDir, `${slug}${ext}`);
+          const mdContent = fs.readFileSync(mdPath, 'utf-8');
+          const firstLine = mdContent.split('\n')[0];
+          const match = firstLine.match(/^#\s+(.*)/);
+          if (match) {
+            return match[1].trim();
+          }
+        } catch (e) {
+          // Если чтение не удалось, будем использовать fallback
+        }
+        // fallback: генерировать из slug
+        const fallback = slug.replace(/-/g, ' ');
+        return fallback.charAt(0).toUpperCase() + fallback.slice(1);
+      })();
       sidebarLinks += ` <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
     }
   }

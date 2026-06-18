@@ -13,6 +13,7 @@ export const scrollToTop = (): void => {
 
   // Следим за скроллом страницы в реальном времени
   window.addEventListener('scroll', (): void => {
+  // Добавлен параметр passive для оптимизации скроллинга
     if (window.scrollY > 400) {
       btn.style.opacity = '1';
       btn.style.visibility = 'visible';

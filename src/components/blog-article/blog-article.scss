@@ -21,13 +21,13 @@
     gap: 40px;
     place-items: start center;
 
-    @media (min-width: 769px) {
+    @media (width >= 769px) {
       grid-template-areas: 'main sidebar';
       grid-template-columns: 1fr 300px;
       justify-items: stretch;
     }
 
-    @media (min-width: 1101px) {
+    @media (width >= 1101px) {
       grid-template-areas: 'main sidebar';
       grid-template-columns: 740px 300px;
       gap: 0;

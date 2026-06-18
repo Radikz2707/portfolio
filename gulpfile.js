@@ -37,9 +37,9 @@ const { parallel, series, src, dest } = gulp;
 
 const loadedModules = {};
 
-// =========================================================================
+// =====================================================================
 // 📦 1. УМНЫЙ ДИСПЕТЧЕР ЛЕНИВОГО ИМПОРТА С ПОЛНОЙ МАРШРУТИЗАЦИЕЙ ФАЙЛОВ
-// =========================================================================
+// =====================================================================
 const runTask = (taskName) => {
   const gulpTaskWrapper = async (done) => {
     try {
@@ -50,7 +50,8 @@ const runTask = (taskName) => {
       } else if (taskName === 'blogIndex') {
         fileName = 'html';
       }
-      // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: если кто-то вызовет runTask('server'), перенаправляем в server.js
+      // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: если кто-то вызовет runTask('server')
+      // перенаправляем в server.js
       else if (taskName === 'server') {
         fileName = 'server';
       } else if (
@@ -66,30 +67,31 @@ const runTask = (taskName) => {
       }
 
       const taskModule = loadedModules[fileName];
-if (typeof taskModule[taskName] === 'function') {
-  try {
-    return taskModule[taskName](done);
-  } catch (err) {
-    console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
-    return done(err);
-  }
-}
-if (typeof taskModule.default === 'function') {
-  try {
-    return taskModule.default(done);
-  } catch (err) {
-    console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
-    return done(err);
-  }
-}
-done();
+      if (typeof taskModule[taskName] === 'function') {
+        try {
+          return taskModule[taskName](done);
+        } catch (err) {
+          console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
+          return done(err);
+        }
+      }
+      if (typeof taskModule.default === 'function') {
+        try {
+          return taskModule.default(done);
+        } catch (err) {
+          console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
+          return done(err);
+        }
+      }
+      done();
     } catch (err) {
       console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
       done(err);
     }
   };
 
-  // КРИТИЧЕСКИЙ ШАГ ДЛЯ ЛОГОВ GULP: Явно переопределяем имя функции для терминала
+  // КРИТИЧЕСКИЙ ШАГ ДЛЯ ЛОГОВ GULP: Явно переопределяем имя функции для
+  // терминала
   Object.defineProperty(gulpTaskWrapper, 'name', {
     value: taskName,
     writable: false,
@@ -98,9 +100,9 @@ done();
   return gulpTaskWrapper;
 };
 
-// =========================================================================
+// =====================================================================
 // 🤖 2. ИЗОЛИРОВАННЫЙ РОБОТ-ГЕНЕРАТОР ТАСКОВ ДЛЯ MD/DOCX КОНТЕНТА
-// =========================================================================
+// =====================================================================
 const createDynamicContentTask = (folderName) => {
   return (done) => {
     const sourcePath = [
@@ -130,10 +132,7 @@ const createDynamicContentTask = (folderName) => {
     return (
       src(sourcePath, { allowEmpty: true, encoding: false })
         .pipe(plumber({ errorHandler: onError }))
-
-        // 🔥 УМНАЯ ОПТИМИЗАЦИЯ: Пропускаем файлы, которые не редактировались в src/content/
         .pipe(newer(tempDestPath))
-
         .pipe(compileContentStream())
         .pipe(dest(tempDestPath))
         .on('end', () => {
@@ -171,8 +170,9 @@ const runAllContentTasks = async (done) => {
   if (!fs.existsSync(blogSrcDir)) return done();
 
   try {
-    // 🔥 ХИРУРГИЧЕСКИЙ КОНТРОЛЬ: Хэшируем ТОЛЬКО стабильные .md файлы, игнорируя .docx и временные файлы ~$
-    const files = fs.readdirSync(blogSrcDir).filter((f) => f.endsWith('.md'));
+    const files = fs
+      .readdirSync(blogSrcDir)
+      .filter((f) => f.endsWith('.md'));
     let currentDirStateString = '';
 
     files.forEach((file) => {
@@ -194,17 +194,15 @@ const runAllContentTasks = async (done) => {
       }
     }
 
-    // Если папки dist нет ИЛИ изменились текстовые .md файлы — запускаем сборку
     if (!isCacheValid || !fs.existsSync(blogDestDir)) {
-      console.log('📝 [Mammoth] Изменения зафиксированы. Сборка статей...');
+      console.log('📝 [Mammoth] Изменения зафиксированы. Сборка статей..');
       await wrapInMasterLayout(blogDestDir, 'blog');
 
       fs.writeFileSync(cacheMarkerPath, currentHash, 'utf8');
       done();
     } else {
-      // 🔥 ПОЛНЫЙ ПРОПУСК ТОРМОЗОВ ЗА 1 МИЛЛИСЕКУНДУ!
       console.log(
-        'ℹ️ [Content-Cache] Статьи не изменялись. Тяжелый парсинг Word пропущен.',
+        'ℹ [Content-Cache] Статьи не изменялись. Тяжелый парсинг Word пропущен.',
       );
       done();
     }
@@ -214,10 +212,9 @@ const runAllContentTasks = async (done) => {
   }
 };
 
-// =========================================================================
+// =====================================================================
 // 🚀 ОПРЕДЕЛЕНИЕ СЦЕНАРИЕВ ВЫПОЛНЕНИЯ (CLI TASKS)
-// =========================================================================
-
+// =====================================================================
 const compileAssets = parallel(
   runTask('styles'),
   runTask('scripts'),
@@ -231,18 +228,14 @@ const blogContent = createDynamicContentTask('blog');
 export const build = series(
   cleandist,
   parallel(
-    // Запускаем линтеры только в продакшн‑режиме
     ...(isProd ? [lintCss, lintJs] : []),
     runTask('fonts'),
     runTask('fontsStyle'),
     runTask('favs'),
     compileAssets,
   ),
-  // Сначала собираем контент блога из markdown
   blogContent,
-  // Затем генерируем структуру блога (сайдбар и ссылки)
   blogIndex,
-  // После готового контента собираем HTML
   parallel(runTask('html')),
   zipFiles,
   (done) => {
@@ -252,8 +245,6 @@ export const build = series(
     done();
   },
 );
-
-/* removed invalid comment */
 
 export default series(
   parallel(runTask('fonts'), runTask('fontsStyle')),
@@ -285,5 +276,4 @@ export {
   lintCss,
 };
 
-// Передаем ленивую обертку наружу для консоли Gulp
 export const favs = runTask('favs');

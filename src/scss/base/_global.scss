@@ -1,0 +1,18 @@
+@use '../base/vars' as v;
+
+/* Глобальные стили проекта */
+body {
+  font-family: v.$font-main;
+  color: v.$color-text-main;
+  user-select: none;
+  background-color: v.$bg-dark;
+}
+
+/* Сетка и контейнер */
+.container {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1180px;
+  padding: 0 20px;
+  margin: 0 auto;
+}

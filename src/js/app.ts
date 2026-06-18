@@ -1,36 +1,23 @@
 import { modal } from '../components/modal/modal';
-import { blogPage } from '../components/blog-page/blog-page';
 import AOS from 'aos';
 
-// 1. ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ХЕЛПЕРОВ
 import { isWebp } from './modules/isWebp';
-
-// 2. ИМПОРТЫ СТАТИЧЕСКИХ КОМПОНЕНТОВ
-import { header } from '../components/header/header';
-import { hero } from '../components/hero/hero';
-import { projectsGrid } from '../components/projects-grid/projects-grid';
-import { aboutMe } from '../components/about-me/about-me';
-import { blogArticle } from '../components/blog-article/blog-article';
 import { scrollToTop } from './modules/scroll-to-top/scroll-to-top';
 import { menu } from '../components/menu/menu';
 import { blogSidebar } from '../components/blog-sidebar/blog-sidebar';
 import { contacts } from '../components/contacts/contacts';
-import { footer } from '../components/footer/footer';
-import { main } from '../components/main/main';
+import { aboutMe } from '../components/about-me/about-me';
+import { projectsGrid } from '../components/projects-grid/projects-grid';
 import { themeToggle } from './modules/theme-toggle/theme-toggle';
 
 // ==========================================
 // ВЫЗОВЫ ФУНКЦИЙ (В порядке их инициализации)
 // ==========================================
-
-// Сервисные утилиты (работают везде)
 isWebp();
-header();
 menu();
 modal();
-footer();
-main();
 scrollToTop();
+themeToggle();
 
 // Инициализация вендорной библиотеки AOS из vendor.min.js
 AOS.init({
@@ -45,20 +32,17 @@ const isBlogPage =
 
 // Асинхронная обёртка для ленивой загрузки динамических чанков страниц
 (async () => {
-  if (isBlogPage) {
-    // 📑 Запускаем скрипты СТРОГО на страницах блога и статей
-    blogArticle();
-    blogSidebar();
-    blogPage();
-    console.log('Скрипты блога успешно инициализированы.');
-  } else {
-    // 🚀 Запускаем скрипты СТРОГО на ГЛАВНОЙ странице портфолио
-    hero();
-    projectsGrid();
-    aboutMe();
-    contacts();
-    console.log('Скрипты главных разделов портфолио успешно инициализированы.');
-  }
+if (isBlogPage) {
+  // Запускаем скрипты СТРОГО на страницах блога и статей
+  blogSidebar();
+  console.log('Скрипты блога успешно инициализированы.');
+} else {
+  // Запускаем скрипты СТРОГО на ГЛАВНОЙ странице портфолио
+  contacts();
+  aboutMe();
+  projectsGrid();
+  console.log('Скрипты главных разделов портфолио успешно инициализированы.');
+}
 })();
 
 console.log('TypeScript успешно запущен!');
@@ -75,5 +59,3 @@ document.addEventListener('keydown', (e: KeyboardEvent): void => {
     e.preventDefault();
   }
 });
-
-themeToggle();

@@ -26,20 +26,9 @@
 @use '../js/modules/theme-toggle/theme-toggle' as themeToggle;
 
 // 🔥 Подключаем шрифты (Перенесено ниже всех @use по правилам Sass)
-@import 'base/fonts';
-
-body {
-  font-family: v.$font-main;
-  color: v.$color-text-main;
-  user-select: none;
-  background-color: v.$bg-dark;
-}
+@use './base/fonts' as fonts;
+@use './base/global' as *;
 
 // ГЛOБАЛЬНАЯ СЕТКА И КОНТЕЙНЕРЫ
-.container {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 1180px;
-  padding: 0 20px;
-  margin: 0 auto;
-}
+
+/* container styles moved to _global.scss */

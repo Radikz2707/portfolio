@@ -79,7 +79,7 @@ const dynamicRun = (moduleName, functionName) => {
 export function startwatch(done) {
   const watchOptions = { delay: 500, queue: true, ignoreInitial: true };
 
-  watch([`${config.srcFolder}/**/*.${config.preprocessor}`], watchOptions).on(
+  watch([`${config.srcFolder}/**/*.${config.scssExtension}`], watchOptions).on(
     'change',
     (filePath) => {
       console.log(`✨ [Style Change] Изменен: ${path.basename(filePath)}`);
@@ -162,4 +162,3 @@ export function startwatch(done) {
 
   done();
 }
-

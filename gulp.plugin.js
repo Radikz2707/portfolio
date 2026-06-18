@@ -92,8 +92,8 @@ export const createPlugin = (done) => {
   const appJsPath = path.join(config.srcFolder, 'js', 'app.ts');
   const styleScssPath = path.join(
     config.srcFolder,
-    config.preprocessor,
-    `style.${config.preprocessor}`,
+    config.scssExtension,
+    `style.${config.scssExtension}`,
   );
 
   if (fs.existsSync(dirPath)) {

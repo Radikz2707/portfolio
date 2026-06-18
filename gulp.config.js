@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 // ==========================================
 // БАЗОВЫЕ НАСТРОЙКИ НАПРАВЛЕНИЙ
 // ==========================================
-const preprocessor = 'scss';
+const scssExtension = 'scss';
 const srcFolder = 'src'; // Папка с исходными файлами
 const buildFolder = 'dist'; // Папка готовой сборки проекта
 
@@ -43,7 +43,7 @@ export const config = {
   // Единая глобальная переменная названия вашего бренда
   siteName: 'Radik.Dev',
 
-  preprocessor,
+scssExtension,
   srcFolder,
   buildFolder,
 
@@ -64,7 +64,7 @@ export const config = {
   // ==========================================
   paths: {
     styles: {
-      src: `${srcFolder}/${preprocessor}/style.{sass,scss,less}`,
+      src: `${srcFolder}/scss/style.scss`,
       dest: `${buildFolder}/css/`,
       output: 'app.min.css',
     },

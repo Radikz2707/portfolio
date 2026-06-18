@@ -57,7 +57,9 @@ const updateAppTs = (filePath, blockName, camelName) => {
 const updateStyleScss = (filePath, blockName) => {
   updateFileContent(filePath, (content) => {
     const lines = content.split(/\r?\n/);
-    const camelName = blockName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    const camelName = blockName.replace(/-([a-z])/g, (_, letter) =>
+      letter.toUpperCase(),
+    );
     const scssImport = `@use "../components/${blockName}/${blockName}" as ${camelName};`;
 
     const modulesIndex = lines.findIndex((line) =>
@@ -107,8 +109,8 @@ export const create = (done) => {
   const mainJsPath = path.join(config.srcFolder, 'js', 'app.ts');
   const mainScssPath = path.join(
     config.srcFolder,
-    config.preprocessor,
-    `style.${config.preprocessor}`,
+    config.scssExtension,
+    `style.${config.scssExtension}`,
   );
   const indexHtmlPath = path.join(config.srcFolder, 'index.html');
 
@@ -127,7 +129,7 @@ export const create = (done) => {
 
   fs.writeFileSync(path.join(dirPath, `${blockName}.html`), htmlTemplate);
   fs.writeFileSync(
-    path.join(dirPath, `${blockName}.${config.preprocessor}`),
+    path.join(dirPath, `${blockName}.${config.scssExtension}`),
     scssTemplate,
   );
   fs.writeFileSync(path.join(dirPath, `${blockName}.ts`), tsTemplate);
