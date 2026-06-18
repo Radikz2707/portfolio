@@ -8,7 +8,7 @@
   "author": "Radik Zalalov",
   "license": "ISC",
   "scripts": {
-    "dev": "set NODE_NO_WARNINGS=1&&set G_MESSAGES_DEBUG=none&&gulp",
+    "dev": "cross-env NODE_NO_WARNINGS=1 G_MESSAGES_DEBUG=none gulp",
     "build": "gulp build",
     "init": "gulp init",
     "create": "gulp create",

@@ -227,13 +227,8 @@ const blogContent = createDynamicContentTask('blog');
 
 export const build = series(
   cleandist,
-  parallel(
-    ...(isProd ? [lintCss, lintJs] : []),
-    runTask('fonts'),
-    runTask('fontsStyle'),
-    runTask('favs'),
-    compileAssets,
-  ),
+  parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
+  parallel(...(isProd ? [lintCss, lintJs] : []), compileAssets),
   blogContent,
   blogIndex,
   parallel(runTask('html')),
@@ -247,7 +242,7 @@ export const build = series(
 );
 
 export default series(
-  parallel(runTask('fonts'), runTask('fontsStyle')),
+  parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
   parallel(
     runTask('html'),
     blogIndex,
