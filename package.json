@@ -18,7 +18,7 @@
     "clean": "gulp cleandist",
     "update-modules": "npx npm-check-updates -i --no-cache && npm install --legacy-peer-deps",
     "prepare": "husky",
-    "push:main": "git add . && git commit -m \"Updates: $(date '+%Y-%m-%d %H:%M')\" && git push origin main",
+    "push:main": "git add . && node -e \"require('child_process').execSync('git commit -m \\\"Updates: ' + new Date().toLocaleString() + '\\\"')\" && git push origin main",
     "deploy:gh": "npm run build && npx gh-pages -d dist --dotfiles -f",
     "deploy:hosting": "cross-env DEPLOY_TARGET=hosting npm run build && gulp deploy",
     "create-post": "node create-post.js",
