@@ -5,7 +5,6 @@ import fs from 'fs';
 import plumber from 'gulp-plumber';
 import fonter from 'gulp-fonter';
 import ttf2woff2 from 'gulp-ttf2woff2';
-
 import { onError, bs } from './server.js';
 
 const { src, dest } = gulp;
@@ -97,7 +96,7 @@ export function fontsStyle(done) {
     else if (fontInfo.includes('black')) fontWeight = 900;
 
     const fontStyle = fontInfo.includes('italic') ? 'italic' : 'normal';
-    const fontRecord = `@font-face {\n\tfont-family: "${fontName}";\n\tfont-display: swap;\n\tsrc: url("../fonts/${fontFileName}.woff2") format("woff2");\n\tfont-weight: ${fontWeight};\n\tfont-style: ${fontStyle};\n}\n\n`;
+    const fontRecord = `@font-face {\n\tfont-family: ${fontName};\n\tfont-style: ${fontStyle};\n\tfont-weight: ${fontWeight};\n\tsrc: url("../fonts/${fontFileName}.woff2") format("woff2");\n\tfont-display: swap;\n}\n\n`;
 
     fs.appendFileSync(fontsFile, fontRecord);
   });

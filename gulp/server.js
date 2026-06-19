@@ -27,6 +27,18 @@ export const onError = function (err) {
 // =========================================================================
 export function browsersync() {
   return new Promise((resolve) => {
+    let allowReload = false;
+    const originalReload = bs.reload;
+
+    setTimeout(() => {
+      allowReload = true;
+    }, 4000);
+
+    bs.reload = function (...args) {
+      if (!allowReload) return;
+      originalReload.apply(bs, args);
+    };
+
     bs.init({
       server: {
         baseDir: config.buildFolder,
@@ -39,14 +51,10 @@ export function browsersync() {
       notify: false,
       online: false,
       open: 'local',
-      // 🔥 НОВОЕ: Ограничители сетевых коллизий
-      reloadDelay: 500, // Ждем 500мс после изменений кода перед обновлением вкладки
-      reloadDebounce: 500, // Группируем пачку быстрых изменений в один единственный релоад
+      reloadDelay: 0,
+      reloadDebounce: 0,
       watchOptions: {
-        awaitWriteFinish: {
-          stabilityThreshold: 300, // Ждем, пока файл полностью допишется на диск (300мс тишины)
-          poll: 100,
-        },
+        awaitWriteFinish: false,
       },
     });
 
@@ -79,7 +87,6 @@ const dynamicRun = (moduleName, functionName) => {
 export function startwatch(done) {
   const watchOptions = { delay: 500, queue: true, ignoreInitial: true };
 
-  // Слежение за SCSS/CSS (Исправлено через dynamicRun)
   watch([`${config.srcFolder}/**/*.${config.scssExtension}`], watchOptions).on(
     'change',
     (filePath) => {
@@ -88,7 +95,6 @@ export function startwatch(done) {
     },
   );
 
-  // Слежение за Скриптами (Исправлено через dynamicRun)
   watch([`${config.srcFolder}/**/*.{js,ts}`], watchOptions).on(
     'change',
     (filePath) => {
@@ -97,7 +103,6 @@ export function startwatch(done) {
     },
   );
 
-  // Слежение за HTML (Исправлено: вызывает blogIndex из html.js, релоадит вкладку и не падает!)
   watch(
     [
       `${config.srcFolder}/*.html`,
@@ -115,7 +120,6 @@ export function startwatch(done) {
     });
   });
 
-  // Слежение за контентом Markdown / Word (Оставляем ваш оригинальный рабочий блок)
   watch([`${config.srcFolder}/content/**/*`], watchOptions).on(
     'change',
     (filePath) => {
@@ -147,7 +151,6 @@ export function startwatch(done) {
     },
   );
 
-  // Слежение за картинками (Исправлено)
   watch(
     [
       `${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,gif}`,
@@ -161,7 +164,6 @@ export function startwatch(done) {
     dynamicRun('images', 'imagesDev')(() => {});
   });
 
-  // Слежение за SVG-спрайтами (Исправлено)
   if (config.paths?.images?.svg) {
     watch([config.paths.images.svg], watchOptions).on('change', (filePath) => {
       console.log(

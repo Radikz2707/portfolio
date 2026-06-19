@@ -17,7 +17,7 @@ const { src, dest } = gulp;
 
 const gulp5Options = { allowEmpty: true, encoding: false };
 const imageSources = [
-  `${config.srcFolder}/images/**/*`,
+  `${config.srcFolder}/images/**/*.{jpg,jpeg,png,svg,gif}`,
   `!${config.srcFolder}/images/svg/**/*`,
   `!${config.srcFolder}/images/favicons/**/*`,
   `${config.srcFolder}/components/**/img/**/*.{jpg,jpeg,png,svg,webp,gif}`,
@@ -39,9 +39,7 @@ export function imagesDev() {
     )
     .pipe(flatten())
     .pipe(dest(config.paths.images.dest))
-    .on('end', () => {
-      bs.reload();
-    });
+    .pipe(bs.stream());
 }
 
 // 2. Сборка для продакшена (использует ваш родной sharpCompressor)

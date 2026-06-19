@@ -71,7 +71,9 @@ const runTask = (taskName) => {
         try {
           return taskModule[taskName](done);
         } catch (err) {
-          console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
+          console.error(
+            `\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`,
+          );
           return done(err);
         }
       }
@@ -79,7 +81,9 @@ const runTask = (taskName) => {
         try {
           return taskModule.default(done);
         } catch (err) {
-          console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
+          console.error(
+            `\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`,
+          );
           return done(err);
         }
       }
@@ -129,21 +133,18 @@ const createDynamicContentTask = (folderName) => {
 
     const tempDestPath = path.join(config.buildFolder, folderName);
 
-    return (
-      src(sourcePath, { allowEmpty: true, encoding: false })
-        .pipe(plumber({ errorHandler: onError }))
-        .pipe(newer(tempDestPath))
-        .pipe(compileContentStream())
-        .pipe(dest(tempDestPath))
-        .on('end', () => {
-          wrapInMasterLayout(tempDestPath, folderName)
-            .then(() => {
-              bs.reload();
-              done();
-            })
-            .catch((err) => done(err));
-        })
-    );
+    return src(sourcePath, { allowEmpty: true, encoding: false })
+      .pipe(plumber({ errorHandler: onError }))
+      .pipe(newer(tempDestPath))
+      .pipe(compileContentStream())
+      .pipe(dest(tempDestPath))
+      .on('end', () => {
+        wrapInMasterLayout(tempDestPath, folderName)
+          .then(() => {
+            done();
+          })
+          .catch((err) => done(err));
+      });
   };
 };
 
@@ -170,9 +171,7 @@ const runAllContentTasks = async (done) => {
   if (!fs.existsSync(blogSrcDir)) return done();
 
   try {
-    const files = fs
-      .readdirSync(blogSrcDir)
-      .filter((f) => f.endsWith('.md'));
+    const files = fs.readdirSync(blogSrcDir).filter((f) => f.endsWith('.md'));
     let currentDirStateString = '';
 
     files.forEach((file) => {
@@ -242,7 +241,7 @@ export const build = series(
 );
 
 export default series(
-  parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
+  parallel(runTask('fonts'), runTask('fontsStyle')),
   parallel(
     runTask('html'),
     blogIndex,

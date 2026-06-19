@@ -187,13 +187,10 @@ export function html() {
 // =======================================================================
 export async function blogIndex() {
   const srcPath = path.join(config.srcFolder, 'blog', '**', '*.html');
-  const folderName = 'blog'; // Имя вашей папки с контентом
+  const folderName = 'blog';
 
-  // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Вместо ломающегося ручного цикла
-  // берем готовые отлаженные русские ссылки из процессора контента!
   const sidebarLinks = await generateSidebarLinks(folderName);
 
-  // Оставляем ваш оригинальный рабочий поток с Гитхаба в полной неприкосновенности!
   return src([path.join(config.srcFolder, 'blog', '**', '*.html')], {
     allowEmpty: true,
   })
@@ -209,6 +206,7 @@ export async function blogIndex() {
     .pipe(replace(/SITE_NAME/gi, config.siteName))
     .pipe(replace(/SITE_AUTHOR/gi, config.repoPath))
     .pipe(replace(/href=["']\s*\/?GO_HOME\s*["']/gi, 'href="../index.html"'))
+    .pipe(replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, 'href="index.html"'))
     .pipe(
       replace(
         /href=["']\s*\/?GO_PROJECTS\s*["']/gi,
@@ -225,7 +223,7 @@ export async function blogIndex() {
       ),
     )
     .pipe(fixHtmlPaths())
-    .pipe(replace(/@@sidebar/g, sidebarLinks)) // Вклеиваем русские ссылки
+    .pipe(replace(/@@sidebar/g, sidebarLinks))
     .pipe(dest(path.join(config.buildFolder, 'blog')))
     .on('end', () => {
       bs.reload();
