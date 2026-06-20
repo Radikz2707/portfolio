@@ -158,7 +158,8 @@ export const contacts = (): void => {
 📝 **Сообщение:** ${formData.message}
       `;
 
-      fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      // Отправляем данные через прокси (чтобы работало в РФ без VPN)
+      fetch(`https://tg-proxy.com/bot${TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
