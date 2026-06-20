@@ -6,6 +6,7 @@
     <title>SITE_NAME</title>
     @@include("parts/favicon-links.html")
     <link rel="stylesheet" href="css/app.min.css" />
+    <script>document.body ? document.body.classList.add('_js-ready') : document.addEventListener('DOMContentLoaded', () => document.body.classList.add('_js-ready'));</script>
   </head>
   <body>
     <div class="wrapper">
@@ -22,7 +23,6 @@
     </div>
 
     @@include("components/modal/modal.html")
-    <script src="js/vendor.min.js"></script>
     <script src="js/app.min.js"></script>
   </body>
 </html>

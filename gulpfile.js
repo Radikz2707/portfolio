@@ -34,6 +34,9 @@ import { help } from './gulp.help.js';
 import { blogIndex } from './gulp/html.js';
 import dotenv from 'dotenv';
 
+// Глобальная метка сборки для пробития кэша
+global.buildSig = Date.now();
+
 const { parallel, series, src, dest } = gulp;
 
 // ГЕНЕРАЦИЯ КОНФИГА ИЗ .ENV
@@ -252,9 +255,8 @@ const compileAssets = parallel(
 const blogContent = createDynamicContentTask('blog');
 
 export const build = series(
-  // createEnvConfig,
-  cleandist,
-  parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
+  createEnvConfig,
+  cleandist,  parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
   parallel(...(isProd ? [lintCss, lintJs] : []), compileAssets),
   blogContent,
   blogIndex,
@@ -269,13 +271,13 @@ export const build = series(
 );
 
 export default series(
-  // createEnvConfig,
+  createEnvConfig,
   parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
+  runTask('scripts'),
+  runTask('html'),
   parallel(
-    runTask('html'),
     blogIndex,
     runTask('styles'),
-    runTask('scripts'),
     runTask('imagesDev'),
     runTask('createWebp'),
     runTask('sprite'),
@@ -285,9 +287,7 @@ export default series(
   ),
   browsersync,
   startwatch,
-);
-
-export {
+);export {
   create,
   remove,
   module,

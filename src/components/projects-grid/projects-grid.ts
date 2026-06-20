@@ -11,8 +11,8 @@ export const projectsGrid = (): void => {
   // Настройки наблюдателя
   const observerOptions: IntersectionObserverInit = {
     root: null, // Отслеживаем относительно экрана
-    rootMargin: '0px 0px -50px 0px', // Срабатывает чуть раньше, чем элемент дойдет до центра
-    threshold: 0.1, // Срабатывает, когда 10% элемента показалось снизу
+    rootMargin: '0px', // Срабатывает сразу при появлении
+    threshold: 0, // Срабатывает, как только показался хотя бы 1 пиксель
   };
 
   const observerCallback = (
@@ -45,4 +45,14 @@ export const projectsGrid = (): void => {
       observer.unobserve(element);
     }
   });
+
+  // Дополнительная проверка после полной загрузки страницы
+  window.addEventListener('load', () => {
+    revealElements.forEach((element) => {
+      if (element.getBoundingClientRect().top < window.innerHeight) {
+        element.classList.add('_active');
+        observer.unobserve(element);
+      }
+    });
+  }, { once: true });
 };

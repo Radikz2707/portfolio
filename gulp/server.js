@@ -39,26 +39,28 @@ export function browsersync() {
       originalReload.apply(bs, args);
     };
 
-    bs.init({
-      server: {
-        baseDir: config.buildFolder,
-      },
-      host: '127.0.0.1',
-      port: 8080,
-      ui: false,
-      watch: false,
-      ghostMode: false,
-      notify: false,
-      online: false,
-      open: 'local',
-      reloadDelay: 0,
-      reloadDebounce: 0,
-      watchOptions: {
-        awaitWriteFinish: false,
-      },
-    });
+    setTimeout(() => {
+      bs.init({
+        server: {
+          baseDir: config.buildFolder,
+        },
+        host: '127.0.0.1',
+        port: 8080,
+        ui: false,
+        watch: false,
+        ghostMode: false,
+        notify: false,
+        online: false,
+        open: 'local',
+        reloadDelay: 0,
+        reloadDebounce: 0,
+        watchOptions: {
+          awaitWriteFinish: false,
+        },
+      });
 
-    resolve();
+      resolve();
+    }, 1000);
   });
 }
 

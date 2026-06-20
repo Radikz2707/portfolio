@@ -11,7 +11,7 @@ import { projectsGrid } from '../components/projects-grid/projects-grid';
 import { themeToggle } from './modules/theme-toggle/theme-toggle';
 
 // ==========================================
-// ВЫЗОВЫ ФУНКЦИЙ (В порядке их инициализации)
+// 1. ИНИЦИАЛИЗАЦИЯ БАЗОВЫХ МОДУЛЕЙ
 // ==========================================
 isWebp();
 menu();
@@ -19,47 +19,60 @@ modal();
 scrollToTop();
 themeToggle();
 
-// Инициализация с небольшой задержкой для корректного расчета координат
-setTimeout(() => {
-  AOS.init({
-    duration: 800,
-    once: true,
-  });
+// 🔥 ОПРЕДЕЛЕНИЕ ТИПА СТРАНИЦЫ
+const isBlogPage = 
+  window.location.pathname.includes('/blog/') || 
+  window.location.href.includes('/blog/') ||
+  document.body.classList.contains('page-blog') ||
+  !!document.querySelector('.blog-sidebar');
 
-  window.dispatchEvent(new Event('scroll'));
-  window.dispatchEvent(new Event('resize'));
-}, 100);
+// ==========================================
+// 2. ГЛАВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ
+// ==========================================
+const initApp = () => {
+  // Добавляем класс готовности для CSS-анимаций
+  document.body.classList.add('_js-ready');
 
-// 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Определяем, где находится пользователь
-const isBlogPage =
-  window.location.pathname.includes('/blog/') ||
-  document.body.classList.contains('page-blog');
-
-// Асинхронная обёртка для ленивой загрузки динамических чанков страниц
-(async () => {
   if (isBlogPage) {
-    // Запускаем скрипты СТРОГО на страницах блога и статей
     blogSidebar();
-    console.log('Скрипты блога успешно инициализированы.');
   } else {
-    // Запускаем скрипты СТРОГО на ГЛАВНОЙ странице портфолио
     contacts();
     aboutMe();
     projectsGrid();
-    console.log('Скрипты главных разделов портфолио успешно инициализированы.');
   }
 
-  // 🔥 ФИКС: Принудительно вызываем события скролла и ресайза,
-  // чтобы IntersectionObserver и AOS увидели элементы сразу после загрузки
+  // Инициализация AOS и активация видимых элементов
+  // Небольшая задержка дает браузеру время на финальный рендеринг
   setTimeout(() => {
+    AOS.init({
+      duration: 800,
+      once: true,
+    });
+
+    // Принудительно активируем элементы в зоне видимости
+    const revealElements = document.querySelectorAll('.element-reveal, .element-reveal-left');
+    revealElements.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 1.2) {
+        el.classList.add('_active');
+      }
+    });
+
     window.dispatchEvent(new Event('scroll'));
     window.dispatchEvent(new Event('resize'));
-  }, 100);
-})();
+  }, 200);
+};
 
-console.log('TypeScript успешно запущен!');
+// Запуск при полной загрузке всех ресурсов
+if (document.readyState === 'complete') {
+  initApp();
+} else {
+  window.addEventListener('load', initApp);
+}
 
-// ЗАЩИТА АВТОРСКИХ ПРАВ
+// ==========================================
+// 3. ЗАЩИТА КОНТЕНТА
+// ==========================================
 document.addEventListener('contextmenu', (e: Event) => e.preventDefault());
 
 document.addEventListener('keydown', (e: KeyboardEvent): void => {
@@ -71,3 +84,5 @@ document.addEventListener('keydown', (e: KeyboardEvent): void => {
     e.preventDefault();
   }
 });
+
+console.log('🚀 Radik.Dev: TypeScript успешно инициализирован');

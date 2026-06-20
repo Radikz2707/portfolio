@@ -82,8 +82,16 @@ export function scripts() {
           },
         }),
       ],
-      // Настройка автоматического разделения кода (отключено для стабильности)
-      splitChunks: false,
+      // Настройка автоматического разделения кода
+      splitChunks: isProd ? {
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendor',
+            chunks: 'all',
+          },
+        },
+      } : false,
     },
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
   };

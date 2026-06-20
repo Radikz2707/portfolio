@@ -50,7 +50,16 @@ function fixHtmlPaths() {
 
       // Обрабатываем ссылки на CSS, JS и изображения
       content = content.replace(
-        /(href=["']\s*)(css\/[^"']+\.css(?:\?[^"']*)?)/gi,
+        /(src=["']\s*)(js\/app\.min\.js)/gi,
+        (match, p1) => p1 + 'js/app.min.js?v=' + (global.buildSig || Date.now())
+      );
+
+      content = content.replace(
+        /(href=["']\s*)(css\/[^"']+\.css)/gi,
+        addPrefix,
+      );
+      content = content.replace(
+        /(src=["']\s*)(js\/[^"']+\.js)/gi,
         addPrefix,
       );
       content = content.replace(
@@ -140,6 +149,7 @@ export function html() {
 
     replace(/SITE_NAME/gi, config.siteName),
     replace(/SITE_AUTHOR/gi, config.repoPath),
+    replace(/js\/app\.min\.js/gi, `js/app.min.js?v=${global.buildSig || Date.now()}`),
   ];
 
   if (isProd) {

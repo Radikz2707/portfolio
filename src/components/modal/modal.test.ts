@@ -25,8 +25,7 @@ describe('Component: Modal', () => {
 
     trigger.click();
 
-    expect(modalElement?.classList.contains('_active')).toBe(true);
-    expect(document.body.classList.contains('_lock')).toBe(true);
+    expect(modalElement?.classList.contains('_active')).toBe(true);    expect(document.body.classList.contains('_lock')).toBe(true);
     expect(modalElement?.getAttribute('aria-hidden')).toBe('false');
   });
 

@@ -13,7 +13,7 @@
     max-width: 1100px;
     margin: 0 auto;
 
-    @media (width <= 768px) {
+    @media (width <=768px) {
       flex-direction: column;
       gap: 30px;
       align-items: flex-start;
@@ -25,7 +25,7 @@
     min-width: 300px;
     max-width: 60%;
 
-    @media (width <= 768px) {
+    @media (width <=768px) {
       max-width: 100%;
     }
   }
@@ -53,7 +53,7 @@
     min-width: 300px;
     max-width: 40%;
 
-    @media (width <= 768px) {
+    @media (width <=768px) {
       max-width: 100%;
     }
 
@@ -82,7 +82,7 @@
     }
   }
 
-  @media (width <= 768px) {
+  @media (width <=768px) {
     &__photo-wrapper {
       & img {
         border-radius: 16px;
@@ -136,16 +136,23 @@
 }
 
 .element-reveal {
-  opacity: 0;
-  transform: translateY(30px);
+  opacity: 1;
+  transform: none;
+
+  // Скрываем только если JS активен и элемент еще не активирован
+  body._js-ready &:not(._active) {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
   transition:
     opacity 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1),
     transform 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
   will-change: opacity, transform;
 
   &._active {
-    opacity: 1;
-    transform: translateY(0);
+    opacity: 1 !important;
+    transform: translateY(0) !important;
   }
 
   @for $i from 1 through 16 {
@@ -156,15 +163,28 @@
 }
 
 .element-reveal-left {
-  opacity: 0;
-  transform: translateX(-40px);
+  opacity: 1;
+  transform: none;
+
+  // Скрываем только если JS активен и элемент еще не активирован
+  body._js-ready &:not(._active) {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
   transition:
-    opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1),
-    transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    opacity 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1),
+    transform 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
   will-change: opacity, transform;
 
   &._active {
-    opacity: 1;
-    transform: translateX(0);
+    opacity: 1 !important;
+    transform: translateX(0) !important;
   }
+}
+
+.element-reveal-left {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
 }

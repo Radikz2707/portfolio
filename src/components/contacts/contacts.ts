@@ -1,9 +1,6 @@
 import { env } from '../../js/env-config';
 
 export const contacts = (): void => {
-  console.log('Блок contacts (TS) инициализирован');
-
-  // 🔥 1. Создаем контроллер отмены для тотальной очистки памяти при выгрузке модуля
   const contactsController = new AbortController();
   const { signal } = contactsController;
 
@@ -17,15 +14,11 @@ export const contacts = (): void => {
   const contactError = form.querySelector<HTMLDivElement>('#contact-error');
   const messageInput = form.querySelector<HTMLTextAreaElement>('#form-message');
 
-  // 🔥 Оптимизированные и строгие регулярные выражения (добавлены якоря конца строки $)
   const regexTelegram = /^[a-zA-Z0-9_]{5,32}$/;
-  const regexPhone =
-    /^(?:\+7|8)?[\s-]?\(?[0-9]{3}\)?[\s-]?[0-9]{3}[\s-]?[0-9]{2}[\s-]?[0-9]{2}$/;
+  const regexPhone = /^(?:\+7|8)?[\s-]?\(?[0-9]{3}\)?[\s-]?[0-9]{3}[\s-]?[0-9]{2}[\s-]?[0-9]{2}$/;
   const regexEmail = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
 
-  const showError = (
-    input: HTMLInputElement | HTMLTextAreaElement | null,
-  ): void => {
+  const showError = (input: HTMLInputElement | HTMLTextAreaElement | null): void => {
     if (!input) return;
     const group = input.parentElement;
     if (group) {
@@ -34,9 +27,7 @@ export const contacts = (): void => {
     }
   };
 
-  const clearError = (
-    input: HTMLInputElement | HTMLTextAreaElement | null,
-  ): void => {
+  const clearError = (input: HTMLInputElement | HTMLTextAreaElement | null): void => {
     if (!input) return;
     const group = input.parentElement;
     if (group) {
@@ -45,46 +36,34 @@ export const contacts = (): void => {
     }
   };
 
-  methodSelect?.addEventListener(
-    'change',
-    () => {
-      if (!contactInput || !contactLabel || !contactError || !methodSelect)
-        return;
+  methodSelect?.addEventListener('change', () => {
+    if (!contactInput || !contactLabel || !contactError || !methodSelect) return;
+    clearError(contactInput);
+    contactInput.value = '';
 
-      clearError(contactInput);
-      contactInput.value = '';
-
-      switch (methodSelect.value) {
-        case 'telegram':
-          contactLabel.textContent = 'Ваш Telegram';
-          contactInput.placeholder = '@username';
-          contactError.textContent =
-            'Введите никнейм Telegram (не менее 5 символов)';
-          break;
-        case 'phone':
-          contactLabel.textContent = 'Ваш номер телефона';
-          contactInput.placeholder = '+7 (999) 123-45-67';
-          contactError.textContent =
-            'Введите корректный номер телефона РФ (+7 или 8)';
-          break;
-        case 'email':
-          contactLabel.textContent = 'Ваш Email';
-          contactInput.placeholder = 'example@mail.com';
-          contactError.textContent = 'Введите корректный email адрес';
-          break;
-      }
-    },
-    { signal },
-  );
+    switch (methodSelect.value) {
+      case 'telegram':
+        contactLabel.textContent = 'Ваш Telegram';
+        contactInput.placeholder = '@username';
+        contactError.textContent = 'Введите никнейм Telegram (не менее 5 символов)';
+        break;
+      case 'phone':
+        contactLabel.textContent = 'Ваш номер телефона';
+        contactInput.placeholder = '+7 (999) 123-45-67';
+        contactError.textContent = 'Введите корректный номер телефона РФ (+7 или 8)';
+        break;
+      case 'email':
+        contactLabel.textContent = 'Ваш Email';
+        contactInput.placeholder = 'example@mail.com';
+        contactError.textContent = 'Введите корректный email адрес';
+        break;
+    }
+  }, { signal });
 
   const validateName = (): boolean => {
     if (!nameInput) return false;
     const isValid = nameInput.value.trim().length >= 2;
-    if (isValid) {
-      clearError(nameInput);
-    } else {
-      showError(nameInput);
-    }
+    isValid ? clearError(nameInput) : showError(nameInput);
     return isValid;
   };
 
@@ -93,30 +72,18 @@ export const contacts = (): void => {
     const value = contactInput.value.trim();
     let isValid = false;
 
-    if (methodSelect.value === 'telegram') {
-      isValid = regexTelegram.test(value);
-    } else if (methodSelect.value === 'phone') {
-      isValid = regexPhone.test(value);
-    } else if (methodSelect.value === 'email') {
-      isValid = regexEmail.test(value);
-    }
+    if (methodSelect.value === 'telegram') isValid = regexTelegram.test(value);
+    else if (methodSelect.value === 'phone') isValid = regexPhone.test(value);
+    else if (methodSelect.value === 'email') isValid = regexEmail.test(value);
 
-    if (isValid) {
-      clearError(contactInput);
-    } else {
-      showError(contactInput);
-    }
+    isValid ? clearError(contactInput) : showError(contactInput);
     return isValid;
   };
 
   const validateMessage = (): boolean => {
     if (!messageInput) return false;
     const isValid = messageInput.value.trim().length >= 10;
-    if (isValid) {
-      clearError(messageInput);
-    } else {
-      showError(messageInput);
-    }
+    isValid ? clearError(messageInput) : showError(messageInput);
     return isValid;
   };
 
@@ -126,12 +93,7 @@ export const contacts = (): void => {
 
   form.addEventListener('submit', (e: Event) => {
     e.preventDefault();
-
-    const isNameValid = validateName();
-    const isContactValid = validateContact();
-    const isMessageValid = validateMessage();
-
-    if (isNameValid && isContactValid && isMessageValid) {
+    if (validateName() && validateContact() && validateMessage()) {
       const button = form.querySelector<HTMLButtonElement>('.form__button');
       if (button) {
         button.disabled = true;
@@ -145,26 +107,12 @@ export const contacts = (): void => {
         message: messageInput?.value.trim()
       };
 
-      // Отправляем данные напрямую в Telegram (через сгенерированный конфиг)
-      const TOKEN = env.TELEGRAM_TOKEN;
-      const CHAT_ID = env.TELEGRAM_CHAT_ID;
-
-      const text = `
-🚀 **Новая заявка с сайта!**
-
-👤 **Имя:** ${formData.name}
-📞 **Способ связи:** ${formData.method}
-✉️ **Контакт:** ${formData.contact}
-📝 **Сообщение:** ${formData.message}
-      `;
-
-      // Отправляем данные через прокси (чтобы работало в РФ без VPN)
-      fetch(`https://tg-proxy.com/bot${TOKEN}/sendMessage`, {
+      fetch(`https://api.telegram.org/bot${env.TELEGRAM_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text: text,
+          chat_id: env.TELEGRAM_CHAT_ID,
+          text: `🚀 *Новая заявка с сайта!*\n\n👤 *Имя:* ${formData.name}\n📞 *Способ связи:* ${formData.method}\n✉️ *Контакт:* ${formData.contact}\n📝 *Сообщение:* ${formData.message}`,
           parse_mode: 'Markdown'
         })
       })
@@ -172,16 +120,9 @@ export const contacts = (): void => {
         if (response.ok) {
           alert('Спасибо! Сообщение успешно отправлено.');
           form.reset();
-        } else {
-          return response.json().then(data => {
-            throw new Error(data.description || 'Ошибка при отправке');
-          });
-        }
+        } else throw new Error('Ошибка при отправке');
       })
-      .catch(err => {
-        console.error('КРИТИЧЕСКАЯ ОШИБКА:', err);
-        alert('Ошибка при отправке. Пожалуйста, попробуйте позже или свяжитесь со мной напрямую.');
-      })
+      .catch(() => alert('Ошибка при отправке. Пожалуйста, попробуйте позже.'))
       .finally(() => {
         if (button) {
           button.disabled = false;
@@ -191,57 +132,30 @@ export const contacts = (): void => {
     }
   });
 
-  // =========================================================================
-  // 👁️ ОПТИМИЗИРОВАННЫЙ INTERSECTION OBSERVER ДЛЯ АНИМАЦИИ ПОЯВЛЕНИЯ
-  // =========================================================================
-  const revealElements = document.querySelectorAll<HTMLElement>(
-    '.contacts__container.element-reveal',
-  );
-
+  const revealElements = document.querySelectorAll<HTMLElement>('.contacts__container.element-reveal');
   if (revealElements.length > 0) {
-    const observerOptions: IntersectionObserverInit = {
-      root: null,
-      rootMargin: '0px',
-      threshold: 0.05,
-    };
-
-    // Счетчик для отслеживания анимированных элементов
-    let revealedCount = 0;
-
-    const observerCallback = (
-      entries: IntersectionObserverEntry[],
-      observer: IntersectionObserver,
-    ): void => {
+    const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (
-          entry.isIntersecting ||
-          entry.boundingClientRect.top < window.innerHeight
-        ) {
+        if (entry.isIntersecting || entry.boundingClientRect.top < window.innerHeight) {
           entry.target.classList.add('_active');
           observer.unobserve(entry.target);
-          revealedCount++;
-
-          // 🔥 ОПТИМИЗАЦИЯ: Если все элементы отображены, полностью уничтожаем наблюдатель
-          if (revealedCount === revealElements.length) {
-            observer.disconnect();
-          }
         }
       });
-    };
+    }, { threshold: 0 });
 
-    const observer = new IntersectionObserver(
-      observerCallback,
-      observerOptions,
-    );
-
-    revealElements.forEach((element) => {
-      observer.observe(element);
-      // 🔥 Улучшенная проверка: даем браузеру 100мс на расчет координат
-      setTimeout(() => {
-        if (element.getBoundingClientRect().top < window.innerHeight) {
-          element.classList.add('_active');
-        }
-      }, 100);
+    revealElements.forEach((el) => {
+      observer.observe(el);
+      if (el.getBoundingClientRect().top < window.innerHeight) {
+        el.classList.add('_active');
+      }
     });
+
+    window.addEventListener('load', () => {
+      revealElements.forEach((el) => {
+        if (el.getBoundingClientRect().top < window.innerHeight) {
+          el.classList.add('_active');
+        }
+      });
+    }, { once: true });
   }
 };

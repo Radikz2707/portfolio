@@ -41,4 +41,13 @@ export const aboutMe = (): void => {
       element.classList.add('_active');
     }
   });
+
+  // Дополнительная проверка после полной загрузки страницы
+  window.addEventListener('load', () => {
+    revealElements.forEach((element) => {
+      if (element.getBoundingClientRect().top < window.innerHeight) {
+        element.classList.add('_active');
+      }
+    });
+  }, { once: true });
 };
