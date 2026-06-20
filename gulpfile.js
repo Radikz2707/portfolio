@@ -32,8 +32,35 @@ import { remove } from './gulp.remove.js';
 import { createStructure as init } from './gulp.init.js';
 import { help } from './gulp.help.js';
 import { blogIndex } from './gulp/html.js';
+import dotenv from 'dotenv';
 
 const { parallel, series, src, dest } = gulp;
+
+// ГЕНЕРАЦИЯ КОНФИГА ИЗ .ENV
+export const createEnvConfig = (done) => {
+  const envPath = path.resolve('.env');
+  let token = '';
+  let chatId = '';
+
+  if (fs.existsSync(envPath)) {
+    const envFileContent = fs.readFileSync(envPath, 'utf8');
+    const tokenMatch = envFileContent.match(/TELEGRAM_TOKEN\s*=\s*(.*)/);
+    const chatIdMatch = envFileContent.match(/TELEGRAM_CHAT_ID\s*=\s*(.*)/);
+    
+    if (tokenMatch) token = tokenMatch[1].trim();
+    if (chatIdMatch) chatId = chatIdMatch[1].trim();
+  }
+
+  const envContent = `export const env = {
+  TELEGRAM_TOKEN: '${token}',
+  TELEGRAM_CHAT_ID: '${chatId}'
+};`;
+  const jsDir = path.join(config.srcFolder, 'js');
+  if (!fs.existsSync(jsDir)) fs.mkdirSync(jsDir, { recursive: true });
+  fs.writeFileSync(path.join(jsDir, 'env-config.js'), envContent);
+  console.log('✅ env-config.js успешно сгенерирован напрямую из .env');
+  done();
+};
 
 const loadedModules = {};
 
@@ -225,6 +252,7 @@ const compileAssets = parallel(
 const blogContent = createDynamicContentTask('blog');
 
 export const build = series(
+  // createEnvConfig,
   cleandist,
   parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
   parallel(...(isProd ? [lintCss, lintJs] : []), compileAssets),
@@ -241,6 +269,7 @@ export const build = series(
 );
 
 export default series(
+  // createEnvConfig,
   parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
   parallel(
     runTask('html'),

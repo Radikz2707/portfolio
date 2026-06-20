@@ -19,11 +19,16 @@ modal();
 scrollToTop();
 themeToggle();
 
-// Инициализация вендорной библиотеки AOS из vendor.min.js
-AOS.init({
-  duration: 800,
-  once: true,
-});
+// Инициализация с небольшой задержкой для корректного расчета координат
+setTimeout(() => {
+  AOS.init({
+    duration: 800,
+    once: true,
+  });
+
+  window.dispatchEvent(new Event('scroll'));
+  window.dispatchEvent(new Event('resize'));
+}, 100);
 
 // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Определяем, где находится пользователь
 const isBlogPage =
@@ -43,6 +48,13 @@ const isBlogPage =
     projectsGrid();
     console.log('Скрипты главных разделов портфолио успешно инициализированы.');
   }
+
+  // 🔥 ФИКС: Принудительно вызываем события скролла и ресайза,
+  // чтобы IntersectionObserver и AOS увидели элементы сразу после загрузки
+  setTimeout(() => {
+    window.dispatchEvent(new Event('scroll'));
+    window.dispatchEvent(new Event('resize'));
+  }, 100);
 })();
 
 console.log('TypeScript успешно запущен!');

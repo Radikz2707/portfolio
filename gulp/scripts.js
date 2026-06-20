@@ -11,13 +11,12 @@ const require = createRequire(import.meta.url);
 const webpackStream = require('webpack-stream');
 const webpack = require('webpack');
 const TerserPlugin = require('terser-webpack-plugin');
-
 import { onError, isProd, bs } from './server.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const { src, dest } = gulp;
 
+const { src, dest } = gulp;
 export function scripts() {
   const webpackConfig = {
     mode: isProd ? 'production' : 'development',
@@ -83,20 +82,8 @@ export function scripts() {
           },
         }),
       ],
-      // Настройка автоматического разделения кода
-      splitChunks: {
-        cacheGroups: {
-          // Выносим все сторонние зависимости из node_modules в vendor
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendor',
-            chunks: 'all',
-            enforce: true,
-            minSize: 0,
-            minChunks: 1,
-          },
-        },
-      },
+      // Настройка автоматического разделения кода (отключено для стабильности)
+      splitChunks: false,
     },
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
   };

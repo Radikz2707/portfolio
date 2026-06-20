@@ -1,3 +1,5 @@
+import { env } from '../../js/env-config';
+
 export const contacts = (): void => {
   console.log('Блок contacts (TS) инициализирован');
 
@@ -135,14 +137,56 @@ export const contacts = (): void => {
         button.disabled = true;
         button.textContent = 'Отправка...';
       }
-      setTimeout(() => {
-        alert('Спасибо! Заявка принята, я свяжусь с вами выбранным способом.');
-        form.reset();
+
+      const formData = {
+        name: nameInput?.value.trim(),
+        method: methodSelect?.value,
+        contact: contactInput?.value.trim(),
+        message: messageInput?.value.trim()
+      };
+
+      // Отправляем данные напрямую в Telegram (через сгенерированный конфиг)
+      const TOKEN = env.TELEGRAM_TOKEN;
+      const CHAT_ID = env.TELEGRAM_CHAT_ID;
+
+      const text = `
+🚀 **Новая заявка с сайта!**
+
+👤 **Имя:** ${formData.name}
+📞 **Способ связи:** ${formData.method}
+✉️ **Контакт:** ${formData.contact}
+📝 **Сообщение:** ${formData.message}
+      `;
+
+      fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: text,
+          parse_mode: 'Markdown'
+        })
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('Спасибо! Сообщение успешно отправлено.');
+          form.reset();
+        } else {
+          return response.json().then(data => {
+            throw new Error(data.description || 'Ошибка при отправке');
+          });
+        }
+      })
+      .catch(err => {
+        console.error('КРИТИЧЕСКАЯ ОШИБКА:', err);
+        alert('Ошибка при отправке. Пожалуйста, попробуйте позже или свяжитесь со мной напрямую.');
+      })
+      .finally(() => {
         if (button) {
           button.disabled = false;
           button.textContent = 'Отправить сообщение';
         }
-      }, 1000);
+      });
     }
   });
 
@@ -191,10 +235,12 @@ export const contacts = (): void => {
 
     revealElements.forEach((element) => {
       observer.observe(element);
-      // Проверка на случай, если элемент уже находится в зоне видимости при загрузке
-      if (element.getBoundingClientRect().top < window.innerHeight) {
-        element.classList.add('_active');
-      }
+      // 🔥 Улучшенная проверка: даем браузеру 100мс на расчет координат
+      setTimeout(() => {
+        if (element.getBoundingClientRect().top < window.innerHeight) {
+          element.classList.add('_active');
+        }
+      }, 100);
     });
   }
 };
