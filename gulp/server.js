@@ -123,7 +123,7 @@ export function startwatch(done) {
   });
 
   watch(
-    [`${config.srcFolder}/content/**/*`, `!${config.srcFolder}/content/**/~$*`], 
+    [`${config.srcFolder}/content/**/*`, `!${config.srcFolder}/content/**/~$*`, `!${config.srcFolder}/content/**/~WRD*`], 
     watchOptions
   ).on(
     'change',
@@ -139,11 +139,25 @@ export function startwatch(done) {
           `📝 [Content Update] Обновление контента: ${path.basename(filePath)}`,
         );
         
-        // Для обновления контента нам нужно пересобрать HTML из исходников
-        // Мы вызываем задачу html, которая в свою очередь обновит и блог
-        dynamicRun('html', 'blogIndex')(() => {
-          bs.reload();
-        });
+        (async () => {
+          try {
+            // 1. Сначала пересобираем сами файлы контента (docx/md -> html)
+            const { blogIndex } = await import('./html.js');
+            const { wrapInMasterLayout } = await import('./utils/content-processor.js');
+            
+            // 2. Запускаем blogIndex (он внутри себя вызывает компиляцию и генерацию списка)
+            blogIndex(() => {
+              // 3. После того как файлы скомпилированы в dist, обновляем их шаблоны
+              const tempDestPath = path.join(config.buildFolder, 'blog');
+              wrapInMasterLayout(tempDestPath, 'blog').then(() => {
+                console.log('✅ Контент успешно обновлен');
+                bs.reload();
+              });
+            });
+          } catch (err) {
+            console.error('❌ Ошибка при обновлении контента:', err);
+          }
+        })();
       }
     },
   );
