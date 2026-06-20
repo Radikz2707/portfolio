@@ -141,18 +141,22 @@ export function startwatch(done) {
         
         (async () => {
           try {
-            // 1. Сначала пересобираем сами файлы контента (docx/md -> html)
-            const { blogIndex } = await import('./html.js');
             const { wrapInMasterLayout } = await import('./utils/content-processor.js');
+            const { blogIndex } = await import('./html.js');
             
-            // 2. Запускаем blogIndex (он внутри себя вызывает компиляцию и генерацию списка)
+            // 1. Копируем измененный файл в dist, чтобы wrapInMasterLayout его увидел
+            const destFolder = path.join(config.buildFolder, 'blog');
+            if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
+            
+            fs.copyFileSync(filePath, path.join(destFolder, path.basename(filePath)));
+
+            // 2. Запускаем оборачивание в шаблон (оно же сконвертирует docx в html)
+            await wrapInMasterLayout(destFolder, 'blog');
+
+            // 3. Обновляем индексную страницу блога (список статей)
             blogIndex(() => {
-              // 3. После того как файлы скомпилированы в dist, обновляем их шаблоны
-              const tempDestPath = path.join(config.buildFolder, 'blog');
-              wrapInMasterLayout(tempDestPath, 'blog').then(() => {
-                console.log('✅ Контент успешно обновлен');
-                bs.reload();
-              });
+              console.log('✅ Контент успешно обновлен');
+              bs.reload();
             });
           } catch (err) {
             console.error('❌ Ошибка при обновлении контента:', err);
