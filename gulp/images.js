@@ -142,6 +142,18 @@ export async function favs(done) {
       .png()
       .toFile(path.join(faviconsDestDir, 'favicon-32.png'));
 
+    // 🔥 НОВОЕ: Генерируем классический favicon.ico
+    await sharpInstance
+      .clone()
+      .resize(32, 32)
+      .toFormat('png')
+      .toFile(path.join(faviconsSrcDir, 'favicon.ico'));
+    await sharpInstance
+      .clone()
+      .resize(32, 32)
+      .toFormat('png')
+      .toFile(path.join(faviconsDestDir, 'favicon.ico'));
+
     // Apple-touch
     await sharpInstance
       .clone()
@@ -181,7 +193,7 @@ export async function favs(done) {
     // HTML линки
     fs.writeFileSync(
       partHtmlPath,
-      `<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">\n<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">\n<link rel="manifest" href="images/favicons/manifest.webmanifest">`,
+      `<link rel="shortcut icon" href="images/favicons/favicon.ico" type="image/x-icon">\n<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">\n<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">\n<link rel="manifest" href="images/favicons/manifest.webmanifest">`,
       'utf8',
     );
 

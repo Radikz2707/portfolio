@@ -34,7 +34,7 @@ const getFirstLineOfFile = async (filePath) => {
 
 export const parsePlainText = (content) => {
   if (!content) return '';
-  return content.replace(/<?[^>]+(>|$)/g, '').trim();
+  return content.replace(/<[^>]*>/g, '').trim();
 };
 
 export const generateSidebarLinks = async (folderName) => {
@@ -109,7 +109,8 @@ const escapeCodeBlocks = (html) => {
 export const processHtmlContent = (html, pathPrefix) => {
   if (!html) return '';
   let processedHtml = html
-    .replace(/src="\.\//gi, `src="${pathPrefix}images/`)
+    .replace(/src="\.\/images\//gi, `src="${pathPrefix}images/`)
+    .replace(/src="(?!http|https|\/|\.\.\/)(?!images\/)/gi, `src="${pathPrefix}images/`)
     .replace(/src="images\//gi, `src="${pathPrefix}images/`);
   processedHtml = escapeCodeBlocks(processedHtml);
   return processedHtml;

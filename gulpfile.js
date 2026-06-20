@@ -241,7 +241,7 @@ export const build = series(
 );
 
 export default series(
-  parallel(runTask('fonts'), runTask('fontsStyle')),
+  parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
   parallel(
     runTask('html'),
     blogIndex,
