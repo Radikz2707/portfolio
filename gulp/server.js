@@ -122,7 +122,10 @@ export function startwatch(done) {
     });
   });
 
-  watch([`${config.srcFolder}/content/**/*`], watchOptions).on(
+  watch(
+    [`${config.srcFolder}/content/**/*`, `!${config.srcFolder}/content/**/~$*`], 
+    watchOptions
+  ).on(
     'change',
     (filePath) => {
       const relativePath = path.relative(

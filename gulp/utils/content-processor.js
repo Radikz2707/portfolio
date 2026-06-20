@@ -45,8 +45,7 @@ export const generateSidebarLinks = async (folderName) => {
   let linksHtml = '';
 
   for (const file of files) {
-    if (file.toLowerCase().startsWith('index.')) continue;
-
+    if (file.toLowerCase().startsWith('index.') || file.startsWith('~$')) continue;
     const ext = path.extname(file).toLowerCase();
     if (!['.md', '.txt', '.rtf', '.docx'].includes(ext)) continue;
 
@@ -238,8 +237,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   if (fs.existsSync(tempDestPath)) {
     const files = await fsPromises.readdir(tempDestPath);
     for (const file of files) {
-      if (file.toLowerCase() === 'index.html') continue;
-
+      if (file.toLowerCase() === 'index.html' || file.startsWith('~$')) continue;
       const ext = path.extname(file).toLowerCase();
       const cleanFileName = path.basename(file, ext) + '.html';
       let rawHtml = '';
