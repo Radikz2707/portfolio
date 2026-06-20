@@ -133,22 +133,14 @@ export function startwatch(done) {
 
       if (folder && folder[0]) {
         console.log(
-          `📝 [Content Update] Обновление секции блога: ${folder[0]}`,
+          `📝 [Content Update] Обновление контента: ${path.basename(filePath)}`,
         );
-        (async () => {
-          const { wrapInMasterLayout } =
-            await import('./utils/content-processor.js');
-          const tempDestPath = path.join(
-            config.buildFolder,
-            folder[0].toLowerCase(),
-          );
-          try {
-            await wrapInMasterLayout(tempDestPath, folder[0]);
-            bs.reload();
-          } catch (err) {
-            onError(err);
-          }
-        })();
+        
+        // Для обновления контента нам нужно пересобрать HTML из исходников
+        // Мы вызываем задачу html, которая в свою очередь обновит и блог
+        dynamicRun('html', 'blogIndex')(() => {
+          bs.reload();
+        });
       }
     },
   );
