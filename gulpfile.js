@@ -33,7 +33,7 @@ import { remove } from './gulp/system/gulp.remove.js';
 import { createStructure as init } from './gulp/system/gulp.init.js';
 import { help } from './gulp/system/gulp.help.js';
 import { blogIndex } from './gulp/html.js';
-
+import { deploy } from './gulp/deploy.js';
 // Глобальная метка сборки для пробития кэша
 global.buildSig = Date.now();
 
@@ -167,7 +167,7 @@ export {
   help, 
   cleandist, 
   lintJs, 
-  lintCss 
+  lintCss, 
+  deploy
 };
-
 export const favs = runTask('favs');

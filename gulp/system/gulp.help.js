@@ -17,8 +17,8 @@ ${c.green}${c.bold}npm run lint${c.reset}         — проверка кода 
 ${c.green}${c.bold}npm run clean${c.reset}        — полная очистка папки dist
 ${c.green}${c.bold}npm run test${c.reset}         — запуск тестов (Watch режим)
 ${c.green}${c.bold}npm run test:run${c.reset}     — одиночный прогон тестов (CI)
+${c.green}${c.bold}npm run create-post${c.reset}  — создать новую статью в блоге
 ${c.green}${c.bold}npm run deploy:gh${c.reset}    — деплой на GitHub Pages
-
 ${c.cyan}${c.bold}КОНСТРУКТОР КОМПОНЕНТОВ:${c.reset}${c.yellow}${c.bold}gulp create --имя${c.reset}    — создать БЛОК (HTML + SCSS + TS)
                           ${c.cyan}* для секций сайта (header, hero, services)${c.reset}
 
