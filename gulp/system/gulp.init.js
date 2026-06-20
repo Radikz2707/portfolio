@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { config } from './gulp.config.js';
+import { config } from '../../gulp.config.js';
 
 export function createStructure(done) {
   const srcFolder = config.srcFolder || 'src';
@@ -31,17 +31,21 @@ table { border-collapse: collapse; border-spacing: 0; }
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TypeScript Gulp Project</title>
+  <title>SITE_NAME</title>
+  <meta name="description" content="Описание вашего проекта" />
   <link rel="stylesheet" href="css/app.min.css">
+  <script>document.body ? document.body.classList.add('_js-ready') : document.addEventListener('DOMContentLoaded', () => document.body.classList.add('_js-ready'));</script>
 </head>
 <body>
+  <div class="wrapper">
+    @@include('components/header/header.html')
+    <main class="main">
+      @@include('components/main/main.html')
+    </main>
+    @@include('components/footer/footer.html')
+  </div>
 
-@@include('components/header/header.html')
-@@include('components/main/main.html')
-@@include('components/footer/footer.html')
-
-<script src="js/vendor.min.js"></script>
-<script src="js/app.min.js"></script>
+  <script src="js/app.min.js"></script>
 </body>
 </html>`;
 
@@ -50,15 +54,25 @@ table { border-collapse: collapse; border-spacing: 0; }
 @use "../components/main/main";
 @use "../components/footer/footer";`;
 
-  const appJsContent = `import { header } from "../components/header/header";
-import { main } from "../components/main/main";
-import { footer } from "../components/footer/footer";
+  const appJsContent = `import { header } from '../components/header/header';
+import { main } from '../components/main/main';
+import { footer } from '../components/footer/footer';
 
-header();
-main();
-footer();
+// Инициализация компонентов
+const initApp = () => {
+  document.body.classList.add('_js-ready');
+  header();
+  main();
+  footer();
+};
 
-console.log("Gulp + TypeScript работает!");`;
+if (document.readyState === 'complete') {
+  initApp();
+} else {
+  window.addEventListener('load', initApp);
+}
+
+console.log('🚀 Radik.Dev: TypeScript успешно инициализирован');`;
 
   const folders = [
     srcFolder,
@@ -66,11 +80,15 @@ console.log("Gulp + TypeScript работает!");`;
     struct.components,
     struct.modules,
     struct.plugins,
+    path.join(srcFolder, 'parts'),
     path.join(srcFolder, 'images', 'src'),
     path.join(srcFolder, 'fonts', 'src'),
     path.join(struct.components, 'header'),
+    path.join(struct.components, 'header', 'img'),
     path.join(struct.components, 'main'),
+    path.join(struct.components, 'main', 'img'),
     path.join(struct.components, 'footer'),
+    path.join(struct.components, 'footer', 'img'),
   ];
 
   folders.forEach((dir) => {

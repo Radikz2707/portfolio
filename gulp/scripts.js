@@ -30,7 +30,7 @@ export function scripts() {
       // Поддерживаем динамическое имя в зависимости от чанка
       filename: '[name].min.js',
       chunkFilename: 'js/chunks/chunk-[name].js',
-      publicPath: '/',
+      publicPath: '',
     },
     resolve: {
       alias: {
@@ -102,7 +102,8 @@ export function scripts() {
     webpackStream(webpackConfig, webpack, function (err, stats) {
       if (err) return;
       if (stats.hasErrors()) {
-        console.error(stats.toString('minimal'));
+        const info = stats.toJson();
+        console.error('\x1b[31m[Webpack Error]\x1b[0m', info.errors[0].message);
         if (typeof onError === 'function') {
           onError.call(this, new Error('Webpack compilation failed.'));
         }

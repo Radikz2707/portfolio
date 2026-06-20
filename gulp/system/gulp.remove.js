@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { config } from './gulp.config.js';
+import { config } from '../../gulp.config.js';
 
 const PROTECTED_NAMES = [
   'js',

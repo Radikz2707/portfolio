@@ -50,8 +50,16 @@ function fixHtmlPaths() {
 
       // Обрабатываем ссылки на CSS, JS и изображения
       content = content.replace(
-        /(src=["']\s*)(js\/app\.min\.js)/gi,
-        (match, p1) => p1 + 'js/app.min.js?v=' + (global.buildSig || Date.now())
+        /(href=["']\s*)(css\/[^"']+\.css)/gi,
+        addPrefix,
+      );
+      content = content.replace(
+        /(src=["']\s*)(js\/[^"']+\.js)/gi,
+        (match, p1, p2) => {
+          // Добавляем версию только для основных скриптов и только в продакшене или если это app.min.js
+          const version = isProd ? `?v=${global.buildSig || Date.now()}` : '';
+          return addPrefix(match, p1, p2 + version);
+        }
       );
 
       content = content.replace(

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { config } from './gulp.config.js';
+import { config } from '../../gulp.config.js';
 
 const toCamelCase = (str) =>
   str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -15,7 +15,7 @@ const updateFileContent = (filePath, modifyCallback) => {
 const updateAppTs = (filePath, name, camelName) => {
   updateFileContent(filePath, (content) => {
     const lines = content.split(/\r?\n/);
-    const importLine = `import { ${camelName} } from "../modules/${name}/${name}";`;
+    const importLine = `import { ${camelName} } from "../plugins/${name}/${name}";`;
     const callLine = `${camelName}();`;
 
     // 1. ИМПОРТЫ: Находим самый последний импорт в файле и вставляем под него
@@ -28,15 +28,20 @@ const updateAppTs = (filePath, name, camelName) => {
       lines.unshift(importLine);
     }
 
-    // 2. ВЫЗОВЫ: Вставляем вызов новой функции в самый-самый конец файла
-    lines.push(callLine);
+    // 2. ВЫЗОВЫ: Вставляем вызов новой функции внутрь initApp
+    const initAppIndex = lines.findIndex(line => line.includes('const initApp = () => {'));
+    if (initAppIndex !== -1) {
+      lines.splice(initAppIndex + 2, 0, `  ${callLine}`);
+    } else {
+      lines.push(callLine);
+    }
 
     return lines
       .join('\n')
       .replace(/(import\s+.*?;)\n\s*\n\s*(import\s+.*?;)/gi, '$1\n$2')
       .replace(/\n{3,}/g, '\n\n');
   });
-  console.log('📝 Модуль успешно добавлен в app.ts');
+  console.log('📝 Плагин успешно добавлен в app.ts');
 };
 
 const updateStyleScss = (filePath, dirPath, name, camelName) => {
@@ -49,7 +54,7 @@ const updateStyleScss = (filePath, dirPath, name, camelName) => {
 
     const lines = content.split(/\r?\n/);
 
-    // ИСПРАВЛЕНО: Безопасный импорт стилей с уникальным пространством имен (алиасом) на основе camelName
+    // ИСПРАВЛЕНО: Безопасный импорт стилей с уникальным пространств��м имен (алиасом) на основе camelName
     const newImport = `@use "${relativePath}" as ${camelName};`;
 
     const firstCodeIndex = lines.findIndex((line) => {
@@ -72,24 +77,23 @@ const updateStyleScss = (filePath, dirPath, name, camelName) => {
       .replace(/\n{3,}/g, '\n\n')
       .replace(/(@use\s+.*?;)\n*(?![^]*@use)/i, '$1\n\n');
   });
-  console.log('🎨 Стили добавлены в блок модулей style.scss');
+  console.log('🎨 Стили плагина добавлены в style.scss');
 };
 
-// ВОТ ЭТА ФУНКЦИЯ БЫЛА УТЕРЯНА. ВОЗВРАЩАЕМ ЕЁ НА МЕСТО:
-export const createModule = (done) => {
+export const createPlugin = (done) => {
   const name = process.argv
     .find((arg) => arg.startsWith('--'))
     ?.replace('--', '');
 
   if (!name) {
     console.log(
-      '\n❌ Укажите имя модуля! Пример: gulp createModule --my-block\n',
+      '\n❌ Укажите имя плагина! Пример: gulp plugin --my-plugin\n',
     );
     return done();
   }
 
   const camelName = toCamelCase(name);
-  const dirPath = path.join(config.structure.modules, name);
+  const dirPath = path.join(config.structure.plugins, name);
   const appJsPath = path.join(config.srcFolder, 'js', 'app.ts');
   const styleScssPath = path.join(
     config.srcFolder,
@@ -98,13 +102,13 @@ export const createModule = (done) => {
   );
 
   if (fs.existsSync(dirPath)) {
-    console.log(`\n⚠️ Модуль "${name}" уже существует!\n`);
+    console.log(`\n⚠️ Плагин "${name}" уже существует!\n`);
     return done();
   }
 
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const tsTemplate = `export const ${camelName} = (): void => {\n  console.log("Модуль ${name} (TS) инициализирован");\n};\n`;
+  const tsTemplate = `export const ${camelName} = (): void => {\n  console.log("Плагин ${name} (TS) инициализирован");\n};\n`;
   const scssTemplate = `.${name} {\n  \n}\n`;
 
   fs.writeFileSync(path.join(dirPath, `${name}.ts`), tsTemplate);
@@ -113,6 +117,6 @@ export const createModule = (done) => {
   updateAppTs(appJsPath, name, camelName);
   updateStyleScss(styleScssPath, dirPath, name, camelName);
 
-  console.log(`\n✅ Модуль "${name}" (TS: ${camelName}) успешно создан!\n`);
+  console.log(`\n✅ Плагин "${name}" (TS: ${camelName}) успешно создан!\n`);
   done();
 };

@@ -15,9 +15,11 @@ ${c.green}${c.bold}npm run dev${c.reset}          — запуск сервер�
 ${c.green}${c.bold}npm run build${c.reset}        — финальная сборка (сжатие, ZIP)
 ${c.green}${c.bold}npm run lint${c.reset}         — проверка кода (TS/SCSS/HTML)
 ${c.green}${c.bold}npm run clean${c.reset}        — полная очистка папки dist
+${c.green}${c.bold}npm run test${c.reset}         — запуск тестов (Watch режим)
+${c.green}${c.bold}npm run test:run${c.reset}     — одиночный прогон тестов (CI)
+${c.green}${c.bold}npm run deploy:gh${c.reset}    — деплой на GitHub Pages
 
-${c.cyan}${c.bold}КОНСТРУКТОР КОМПОНЕНТОВ:${c.reset}
-${c.yellow}${c.bold}gulp create --имя${c.reset}    — создать БЛОК (HTML + SCSS + TS)
+${c.cyan}${c.bold}КОНСТРУКТОР КОМПОНЕНТОВ:${c.reset}${c.yellow}${c.bold}gulp create --имя${c.reset}    — создать БЛОК (HTML + SCSS + TS)
                           ${c.cyan}* для секций сайта (header, hero, services)${c.reset}
 
 ${c.yellow}${c.bold}gulp module --имя${c.reset}    — создать МОДУЛЬ (TS + SCSS)

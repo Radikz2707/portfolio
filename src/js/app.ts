@@ -18,6 +18,7 @@ menu();
 modal();
 scrollToTop();
 themeToggle();
+// [ДИНАМИЧЕСКИЕ МОДУЛИ]
 
 // 🔥 ОПРЕДЕЛЕНИЕ ТИПА СТРАНИЦЫ
 const isBlogPage = 
@@ -35,10 +36,12 @@ const initApp = () => {
 
   if (isBlogPage) {
     blogSidebar();
+    // [ВЫЗОВЫ БЛОГ]
   } else {
     contacts();
     aboutMe();
     projectsGrid();
+    // [ВЫЗОВЫ ГЛАВНАЯ]
   }
 
   // Инициализация AOS и активация видимых элементов
