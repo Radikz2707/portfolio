@@ -4,8 +4,12 @@ import gulp from 'gulp';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import dotenv from 'dotenv';
 import plumber from 'gulp-plumber';
 import { createRequire } from 'module';
+
+// Загружаем переменные окружения из .env файла
+dotenv.config();
 
 const require = createRequire(import.meta.url);
 const webpackStream = require('webpack-stream');
@@ -94,6 +98,13 @@ export function scripts() {
       } : false,
     },
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
+    plugins: [
+      // 🔥 НОВОЕ: Подстановка переменных окружения из .env файла
+      new webpack.EnvironmentPlugin({
+        TELEGRAM_TOKEN: '8806317386:AAFnzU0x4ibgXkdEvqyhGgjcX3ZX6Qf1GQE',
+        TELEGRAM_CHAT_ID: '1260692042',
+      }),
+    ],
   };
 
   const pipeline = [
