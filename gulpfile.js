@@ -11,7 +11,11 @@ import rename from 'gulp-rename';
 import newer from 'gulp-newer';
 import dotenv from 'dotenv';
 
-// Импорты процессоров контента
+// =========================================================================
+// ДИРЕКТИВНЫЕ ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ИНФРАСТРУКТУРЫ
+// =========================================================================
+
+// Процессоры статического контента (Markdown / Разметка)
 import {
   generateSidebarLinks,
   processHtmlContent,
@@ -20,12 +24,12 @@ import {
   wrapInMasterLayout,
 } from './gulp/utils/content-processor.js';
 
-// Импорты инфраструктуры сервера
+// Серверное ядро и утилиты отладки
 import { browsersync, startwatch, onError, isProd, bs } from './gulp/server.js';
 import { lintCss, lintJs } from './gulp/lint.js';
 import { cleandist, zipFiles } from './gulp/utils.js';
 
-// Импорты системных утилит
+// Инструменты автоматизации CLI (БЭМ CRUD & Инициализация)
 import { create } from './gulp/system/gulp.create.js';
 import { createModule as module } from './gulp/system/gulp.module.js';
 import { createPlugin as plugin } from './gulp/system/gulp.plugin.js';
@@ -34,12 +38,19 @@ import { createStructure as init } from './gulp/system/gulp.init.js';
 import { help } from './gulp/system/gulp.help.js';
 import { deploy } from './gulp/deploy.js';
 
-// Глобальная метка сборки для пробития кэша
+// Глобальный отпечаток сборки для инвалидации кэша ресурсов (Cache Busting)
 global.buildSig = Date.now();
 
 const { parallel, series, src, dest } = gulp;
+const loadedModules = {};
 
-// ГЕНЕРАЦИЯ КОНФИГА ИЗ .ENV
+// =========================================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ДИНАМИЧЕСКИЕ СТРИМЫ (CORE UTILS)
+// =========================================================================
+
+/**
+ * Автоматически генерирует файл конфигурации среды `env-config.js` из .env
+ */
 export const createEnvConfig = (done) => {
   const envPath = path.resolve('.env');
   let token = '';
@@ -54,32 +65,40 @@ export const createEnvConfig = (done) => {
     if (chatIdMatch) chatId = chatIdMatch[1].trim();
   }
 
-  const envContent = `export const env = {
-  TELEGRAM_TOKEN: '${token}',
-  TELEGRAM_CHAT_ID: '${chatId}'
-};`;
+  const envContent = `export const env = { TELEGRAM_TOKEN: '${token}', TELEGRAM_CHAT_ID: '${chatId}' };`;
   const jsDir = path.join(config.srcFolder, 'js');
-  if (!fs.existsSync(jsDir)) fs.mkdirSync(jsDir, { recursive: true });
+
+  if (!fs.existsSync(jsDir)) {
+    fs.mkdirSync(jsDir, { recursive: true });
+  }
+
   fs.writeFileSync(path.join(jsDir, 'env-config.js'), envContent);
   console.log('✅ env-config.js успешно сгенерирован напрямую из .env');
   done();
 };
 
-const loadedModules = {};
-
+/**
+ * Динамический загрузчик изолированных Gulp-модулей (Lazy Loading)
+ * @param {string} taskName - Имя запрашиваемой задачи
+ */
 const runTask = (taskName) => {
   const gulpTaskWrapper = async (done) => {
     try {
       let fileName = taskName;
-      if (taskName === 'fontsStyle') fileName = 'fonts';
-      else if (taskName === 'blogIndex') fileName = 'html';
-      else if (taskName === 'server') fileName = 'server';
-      else if (
+
+      if (taskName === 'fontsStyle') {
+        fileName = 'fonts';
+      } else if (taskName === 'blogIndex') {
+        fileName = 'html';
+      } else if (taskName === 'server') {
+        fileName = 'server';
+      } else if (
         ['imagesDev', 'createWebp', 'sprite', 'favs', 'faviconsDev'].includes(
           taskName,
         )
-      )
+      ) {
         fileName = 'images';
+      }
 
       if (!loadedModules[fileName]) {
         loadedModules[fileName] = await import(`./gulp/${fileName}.js`);
@@ -87,6 +106,7 @@ const runTask = (taskName) => {
 
       const taskModule = loadedModules[fileName];
       const task = taskModule[taskName] || taskModule.default;
+
       if (typeof task === 'function') return task(done);
       done();
     } catch (err) {
@@ -94,10 +114,15 @@ const runTask = (taskName) => {
       done(err);
     }
   };
+
   Object.defineProperty(gulpTaskWrapper, 'name', { value: taskName });
   return gulpTaskWrapper;
 };
 
+/**
+ * Фабрика динамических задач для генерации контента блога из Markdown
+ * @param {string} folderName - Имя целевой контентной папки
+ */
 const createDynamicContentTask = (folderName) => {
   const task = (done) => {
     const sourcePath = [
@@ -109,6 +134,7 @@ const createDynamicContentTask = (folderName) => {
         '*.{md,txt,rtf,docx}',
       ),
     ];
+
     if (folderName === 'blog') {
       sourcePath.push(
         '!' +
@@ -132,22 +158,20 @@ const createDynamicContentTask = (folderName) => {
       .pipe(compileContentStream())
       .pipe(dest(tempDestPath))
       .on('end', () => {
-        // 🔥 ИСПРАВЛЕНО: Передаем folderName без изменений, чтобы пути к src/content/ читал без ошибок,
-        // но добавляем флаг вложенности третьим аргументом, если это необходимо
         wrapInMasterLayout(tempDestPath, folderName)
           .then(() => done())
           .catch((err) => done(err));
       });
   };
+
   Object.defineProperty(task, 'name', { value: `content:${folderName}` });
   return task;
 };
 
+// Динамическое сканирование директорий контента
 const contentDir = path.resolve(config.srcFolder || 'src', 'content');
-
 const dynamicContentFolderNames = fs.existsSync(contentDir)
   ? fs.readdirSync(contentDir).filter((f) => {
-      // Игнорируем скрытые папки (например, .git или системные кэши)
       if (f.startsWith('.')) return false;
       return fs.statSync(path.join(contentDir, f)).isDirectory();
     })
@@ -161,6 +185,8 @@ const dynamicContentFolderNames = fs.existsSync(contentDir)
       'psychology',
       'space',
     ];
+
+// Комплексные агрегаторы ресурсов
 const compileAssets = parallel(
   runTask('styles'),
   runTask('scripts'),
@@ -168,8 +194,14 @@ const compileAssets = parallel(
   runTask('createWebp'),
   runTask('sprite'),
 );
+
 const blogContent = createDynamicContentTask('blog');
 
+// =========================================================================
+// ПОЛНЫЕ РЕЖИМЫ СБОРКИ ПРОЕКТА (BUILD & DEVELOPMENT PRODUCTION)
+// =========================================================================
+
+// Продакшен-сборка со сквозной валидацией, архивацией и оптимизацией
 export const build = series(
   createEnvConfig,
   cleandist,
@@ -189,6 +221,7 @@ export const build = series(
   },
 );
 
+// Сценарий локальной разработки по умолчанию (Команда: npx gulp)
 export default series(
   createEnvConfig,
   parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
@@ -208,24 +241,41 @@ export default series(
   startwatch,
 );
 
+// =========================================================================
+// ЕДИНЫЙ ИЗОЛИРОВАННЫЙ БЛОК СИСТЕМНОГО ЭКСПОРТА (GULP CLI REGISTRATION)
+// =========================================================================
 export {
+  // Системные хелперы и CLI CRUD
   create,
   remove,
   module,
   plugin,
   init,
   help,
+  deploy,
   cleandist,
   lintJs,
   lintCss,
-  deploy,
+
+  // Изолированные задачи для точечного вызова в тестах
+  favs,
+  styles,
+  scripts,
+  html,
+  images,
+  createWebp,
+  sprite,
+  fonts,
+  fontsStyle,
 };
-export const favs = runTask('favs');
-export const styles = runTask('styles');
-export const scripts = runTask('scripts');
-export const html = runTask('html');
-export const images = runTask('images');
-export const createWebp = runTask('createWebp');
-export const sprite = runTask('sprite');
-export const fonts = runTask('fonts');
-export const fontsStyle = runTask('fontsStyle');
+
+// Явная ленивая регистрация деструктурированных ссылок задач
+const favs = runTask('favs');
+const styles = runTask('styles');
+const scripts = runTask('scripts');
+const html = runTask('html');
+const images = runTask('images');
+const createWebp = runTask('createWebp');
+const sprite = runTask('sprite');
+const fonts = runTask('fonts');
+const fontsStyle = runTask('fontsStyle');
