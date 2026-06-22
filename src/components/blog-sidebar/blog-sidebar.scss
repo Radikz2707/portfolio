@@ -1,30 +1,34 @@
-// src/components/blog-sidebar/blog-sidebar.scss
-@use "../../scss/base/vars" as v;
+@use '../../scss/base/vars' as v;
 
 .blog-sidebar {
   width: 100%;
   padding: 24px;
-  background-color: v.$bg-card; // Наша переменная цвета карточек (#1e293b)
-  border: 1px solid #334155;
-  border-radius: 8px;
+  background-color: v.$bg-card;
 
-  // 🖥️ ДЕСКТОПНАЯ ВЕРСИЯ: Заставляем меню красиво двигаться вместе со взглядом пользователя
+  // 🔥 ИСПРАВЛЕНО: Рамка адаптируется под тему, чтобы не выглядеть грязной на светлом фоне
+  border: 1px solid v.$color-text-muted;
+  border-radius: 8px;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+
   @media (width >= 769px) {
     position: sticky;
-    top: 140px; // Учитываем высоту вашей фиксированной шапки сайта, чтобы меню не заезжало под неё
+    top: 140px;
   }
 
-  // Заголовок сайдбара (например, "Другие статьи")
   &__title {
     margin-bottom: 20px;
     font-size: 20px;
     font-weight: 700;
-    color: #ffffff;
+
+    // 🔥 ИСПРАВЛЕНО: Текст заголовка адаптируется и меняется с белого на темно-slate
+    color: v.$color-text-main;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    transition: color 0.3s ease;
   }
 
-  // Список ссылок
   &__list {
     display: flex;
     flex-direction: column;
@@ -34,7 +38,6 @@
     list-style: none;
   }
 
-  // Категория (заголовок группы)
   &__category {
     margin-bottom: 10px;
 
@@ -43,7 +46,6 @@
     }
   }
 
-  // Кнопка раскрытия категории
   &__category-btn {
     display: flex;
     align-items: center;
@@ -52,7 +54,7 @@
     padding: 10px 0;
     font-size: 14px;
     font-weight: 600;
-    color: #94a3b8;
+    color: v.$color-text-muted;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     cursor: pointer;
@@ -65,15 +67,17 @@
       width: 8px;
       height: 8px;
       margin-left: 10px;
-      content: "";
+      content: '';
       border-right: 2px solid currentcolor;
       border-bottom: 2px solid currentcolor;
       transform: rotate(45deg) translateY(-2px);
       transition: transform 0.3s ease;
     }
 
+    // 🔥 ИСПРАВЛЕНО: Кнопка категории при ховере загорается вашим пурпурным цветом (контрастным в обеих темах)
     &:hover {
-      color: #ffffff;
+      font-weight: 500;
+      color: v.$color-purple;
     }
 
     &._active {
@@ -85,47 +89,51 @@
     }
   }
 
-  // Вложенный список статей
   &__sublist {
-    display: none; // По умолчанию скрыт
+    display: none;
     flex-direction: column;
     gap: 10px;
     padding: 5px 0 10px 15px;
     margin: 0;
     list-style: none;
-    border-left: 1px solid #334155;
+
+    // 🔥 ИСПРАВЛЕНО: Боковая линия списка адаптируется и не режет глаза
+    border-left: 1px solid v.$color-text-muted;
+    transition: border-color 0.3s ease;
 
     &._open {
       display: flex;
     }
   }
 
-  // Элемент списка
   &__item {
     padding: 0;
     margin: 0;
   }
 
-  // Интерактивная ссылка на статью
   &__link {
     display: block;
     font-size: 16px;
     line-height: 1.4;
-    color: v.$color-text-muted; // Наш мягкий серый цвет для второстепенного текста
+    color: v.$color-text-muted;
+    text-transform: normal;
+    overflow-wrap: break-word;
     text-decoration: none;
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition:
+      color 0.2s ease,
+      transform 0.2s ease;
 
-    // Эффект при наведении мышкой
+    // 🔥 ИСПРАВЛЕНО: Текст ссылок при ховере плавно окрашивается в v.$color-purple и СТАНОВИТСЯ ИДЕАЛЬНО ВИДИМЫМ!
     &:hover {
-      color: #ffffff;
-      transform: translateX(4px); // Ссылка аккуратно сдвинется вправо, подсказывая, что на неё можно кликнуть
+      font-weight: 500;
+      color: v.$color-purple;
+      transform: translateX(4px);
     }
 
-    // Стили для активной статьи, которую пользователь читает прямо сейчас
     &._active {
       font-weight: 600;
-      color: v.$color-accent; // Подсвечиваем цветом индиго
-      pointer-events: none; // Отключаем кликабельность по уже открытой статье
+      color: v.$color-accent;
+      pointer-events: none;
     }
   }
 }
