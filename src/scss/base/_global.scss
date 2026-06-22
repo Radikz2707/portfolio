@@ -3,7 +3,8 @@
 /* Глобальные стили проекта */
 html,
 body {
-  height: 100%; /* Обеспечивает передачу высоты окна браузера */
+  height: 100%;
+  overflow-x: hidden !important;
 }
 
 body {
