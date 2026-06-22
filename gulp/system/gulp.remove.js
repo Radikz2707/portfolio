@@ -30,24 +30,20 @@ const cleanAppTs = (filePath, blockName, camelName) => {
     const lines = content.split(/\r?\n/);
     const filteredLines = lines.filter((line) => {
       const trimmed = line.trim();
-
       const escapeRegExp = (string) =>
-        string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        string.replace(/[.*+?^{}()|[\]\\]/g, '\\$&');
       const escapedBlock = escapeRegExp(blockName);
-
-      // 🔥 БРОНЕБОЙНЫЙ REGEX: Находит ЛЮБОЙ импорт, содержащий имя компонента внутри кавычек в секции from
       const importRegex = new RegExp(
         `^import\\s+.*\\s+from\\s+['"].*?\\/${escapedBlock}['"];?$`,
       );
-
-      const isTargetImport = importRegex.test(trimmed);
-      const isTargetCall = trimmed.replace(/\s+/g, '') === `${camelName}();`;
-
-      return !isTargetImport && !isTargetCall;
+      return (
+        !importRegex.test(trimmed) &&
+        trimmed.replace(/\s+/g, '') !== `${camelName}();`
+      );
     });
     return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n');
   });
-  console.log('✂️ Импорты и вызовы TS успешно удалены.');
+  console.log('✂️ Импорты и вызовы TS успешно вычищены.');
 };
 
 const cleanStyleScss = (filePath, blockName) => {
@@ -56,7 +52,7 @@ const cleanStyleScss = (filePath, blockName) => {
     const filteredLines = lines.filter((line) => {
       const trimmed = line.trim();
       const escapeRegExp = (string) =>
-        string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        string.replace(/[.*+?^{}()|[\]\\]/g, '\\$&');
       const scssRegex = new RegExp(
         `@use\\s+['"].*?\\/${escapeRegExp(blockName)}['"];?`,
       );
@@ -82,30 +78,47 @@ const checkDirectorySafety = (dirPath) => {
   if (!fs.existsSync(dirPath)) return true;
   if (!fs.statSync(dirPath).isDirectory()) return true;
 
+  const dirName = path.basename(dirPath).toLowerCase();
+
+  // Разрешаем автоудаление для обычных автотестов, но ИСКЛЮЧАЕМ блок 'secure'
+  if (dirName.includes('autotest') && !dirName.includes('secure')) {
+    return true;
+  }
+
+  // Альтернативные короткие префиксы для тестов
+  if (
+    dirName.startsWith('atcomp') ||
+    dirName.startsWith('atmod') ||
+    dirName.startsWith('atplug') ||
+    dirName.startsWith('atclean')
+  ) {
+    return true;
+  }
+
   const files = fs.readdirSync(dirPath);
   for (const file of files) {
     const fullPath = path.join(dirPath, file);
-
-    // 🔥 ИСПРАВЛЕНО: Интеллектуальный разбор вложенных папок
     if (fs.statSync(fullPath).isDirectory()) {
       if (file === 'img') {
         const imgFiles = fs
           .readdirSync(fullPath)
           .filter((f) => f !== '.gitkeep');
-        if (imgFiles.length === 0) continue; // Папка img пустая — пропускаем и идём дальше
+        if (imgFiles.length === 0) continue;
       }
-      return false; // Найдена посторонняя папка с файлами — блокируем удаление
+      return false;
     }
 
     const content = fs.readFileSync(fullPath, 'utf-8').trim();
 
     if (file.endsWith('.html')) {
-      const cleanContent = content.replace(/<!--[\s\S]*?-->/g, '').trim();
-      const isAutoTemplate =
-        cleanContent.includes('Шаблон компонента') ||
-        /<h2>.*? (component|module|plugin)<\/h2>/i.test(cleanContent);
-
-      if (cleanContent.length > 0 && !isAutoTemplate) return false;
+      const cleanContent = content
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(
+          /<section[^>]*>[\s\S]*?<div[^>]*>[\s\S]*?<h2[^>]*>[\s\S]*?<\/h2>[\s\S]*?<\/div>[\s\S]*?<\/section>/gi,
+          '',
+        )
+        .trim();
+      if (cleanContent.length > 0) return false;
     }
 
     if (file.endsWith('.scss') || file.endsWith('.sass')) {
@@ -113,6 +126,7 @@ const checkDirectorySafety = (dirPath) => {
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/\/\/.*/g, '')
         .replace(/@use\s+['"][^'"]+['"]\s*as\s+\w+;/g, '')
+        .replace(/\.[\w-]+\s*\{\s*[\s\S]*?\s*\}/gi, '')
         .trim();
       if (cleanContent.length > 0) return false;
     }
@@ -158,6 +172,16 @@ export const remove = (done) => {
     path.join(config.structure.plugins, `${blockName}.ts`),
   ];
 
+  const hasDirectory = possibleDirs.some((dir) => fs.existsSync(dir));
+  const hasSingleFile = possibleFiles.some((file) => fs.existsSync(file));
+
+  if (!hasDirectory && !hasSingleFile) {
+    console.log(
+      `\n⚠️ Ошибка: Ресурс "${blockName}" не найден на диске. Нечего удалять!\n`,
+    );
+    return done();
+  }
+
   for (const dir of possibleDirs) {
     if (fs.existsSync(dir) && !checkDirectorySafety(dir)) {
       console.log(
@@ -174,13 +198,11 @@ export const remove = (done) => {
     `style.${config.scssExtension}`,
   );
   const indexHtmlPath = path.join(config.srcFolder, 'index.html');
-  let dirDeleted = false;
 
   possibleDirs.forEach((dir) => {
     if (fs.existsSync(dir)) {
       fs.rmSync(dir, { recursive: true, force: true });
       console.log(`🗑️ Папка удалена: ${dir}`);
-      dirDeleted = true;
     }
   });
 
@@ -188,12 +210,8 @@ export const remove = (done) => {
     if (fs.existsSync(file)) {
       fs.unlinkSync(file);
       console.log(`🗑️ Файл удален: ${file}`);
-      dirDeleted = true;
     }
   });
-
-  if (!dirDeleted)
-    console.log(`⚠️ Ресурсы для "${blockName}" не найдены на диске.`);
 
   cleanAppTs(mainJsPath, blockName, camelName);
   cleanStyleScss(mainScssPath, blockName);

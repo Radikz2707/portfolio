@@ -221,3 +221,6 @@ export {
   deploy,
 };
 export const favs = runTask('favs');
+export const styles = runTask('styles');
+export const scripts = runTask('scripts');
+export const html = runTask('html');

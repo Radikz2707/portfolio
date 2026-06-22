@@ -1,19 +1,40 @@
-import { vi } from 'vitest';
+import { vi, expect } from 'vitest';
 
-// Мокаем Node.js модули для JSDOM
-vi.mock('fs', () => ({
-  default: {
-    createReadStream: vi.fn(),
-    existsSync: vi.fn(),
-    readdirSync: vi.fn(),
-  },
-  promises: {
-    readFile: vi.fn(),
-    writeFile: vi.fn(),
-    readdir: vi.fn(),
-    unlink: vi.fn(),
-  },
-}));
+// 1. Мокаем Node.js модули для JSDOM (С динамическим пропуском серверных CLI-тестов)
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof import('fs')>('fs');
+
+  // Внутренний интерфейс состояния Vitest, чтобы TypeScript точно знал про существование testPath
+  interface VitestState {
+    testPath?: string;
+  }
+
+  const checkIsCliTest = (): boolean => {
+    if (typeof expect === 'undefined') return false;
+
+    // Сначала приводим к unknown (разрешено), а затем вытаскиваем getState
+    const expectWithState = expect as unknown as {
+      getState?: () => VitestState;
+    };
+    const testPath = expectWithState.getState?.()?.testPath;
+
+    return !!testPath?.replace(/\\/g, '/').includes('gulp/tests/');
+  };
+
+  return {
+    ...actual,
+    default: {
+      ...actual,
+      createReadStream: vi.fn(),
+      existsSync: (path: string) => {
+        return checkIsCliTest() ? actual.existsSync(path) : false;
+      },
+    },
+    existsSync: (path: string) => {
+      return checkIsCliTest() ? actual.existsSync(path) : false;
+    },
+  };
+});
 
 vi.mock('fs/promises', () => ({
   readFile: vi.fn(),
@@ -22,45 +43,31 @@ vi.mock('fs/promises', () => ({
   unlink: vi.fn(),
 }));
 
-vi.mock('path', () => ({
-  default: {
-    resolve: vi.fn(),
-    join: vi.fn(),
-    extname: vi.fn(),
-    basename: vi.fn(),
-    dirname: vi.fn(),
-  },
-}));
+vi.mock('path', async () => {
+  const actual = await vi.importActual<typeof import('path')>('path');
+  return { default: actual, ...actual };
+});
 
 vi.mock('readline', () => ({
-  default: {
-    createInterface: vi.fn(),
-  },
+  default: { createInterface: vi.fn() },
+  createInterface: vi.fn(),
 }));
 
-vi.mock('stream', () => ({
-  Transform: vi.fn().mockImplementation(() => ({
+vi.mock('stream', () => {
+  const mockTransform = vi.fn().mockImplementation(() => ({
     transform: vi.fn(),
     pipe: vi.fn(),
     write: vi.fn(),
     end: vi.fn(),
-  })),
-  default: {
-    Transform: vi.fn().mockImplementation(() => ({
-      transform: vi.fn(),
-      pipe: vi.fn(),
-      write: vi.fn(),
-      end: vi.fn(),
-    })),
-  },
-}));
+  }));
+  return {
+    Transform: mockTransform,
+    default: { Transform: mockTransform },
+  };
+});
 
-// Мокаем внешние модули
-vi.mock('mammoth', () => ({
-  extractRawText: vi.fn(),
-  convertToHtml: vi.fn(),
-}));
-
+// 2. Мокаем внешние модули сборщика
+vi.mock('mammoth', () => ({ extractRawText: vi.fn(), convertToHtml: vi.fn() }));
 vi.mock('gulp', () => ({
   default: {
     src: vi.fn(),
@@ -69,16 +76,21 @@ vi.mock('gulp', () => ({
     series: vi.fn(),
     parallel: vi.fn(),
   },
+  src: vi.fn(),
+  dest: vi.fn(),
+  watch: vi.fn(),
+  series: vi.fn(),
+  parallel: vi.fn(),
 }));
-
 vi.mock('gulp-markdown', () => ({ default: vi.fn() }));
 
-// Мокаем конфигурацию
+// 3. Мокаем конфигурацию проекта
 vi.mock('../../gulp.config.js', () => ({
   config: {
     srcFolder: 'src',
     siteName: 'Radik.Dev',
     repoPath: 'Radik/portfolio',
+    scssExtension: 'scss',
     structure: {
       components: 'src/components',
       modules: 'src/js/modules',
@@ -91,11 +103,7 @@ vi.mock('../../gulp.config.js', () => ({
         dest: 'dist/css/',
         output: 'app.min.css',
       },
-      scripts: {
-        src: 'src/js/app.ts',
-        dest: 'dist/js/',
-        output: 'app.min.js',
-      },
+      scripts: { src: 'src/js/app.ts', dest: 'dist/js/', output: 'app.min.js' },
       images: {
         src: 'src/images/**/*',
         dest: 'dist/images/',
@@ -106,31 +114,20 @@ vi.mock('../../gulp.config.js', () => ({
         dest: 'dist/images/favicons/',
         htmlOutput: 'src/parts/favicon-links.html',
       },
-      fonts: {
-        src: 'src/fonts/src/**/*.{ttf,otf}',
-        dest: 'dist/fonts/',
-      },
+      fonts: { src: 'src/fonts/src/**/*.{ttf,otf}', dest: 'dist/fonts/' },
     },
     settings: {
       webpQuality: 70,
-      imagemin: {
-        jpeg: 75,
-        png: 5,
-      },
+      imagemin: { jpeg: 75, png: 5 },
       autoprefixer: ['> 0.5%', 'last 2 versions', 'not dead'],
     },
   },
 }));
 
-// Мокаем env-config
 vi.mock('../src/js/env-config.js', () => ({
-  env: {
-    TELEGRAM_TOKEN: 'test-token',
-    TELEGRAM_CHAT_ID: 'test-chat-id',
-  },
+  env: { TELEGRAM_TOKEN: 'test-token', TELEGRAM_CHAT_ID: 'test-chat-id' },
 }));
 
-// Мокаем content-processor.js
 vi.mock('../../gulp/utils/content-processor.js', () => ({
   parsePlainText: vi.fn(
     (content) => content?.replace(/<[^>]*>/g, '').trim() || '',

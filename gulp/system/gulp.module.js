@@ -9,24 +9,22 @@ const updateFileContent = (filePath, modifyCallback) => {
   if (!fs.existsSync(filePath)) return;
   const content = fs.readFileSync(filePath, 'utf-8');
   const updatedContent = modifyCallback(content);
-  fs.writeFileSync(filePath, updatedContent.trimEnd() + '\n');
+  if (updatedContent !== content) {
+    fs.writeFileSync(filePath, updatedContent.trimEnd() + '\n');
+  }
 };
 
-const updateAppTs = (filePath, name, camelName, type) => {
+const updateAppTs = (filePath, name, camelName) => {
   updateFileContent(filePath, (content) => {
-    const isPlugin = type === 'plugin';
-    const importLine = `import { ${camelName} } from './${isPlugin ? 'plugins' : 'modules'}/${name}/${name}';`;
+    const importLine = `import { ${camelName} } from './modules/${name}/${name}';`;
     const callLine = `${camelName}();`;
 
     let newContent = content;
 
     if (!newContent.includes(importLine)) {
-      // 🎯 НАДЁЖНЫЙ МАРКЕР: Ищем пустую строку прямо перед заголовком БЭМ-компонентов
       const targetMarker =
         /\s*\n\/\/ ==========================================\n\/\/ 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ/;
-
       if (targetMarker.test(newContent)) {
-        // Вставляем новый импорт в самый конец списка системных модулей, перед компонентами
         newContent = newContent.replace(
           targetMarker,
           `\n${importLine}\n\n// ==========================================\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ`,
@@ -51,7 +49,7 @@ const updateAppTs = (filePath, name, camelName, type) => {
 
     return newContent.replace(/\n{3,}/g, '\n\n');
   });
-  console.log(`📝 ${isPlugin ? 'Плагин' : 'Модуль'} успешно добавлен в app.ts`);
+  console.log('📝 Модуль успешно добавлен в app.ts');
 };
 
 const updateStyleScss = (filePath, dirPath, name, camelName) => {
@@ -73,7 +71,7 @@ const updateStyleScss = (filePath, dirPath, name, camelName) => {
       return content + `\n${newImport}`;
     }
   });
-  console.log('🎨 Стили добавлены в блок модулей style.scss');
+  console.log('🎨 Стили добавили в блок модулей style.scss');
 };
 
 export const createModule = (done) => {
@@ -100,6 +98,8 @@ export const createModule = (done) => {
   }
 
   fs.mkdirSync(dirPath, { recursive: true });
+  fs.mkdirSync(path.join(dirPath, 'img'), { recursive: true });
+  fs.writeFileSync(path.join(dirPath, 'img', '.gitkeep'), '');
 
   const tsTemplate = `export const ${camelName} = (): void => {\n  console.log('Модуль ${name} (TS) инициализирован');\n};\n`;
   const scssTemplate = `.${name} {\n  \n}\n`;

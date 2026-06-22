@@ -10,11 +10,10 @@ export default defineConfig({
     ],
     setupFiles: ['./vitest.setup.ts'],
 
-    // 🔥 ГЛАВНЫЙ СЕКРЕТ ДЛЯ СЕРВЕРНОГО КОДА В JSDOM:
-    // Говорим Vite не анализировать импорты в папке gulp, а отдавать их напрямую в Node.js
+    // 🔥 АКТУАЛЬНЫЙ СИНТАКСИС VITEST ДЛЯ ИЗОЛЯЦИИ ТЕСТОВОГО СЕРВЕРА:
     server: {
       deps: {
-        inline: [/gulp/],
+        external: [/gulp/],
       },
     },
   },

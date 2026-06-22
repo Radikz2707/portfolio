@@ -9,24 +9,22 @@ const updateFileContent = (filePath, modifyCallback) => {
   if (!fs.existsSync(filePath)) return;
   const content = fs.readFileSync(filePath, 'utf-8');
   const updatedContent = modifyCallback(content);
-  fs.writeFileSync(filePath, updatedContent.trimEnd() + '\n');
+  if (updatedContent !== content) {
+    fs.writeFileSync(filePath, updatedContent.trimEnd() + '\n');
+  }
 };
 
-const updateAppTs = (filePath, name, camelName, type) => {
+const updateAppTs = (filePath, name, camelName) => {
   updateFileContent(filePath, (content) => {
-    const isPlugin = type === 'plugin';
-    const importLine = `import { ${camelName} } from './${isPlugin ? 'plugins' : 'modules'}/${name}/${name}';`;
+    const importLine = `import { ${camelName} } from './plugins/${name}/${name}';`;
     const callLine = `${camelName}();`;
 
     let newContent = content;
 
     if (!newContent.includes(importLine)) {
-      // 🎯 НАДЁЖНЫЙ МАРКЕР: Ищем пустую строку прямо перед заголовком БЭМ-компонентов
       const targetMarker =
         /\s*\n\/\/ ==========================================\n\/\/ 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ/;
-
       if (targetMarker.test(newContent)) {
-        // Вставляем новый импорт в самый конец списка системных модулей, перед компонентами
         newContent = newContent.replace(
           targetMarker,
           `\n${importLine}\n\n// ==========================================\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ`,
@@ -51,7 +49,7 @@ const updateAppTs = (filePath, name, camelName, type) => {
 
     return newContent.replace(/\n{3,}/g, '\n\n');
   });
-  console.log(`📝 ${isPlugin ? 'Плагин' : 'Модуль'} успешно добавлен в app.ts`);
+  console.log('📝 Плагин успешно добавлен в app.ts');
 };
 
 const updateStyleScss = (filePath, dirPath, name, camelName) => {
@@ -62,7 +60,6 @@ const updateStyleScss = (filePath, dirPath, name, camelName) => {
       .replace(/\\/g, '/');
     if (!relativePath.startsWith('.')) relativePath = `./${relativePath}`;
 
-    // 🔥 ОДИНАРНЫЕ КАВЫЧКИ
     const newImport = `@use '${relativePath}' as ${camelName};`;
     if (content.includes(newImport)) return content;
 
@@ -101,8 +98,9 @@ export const createPlugin = (done) => {
   }
 
   fs.mkdirSync(dirPath, { recursive: true });
+  fs.mkdirSync(path.join(dirPath, 'img'), { recursive: true });
+  fs.writeFileSync(path.join(dirPath, 'img', '.gitkeep'), '');
 
-  // 🔥 ОДИНАРНЫЕ КАВЫЧКИ ВНУТРИ ШАБЛОНА LOG
   const tsTemplate = `export const ${camelName} = (): void => {\n  console.log('Плагин ${name} (TS) инициализирован');\n};\n`;
   const scssTemplate = `.${name} {\n  \n}\n`;
 
