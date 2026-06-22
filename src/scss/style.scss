@@ -17,8 +17,9 @@
 @use '../components/footer/footer';
 @use '../components/menu/menu';
 @use '../components/blog-sidebar/blog-sidebar';
+@use './pages/blog';
 @use '../components/contacts/contacts';
-@use '../components/blog-page/blog-page';
+@use '../components/blog-categories/blog-categories';
 @use '../components/modal/modal' as modal;
 
 // ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ

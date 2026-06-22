@@ -123,7 +123,11 @@ export function startwatch(done) {
   });
 
   watch(
-    [`${config.srcFolder}/content/**/*`, `!${config.srcFolder}/content/**/~$*`, `!${config.srcFolder}/content/**/~WRD*`], 
+    [
+      config.srcFolder + '/content/**/*',
+      '!' + config.srcFolder + '/content/**/~$*',
+      '!' + config.srcFolder + '/content/**/~WRD*'
+    ], 
     watchOptions
   ).on(
     'change',
@@ -139,21 +143,18 @@ export function startwatch(done) {
           `📝 [Content Update] Обновление контента: ${path.basename(filePath)}`,
         );
         
-        (async () => {
+        const updateContent = async () => {
           try {
             const { wrapInMasterLayout } = await import('./utils/content-processor.js');
             const { blogIndex } = await import('./html.js');
             
-            // 1. Копируем измененный файл в dist, чтобы wrapInMasterLayout его увидел
             const destFolder = path.join(config.buildFolder, 'blog');
             if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
             
             fs.copyFileSync(filePath, path.join(destFolder, path.basename(filePath)));
 
-            // 2. Запускаем оборачивание в шаблон (оно же сконвертирует docx в html)
             await wrapInMasterLayout(destFolder, 'blog');
 
-            // 3. Обновляем индексную страницу блога (список статей)
             blogIndex(() => {
               console.log('✅ Контент успешно обновлен');
               bs.reload();
@@ -161,7 +162,8 @@ export function startwatch(done) {
           } catch (err) {
             console.error('❌ Ошибка при обновлении контента:', err);
           }
-        })();
+        };
+        updateContent();
       }
     },
   );

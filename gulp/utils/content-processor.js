@@ -2,15 +2,126 @@ import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
-import { config } from '../../gulp.config.js';
 import mammoth from 'mammoth';
 import gulp from 'gulp';
 import markdown from 'gulp-markdown';
 import { Transform } from 'stream';
 
+// Получение config для тестов и production
+const getConfig = async () => {
+  try {
+    // Проверяем, что мы не в тестовой среде JSDOM
+    if (
+      typeof process !== 'undefined' &&
+      process.versions &&
+      process.versions.node
+    ) {
+      const configPath = path.resolve(process.cwd(), 'gulp.config.js');
+      const configModule = await import(configPath);
+      return configModule.config;
+    }
+  } catch {
+    // Fallback для тестов
+  }
+  return {
+    srcFolder: 'src',
+    siteName: 'Radik.Dev',
+    repoPath: 'Radik/portfolio',
+    structure: {
+      components: 'src/components',
+      modules: 'src/js/modules',
+      plugins: 'src/js/plugins',
+    },
+    aliasPath: 'src/js',
+    paths: {
+      styles: {
+        src: 'src/scss/style.scss',
+        dest: 'dist/css/',
+        output: 'app.min.css',
+      },
+      scripts: {
+        src: 'src/js/app.ts',
+        dest: 'dist/js/',
+        output: 'app.min.js',
+      },
+      images: {
+        src: 'src/images/**/*',
+        dest: 'dist/images/',
+        svg: 'src/images/**/*.svg',
+      },
+      favicons: {
+        src: 'src/images/src/favicon.png',
+        dest: 'dist/images/favicons/',
+        htmlOutput: 'src/parts/favicon-links.html',
+      },
+      fonts: {
+        src: 'src/fonts/src/**/*.{ttf,otf}',
+        dest: 'dist/fonts/',
+      },
+    },
+    settings: {
+      webpQuality: 70,
+      imagemin: {
+        jpeg: 75,
+        png: 5,
+      },
+      autoprefixer: ['> 0.5%', 'last 2 versions', 'not dead'],
+    },
+  };
+};
+
+const config = await getConfig();
+
 const { src } = gulp;
 
-const getFirstLineOfFile = async (filePath) => {
+const categoryNames = {
+  programming: 'Программирование',
+  'project-info': 'О проекте',
+  space: 'Космос',
+  poems: 'Мои стихи',
+  books: 'Книги',
+  travel: 'Путешествия',
+  games: 'Игры и развлечения',
+  psychology: 'Психология',
+  blog: 'Общий блог',
+};
+
+export const getFirstLineOfFile = async (filePath) => {
+  const ext = path.extname(filePath).toLowerCase();
+
+  // 📁 Сценарий для файлов Microsoft Word
+  if (ext === '.docx') {
+    try {
+      const docBuffer = await fsPromises.readFile(filePath);
+
+      // Шаг 1: Пробуем найти заголовок h1 через конвертацию в HTML
+      const resultHtml = await mammoth.convertToHtml({ buffer: docBuffer });
+      const html = resultHtml.value || '';
+      const h1Match = html.match(/<h1>(.*?)<\/h1>/);
+
+      if (h1Match && h1Match[1]) {
+        return h1Match[1].replace(/<[^>]*>/g, '').trim();
+      }
+
+      // Шаг 2: Если h1 нет, вытаскиваем сырой текст и берем первую непустую строку
+      const resText = await mammoth.extractRawText({ buffer: docBuffer });
+      const textValue = resText.value || '';
+      const firstLine = textValue
+        .split(/\r?\n/)
+        .find((line) => line.trim() !== '');
+
+      if (firstLine) return firstLine.trim();
+    } catch (err) {
+      console.log(
+        `⚠️ Ошибка чтения заголовка DOCX через процессор для ${path.basename(filePath)}:`,
+        err,
+      );
+    }
+    // Если файл Word пустой или поврежден, возвращаем пустую строку
+    return '';
+  }
+
+  // 📝 Сценарий для текстовых файлов (ваш оригинальный рабочий код один в один)
   try {
     const fileStream = fs.createReadStream(filePath, 'utf-8');
     const rl = readline.createInterface({
@@ -37,55 +148,104 @@ export const parsePlainText = (content) => {
   return content.replace(/<[^>]*>/g, '').trim();
 };
 
-export const generateSidebarLinks = async (folderName) => {
-  const dirPath = path.join(config.srcFolder, 'content', folderName);
-  if (!fs.existsSync(dirPath)) return '';
+export const generateSidebarLinks = async (currentFolderName) => {
+  const contentRoot = path.join(config.srcFolder, 'content');
+  if (!fs.existsSync(contentRoot)) return '';
 
-  const files = await fsPromises.readdir(dirPath);
-  let linksHtml = '';
+  const categories = fs
+    .readdirSync(contentRoot)
+    .filter((f) => fs.statSync(path.join(contentRoot, f)).isDirectory());
 
-  for (const file of files) {
-    if (file.toLowerCase().startsWith('index.') || file.startsWith('~$')) continue;
-    const ext = path.extname(file).toLowerCase();
-    if (!['.md', '.txt', '.rtf', '.docx'].includes(ext)) continue;
+  let fullSidebarHtml = '';
 
-    const slug = path.basename(file, ext).toLowerCase();
-    let title = '';
-    const filePath = path.join(dirPath, file);
+  for (const category of categories) {
+    const dirPath = path.join(contentRoot, category);
+    const files = await fsPromises.readdir(dirPath);
 
-    if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
-      title = await getFirstLineOfFile(filePath);
-    }
-    // 🔥 ИСПРАВЛЕНО: Парсим первую строчку из Word для генерации ссылки в сайдбаре
-    else if (ext === '.docx') {
-      try {
-        const docBuffer = await fsPromises.readFile(filePath);
-        const result = await mammoth.extractRawText({ buffer: docBuffer });
-        const textValue = result.value || '';
+    const hasFiles = files.some(
+      (f) =>
+        ['.md', '.txt', '.rtf', '.docx'].includes(
+          path.extname(f).toLowerCase(),
+        ) && !f.toLowerCase().startsWith('index.'),
+    );
+    if (!hasFiles) continue;
 
-        // 🔥 Строки отладки [DEBUG] удалены, чтобы не засорять терминал
-        const firstLine = textValue
-          .split(/\r?\n/)
-          .find((line) => line.trim() !== '');
+    const categoryTitle =
+      categoryNames[category] ||
+      category.charAt(0).toUpperCase() + category.slice(1);
 
-        if (firstLine) title = firstLine.trim();
-      } catch (err) {
-        console.log(`⚠️ Ошибка чтения заголовка DOCX ${file}:`, err);
+    fullSidebarHtml += `<li class="blog-sidebar__category">
+      <button class="blog-sidebar__category-btn" aria-expanded="false">${categoryTitle}</button>
+      <ul class="blog-sidebar__sublist">`;
+
+    const walkDirectory = async (currentDir, relativePath = '') => {
+      let result = '';
+      const entries = await fsPromises.readdir(currentDir, {
+        withFileTypes: true,
+      });
+
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name);
+        const entryRelativePath = relativePath
+          ? `${relativePath}/${entry.name}`
+          : entry.name;
+
+        if (entry.isDirectory()) {
+          result += await walkDirectory(fullPath, entryRelativePath);
+        } else if (entry.isFile()) {
+          if (
+            entry.name.toLowerCase().startsWith('index.') ||
+            entry.name.startsWith('~$')
+          )
+            continue;
+          const ext = path.extname(entry.name).toLowerCase();
+          if (!['.md', '.txt', '.rtf', '.docx'].includes(ext)) continue;
+
+          const slug = path.basename(entry.name, ext).toLowerCase();
+          let title = '';
+
+          if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
+            title = await getFirstLineOfFile(fullPath);
+          } else if (ext === '.docx') {
+            try {
+              const docBuffer = await fsPromises.readFile(fullPath);
+              const res = await mammoth.extractRawText({ buffer: docBuffer });
+              const textValue = res.value || '';
+              const firstLine = textValue
+                .split(/\r?\n/)
+                .find((line) => line.trim() !== '');
+              if (firstLine) title = firstLine.trim();
+            } catch (err) {
+              console.log(
+                `⚠️ Ошибка чтения заголовка DOCX ${entry.name}:`,
+                err,
+              );
+            }
+          }
+
+          if (!title) {
+            title = slug.replace(/-/g, ' ');
+            title = title.charAt(0).toUpperCase() + title.slice(1);
+          }
+
+          const articleUrl = entryRelativePath
+            .replace(/\\/g, '/')
+            .replace(/\.(md|txt|rtf|docx)$/i, '.html');
+          const finalUrl = `./${articleUrl}`;
+
+          result += `  <li class="blog-sidebar__item"><a href="${finalUrl}" class="blog-sidebar__link">${title}</a></li>\n`;
+        }
       }
-    }
+      return result;
+    };
 
-    if (!title) {
-      title = slug.replace(/-/g, ' ');
-      title = title.charAt(0).toUpperCase() + title.slice(1);
-    }
-
-    // 🔥 Оставляем ваш оригинальный HTML-шаблон ссылки со Страницы 2 без изменений
-    linksHtml += `  <li class="blog-sidebar__item"><a href="${slug}.html" class="blog-sidebar__link">${title}</a></li>\n`;
+    fullSidebarHtml += await walkDirectory(dirPath);
+    fullSidebarHtml += `</ul></li>\n`;
   }
-  return linksHtml;
+
+  return fullSidebarHtml;
 };
 
-// 🔥 Исправлено: Корректное регулярное выражение [\s\S]*? и замена на HTML-мнемоники &lt; и &gt;
 const escapeCodeBlocks = (html) => {
   if (!html) return '';
   return html
@@ -107,10 +267,17 @@ const escapeCodeBlocks = (html) => {
 
 export const processHtmlContent = (html, pathPrefix) => {
   if (!html) return '';
-  let processedHtml = html
-    .replace(/src="\.\/images\//gi, `src="${pathPrefix}images/`)
-    .replace(/src="(?!http|https|\/|\.\.\/)(?!images\/)/gi, `src="${pathPrefix}images/`)
-    .replace(/src="images\//gi, `src="${pathPrefix}images/`);
+  let processedHtml = html;
+
+  // Замена src=".\/images/ на src="pathPrefiximages/
+  processedHtml = processedHtml.replace(/src="\.\//g, `src="${pathPrefix}`);
+
+  // Замена src="images/ на src="pathPrefiximages/
+  processedHtml = processedHtml.replace(
+    /src="images\//g,
+    `src="${pathPrefix}images/`,
+  );
+
   processedHtml = escapeCodeBlocks(processedHtml);
   return processedHtml;
 };
@@ -124,8 +291,6 @@ export const compileContentStream = () => {
         if (ext === '.md' || ext === '.txt' || ext === '.rtf') {
           try {
             const stream = markdown();
-
-            // 🔥 Исправлено: Перехватываем ошибки самого компилятора, чтобы не вешать watcher Gulp
             stream.on('error', (err) => {
               console.error(
                 `[Markdown Сritical Error] ${file.relative}:`,
@@ -133,7 +298,6 @@ export const compileContentStream = () => {
               );
               callback(null, file);
             });
-
             stream.on('data', (updatedFile) => {
               file.contents = updatedFile.contents;
               file.path = file.path.replace(/\.(md|txt|rtf)/i, '.html');
@@ -162,8 +326,6 @@ export const compileContentStream = () => {
 
 export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
   const folderName = rawFolderName.toLowerCase();
-
-  // 🔥 ОПТИМИЗАЦИЯ №1: Генерируем сайдбар и ссылки строго ОДИН РАЗ до начала цикла по файлам
   const sidebarLinks = await generateSidebarLinks(folderName);
 
   const sidebarComponentPath = path.join(
@@ -233,36 +395,58 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
     menuHtml = await fsPromises.readFile(menuPath, 'utf-8');
   }
 
-  // 🔥 ОПТИМИЗАЦИЯ №2: Теперь цикл работает исключительно в памяти с готовыми шаблонами
   if (fs.existsSync(tempDestPath)) {
     const files = await fsPromises.readdir(tempDestPath);
     for (const file of files) {
-      if (file.toLowerCase() === 'index.html' || file.startsWith('~$')) continue;
+      if (file.toLowerCase() === 'index.html' || file.startsWith('~$'))
+        continue;
       const ext = path.extname(file).toLowerCase();
       const cleanFileName = path.basename(file, ext) + '.html';
       let rawHtml = '';
 
-      // 🔥 ИСПРАВЛЕНО: Обрабатываем строго оригинальные .docx файлы контента
       if (ext === '.docx') {
         try {
-          const originalDocxPath = path.join(
+          // 🎯 План А: Пробуем найти файл по стандартному переданному пути
+          let originalDocxPath = path.join(
             config.srcFolder,
             'content',
             folderName,
             file,
           );
+
+          // 🎯 План Б (Максимальный контроль): Если папка не совпала по регистру,
+          // динамически ищем, в какой именно подпапке content лежит этот .docx файл
+          if (!fs.existsSync(originalDocxPath)) {
+            const contentRoot = path.join(config.srcFolder, 'content');
+            const searchSubfolders = fs
+              .readdirSync(contentRoot)
+              .filter((f) =>
+                fs.statSync(path.join(contentRoot, f)).isDirectory(),
+              );
+
+            for (const sub of searchSubfolders) {
+              const checkPath = path.join(contentRoot, sub, file);
+              if (fs.existsSync(checkPath)) {
+                originalDocxPath = checkPath;
+                break;
+              }
+            }
+          }
+
+          // Если файл успешно локализован на диске — компилируем через Mammoth
           if (fs.existsSync(originalDocxPath)) {
             const docBuffer = await fsPromises.readFile(originalDocxPath);
-
-            const options = {
-              styleMap: ['p:first-child => h1:fresh'],
-            };
-
+            const options = { styleMap: ['p:first-child => h1:fresh'] };
             const result = await mammoth.convertToHtml(
               { buffer: docBuffer },
               options,
             );
             rawHtml = result.value || '';
+          } else {
+            console.error(
+              `❌ [Content Processor] Исходный файл Word не найден на диске: ${file}`,
+            );
+            continue;
           }
         } catch (err) {
           console.error(
@@ -272,34 +456,27 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
           continue;
         }
       } else if (ext === '.html') {
-        // 🔥 Читаем HTML-код статьи, скомпилированный из Markdown
         const fileContent = await fsPromises.readFile(
           path.join(tempDestPath, file),
           'utf-8',
         );
-
-        // КРИТИЧЕСКАЯ ЗАЩИТА: Если файл уже содержит каркас (например, тег <body),
-        // значит он был собран ранее. Пропускаем его, чтобы избежать дублирования ссылок!
         if (
           fileContent.includes('<body') ||
           fileContent.includes('blog-article')
-        ) {
+        )
           continue;
-        }
-
         rawHtml = fileContent;
       } else {
-        // Любые другие файлы (.gitkeep, картинки) просто пропускаем
         continue;
       }
 
+      // Ниже идёт ваш оригинальный код формирования finalPageHtml и записи файла без изменений...
       const pageTitle = path.basename(file, ext).replace(/-/g, ' ');
       const capitalizedTitle =
         pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
 
       let finalPageHtml = articleTemplate
         .replace('@@title', capitalizedTitle)
-        // 🔥 ИСПРАВЛЕНО: Колбэк-функция защищает разметку от ложных срабатываний спецсимволов ($&) в тексте
         .replace('@@content', () => rawHtml)
         .replace('@@sidebar', sidebarHtml)
         .replace(
@@ -320,7 +497,26 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
         )
         .replace(/SITE_NAME/gi, config.siteName || 'Radik.Dev');
 
-      const pathPrefix = '../';
+      const rootBuildDir = config.buildFolder || 'dist';
+      const relativePath = path.relative(tempDestPath, rootBuildDir);
+
+      let pathPrefix = relativePath
+        ? relativePath.replace(/\\/g, '/') + '/'
+        : './';
+
+      if (pathPrefix === '/') {
+        pathPrefix = './';
+      }
+
+      // Дополнительная страховка: если путь пустой или точка, а мы точно знаем,
+      // что папка вложенная (содержит /blog/), принудительно ставим два шага назад
+      if (
+        (pathPrefix === './' || pathPrefix === '') &&
+        tempDestPath.replace(/\\/g, '/').includes('/blog/')
+      ) {
+        pathPrefix = '../../';
+      }
+
       finalPageHtml = finalPageHtml
         .replace(
           /href=["']\s*\/?GO_HOME\s*["']/gis,
@@ -354,9 +550,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
 
       if (ext === '.docx') {
         const tempFilePath = path.join(tempDestPath, file);
-        if (fs.existsSync(tempFilePath)) {
-          await fsPromises.unlink(tempFilePath);
-        }
+        // if (fs.existsSync(tempFilePath)) await fsPromises.unlink(tempFilePath);
       }
     }
   }

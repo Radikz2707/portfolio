@@ -5,33 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Блог | SITE_NAME</title>
     @@include("parts/favicon-links.html")
-    <link rel="stylesheet" href="css/app.min.css" />
+    <link rel="stylesheet" href="../css/app.min.css" />
   </head>
   <body class="page-blog">
-    @@include("components/header/header.html")
+    <div class="wrapper">
+      @@include("components/header/header.html")
+      @@include("components/menu/menu.html")
 
-    <!-- Чистый семантичный контейнер блога -->
-    <main class="blog-page">
-      <div class="blog-page__container container">
-        <div class="blog-page__layout">
+      <main class="blog-main">
+        <section class="blog-hero">
+          <div class="blog-hero__container container">
+            <h1 class="blog-hero__title">Мой Блог</h1>
+            <p class="blog-hero__subtitle">Выберите интересующую вас тему</p>
 
-          <div class="blog-page__main-content">
-            <!-- Интегрируем оригинальный БЭМ-компонент -->
-            <aside class="blog-sidebar">
-              <h3 class="blog-sidebar__title">Все публикации</h3>
-              <ul class="blog-sidebar__list">
-                <!-- Сюда Gulp автоматически вставит сгенерированные ссылки -->
-                @@sidebar
-              </ul>
-            </aside>
+            <div class="blog-categories">
+              <!-- Сюда Gulp автоматически вставит сгенерированные карточки категорий -->
+              @@categories
+            </div>
           </div>
+        </section>
+      </main>
 
-        </div>
-      </div>
-    </main>
-
-    @@include("components/footer/footer.html")
-    <script src="js/vendor.min.js"></script>
-    <script src="js/app.min.js" defer></script>
+      @@include("components/footer/footer.html")
+    </div>
+    <script src="../js/app.min.js" defer></script>
   </body>
 </html>

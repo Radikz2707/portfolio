@@ -1,0 +1,141 @@
+@use '../../scss/base/_vars' as v;
+
+.blog-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  align-items: start;
+  margin-top: 40px;
+  contain: layout;
+}
+
+.blog-category-card {
+  display: flex;
+  flex-direction: column;
+  height: max-content;
+  overflow: hidden;
+  text-decoration: none;
+  background-color: v.$bg-card;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: v.$color-accent;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 30%);
+    transform: translateY(-4px);
+  }
+
+  &__header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background: rgba(v.$color-accent, 0.05);
+    }
+  }
+
+  &__title {
+    flex-grow: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    transition: color 0.3s ease;
+  }
+
+  &__count {
+    flex-shrink: 0;
+    margin: 0;
+    margin-right: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: v.$color-accent;
+    white-space: nowrap;
+  }
+
+  &__list {
+    width: 100%;
+
+    // 🔥 ДОБАВЛЕНО ДЛЯ СИНХРОНИЗАЦИИ С JS:
+    height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    list-style: none;
+    background: rgba(v.$color-accent, 0.02);
+    transition: height 300ms ease;
+
+    &._open {
+      height: auto;
+      overflow-y: auto;
+    }
+  }
+
+  &__item {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  &__link {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 16px 24px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #38bdf8;
+    text-align: left;
+    text-decoration: none;
+    border-bottom: 1px solid rgb(255 255 255 / 4%);
+    transition: all 0.2s ease;
+
+    &:hover {
+      padding-left: 32px;
+      color: #ffffff;
+      background: rgba(v.$color-accent, 0.08);
+    }
+  }
+
+  &__item:last-child &__link {
+    border-bottom: none;
+  }
+
+  &__header::after {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: v.$color-accent;
+    content: '▼';
+    transition: transform 0.3s ease;
+  }
+
+  &._open {
+    border-color: v.$color-accent;
+    box-shadow: 0 8px 24px rgb(99 102 241 / 15%);
+
+    .blog-category-card__header {
+      background: rgba(v.$color-accent, 0.08);
+    }
+
+    .blog-category-card__title {
+      color: v.$color-accent;
+    }
+  }
+
+  &._open .blog-category-card__header::after {
+    transform: rotate(180deg);
+  }
+}

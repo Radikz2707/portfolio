@@ -1,11 +1,24 @@
 @use '../base/vars' as v;
 
 /* Глобальные стили проекта */
+html,
 body {
+  height: 100%; /* Обеспечивает передачу высоты окна браузера */
+}
+
+body {
+  display: flex;
+  flex-direction: column; /* Выстраивает элементы сверху вниз */
   font-family: v.$font-main;
   color: v.$color-text-main;
-  user-select: none;
   background-color: v.$bg-dark;
+}
+
+/* Корневая обертка для управления прижатием футера */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%; /* Растягивает обертку на всю высоту экрана */
 }
 
 /* Сетка и контейнер */

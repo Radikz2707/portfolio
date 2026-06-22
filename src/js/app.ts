@@ -5,6 +5,7 @@ import { isWebp } from './modules/isWebp';
 import { scrollToTop } from './modules/scroll-to-top/scroll-to-top';
 import { menu } from '../components/menu/menu';
 import { blogSidebar } from '../components/blog-sidebar/blog-sidebar';
+import { blogCategories } from '../components/blog-categories/blog-categories';
 import { contacts } from '../components/contacts/contacts';
 import { aboutMe } from '../components/about-me/about-me';
 import { projectsGrid } from '../components/projects-grid/projects-grid';
@@ -36,6 +37,7 @@ const initApp = () => {
 
   if (isBlogPage) {
     blogSidebar();
+    blogCategories();
     // [ВЫЗОВЫ БЛОГ]
   } else {
     contacts();

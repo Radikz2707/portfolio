@@ -32,8 +32,8 @@ import { createPlugin as plugin } from './gulp/system/gulp.plugin.js';
 import { remove } from './gulp/system/gulp.remove.js';
 import { createStructure as init } from './gulp/system/gulp.init.js';
 import { help } from './gulp/system/gulp.help.js';
-import { blogIndex } from './gulp/html.js';
 import { deploy } from './gulp/deploy.js';
+
 // Глобальная метка сборки для пробития кэша
 global.buildSig = Date.now();
 
@@ -49,7 +49,7 @@ export const createEnvConfig = (done) => {
     const envFileContent = fs.readFileSync(envPath, 'utf8');
     const tokenMatch = envFileContent.match(/TELEGRAM_TOKEN\s*=\s*(.*)/);
     const chatIdMatch = envFileContent.match(/TELEGRAM_CHAT_ID\s*=\s*(.*)/);
-    
+
     if (tokenMatch) token = tokenMatch[1].trim();
     if (chatIdMatch) chatId = chatIdMatch[1].trim();
   }
@@ -74,7 +74,12 @@ const runTask = (taskName) => {
       if (taskName === 'fontsStyle') fileName = 'fonts';
       else if (taskName === 'blogIndex') fileName = 'html';
       else if (taskName === 'server') fileName = 'server';
-      else if (['imagesDev', 'createWebp', 'sprite', 'favs', 'faviconsDev'].includes(taskName)) fileName = 'images';
+      else if (
+        ['imagesDev', 'createWebp', 'sprite', 'favs', 'faviconsDev'].includes(
+          taskName,
+        )
+      )
+        fileName = 'images';
 
       if (!loadedModules[fileName]) {
         loadedModules[fileName] = await import(`./gulp/${fileName}.js`);
@@ -94,28 +99,68 @@ const runTask = (taskName) => {
 };
 
 const createDynamicContentTask = (folderName) => {
-  return (done) => {
-    const sourcePath = [path.join(config.srcFolder, 'content', folderName, '**', '*.{md,txt,rtf,docx}')];
+  const task = (done) => {
+    const sourcePath = [
+      path.join(
+        config.srcFolder,
+        'content',
+        folderName,
+        '**',
+        '*.{md,txt,rtf,docx}',
+      ),
+    ];
     if (folderName === 'blog') {
-      sourcePath.push('!' + path.join(config.srcFolder, 'content', folderName, 'index.{md,txt,rtf,docx}'));
+      sourcePath.push(
+        '!' +
+          path.join(
+            config.srcFolder,
+            'content',
+            folderName,
+            'index.{md,txt,rtf,docx}',
+          ),
+      );
     }
-    const tempDestPath = path.join(config.buildFolder, folderName);
+
+    const isMainBlogFolder = folderName === 'blog';
+    const tempDestPath = isMainBlogFolder
+      ? path.join(config.buildFolder, folderName)
+      : path.join(config.buildFolder, 'blog', folderName);
+
     return src(sourcePath, { allowEmpty: true, encoding: false })
       .pipe(plumber({ errorHandler: onError }))
       .pipe(newer(tempDestPath))
       .pipe(compileContentStream())
       .pipe(dest(tempDestPath))
       .on('end', () => {
-        wrapInMasterLayout(tempDestPath, folderName).then(() => done()).catch(err => done(err));
+        // 🔥 ИСПРАВЛЕНО: Передаем folderName без изменений, чтобы пути к src/content/ читал без ошибок,
+        // но добавляем флаг вложенности третьим аргументом, если это необходимо
+        wrapInMasterLayout(tempDestPath, folderName)
+          .then(() => done())
+          .catch((err) => done(err));
       });
   };
+  Object.defineProperty(task, 'name', { value: `content:${folderName}` });
+  return task;
 };
 
-const contentDir = path.join(config.srcFolder, 'content');
-const dynamicContentFolderNames = fs.existsSync(contentDir)
-  ? fs.readdirSync(contentDir).filter(f => fs.statSync(path.join(contentDir, f)).isDirectory())
-  : [];
+const contentDir = path.resolve(config.srcFolder || 'src', 'content');
 
+const dynamicContentFolderNames = fs.existsSync(contentDir)
+  ? fs.readdirSync(contentDir).filter((f) => {
+      // Игнорируем скрытые папки (например, .git или системные кэши)
+      if (f.startsWith('.')) return false;
+      return fs.statSync(path.join(contentDir, f)).isDirectory();
+    })
+  : [
+      'programming',
+      'project-info',
+      'travel',
+      'books',
+      'games',
+      'poems',
+      'psychology',
+      'space',
+    ];
 const compileAssets = parallel(
   runTask('styles'),
   runTask('scripts'),
@@ -123,7 +168,6 @@ const compileAssets = parallel(
   runTask('createWebp'),
   runTask('sprite'),
 );
-
 const blogContent = createDynamicContentTask('blog');
 
 export const build = series(
@@ -131,9 +175,13 @@ export const build = series(
   cleandist,
   parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
   parallel(...(isProd ? [lintCss, lintJs] : []), compileAssets),
-  blogContent,
-  blogIndex,
+  parallel(
+    ...dynamicContentFolderNames.map((folder) =>
+      createDynamicContentTask(folder),
+    ),
+  ),
   parallel(runTask('html')),
+  runTask('blogIndex'),
   zipFiles,
   (done) => {
     console.log('>>> 🚀 [Gulp 5] Project successfully assembled! <<<');
@@ -147,27 +195,29 @@ export default series(
   runTask('scripts'),
   runTask('html'),
   parallel(
-    blogIndex,
+    runTask('blogIndex'),
     runTask('styles'),
     runTask('imagesDev'),
     runTask('createWebp'),
     runTask('sprite'),
-    ...dynamicContentFolderNames.map(folder => createDynamicContentTask(folder)),
+    ...dynamicContentFolderNames.map((folder) =>
+      createDynamicContentTask(folder),
+    ),
   ),
   browsersync,
   startwatch,
 );
 
-export { 
-  create, 
-  remove, 
-  module, 
-  plugin, 
-  init, 
-  help, 
-  cleandist, 
-  lintJs, 
-  lintCss, 
-  deploy
+export {
+  create,
+  remove,
+  module,
+  plugin,
+  init,
+  help,
+  cleandist,
+  lintJs,
+  lintCss,
+  deploy,
 };
 export const favs = runTask('favs');

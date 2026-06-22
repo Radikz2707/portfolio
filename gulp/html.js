@@ -9,12 +9,15 @@ import replace from 'gulp-replace';
 import path from 'path';
 import { onError, isProd, bs } from './server.js';
 import { Transform } from 'stream';
-import { generateSidebarLinks } from './utils/content-processor.js';
+import {
+  generateSidebarLinks,
+  getFirstLineOfFile,
+} from './utils/content-processor.js';
 
 const { src, dest } = gulp;
 
 // =======================================================================
-// 🌐 1. УМНЫЙ ОПТИМИЗАТОР ССЫЛОК И АДАПТЕР ОТНОСИТЕЛЬНЫХ ПУТЕЙ ФАВИКОНОВ
+// 🌐 1. Умный оптимизатор ссылок и адаптер относительных путей фавиконов
 // =======================================================================
 function fixHtmlPaths() {
   return new Transform({
@@ -50,28 +53,19 @@ function fixHtmlPaths() {
 
       // Обрабатываем ссылки на CSS, JS и изображения
       content = content.replace(
-        /(href=["']\s*)(css\/[^"']+\.css)/gi,
+        /(href=["']\s*)(css\/[^"']+\.(?:css))/gi,
         addPrefix,
       );
       content = content.replace(
-        /(src=["']\s*)(js\/[^"']+\.js)/gi,
+        /(src=["']\s*)(js\/[^"']+\.(?:js))/gi,
         (match, p1, p2) => {
           // Добавляем версию только для основных скриптов и только в продакшене или если это app.min.js
           const version = isProd ? `?v=${global.buildSig || Date.now()}` : '';
           return addPrefix(match, p1, p2 + version);
-        }
-      );
-
-      content = content.replace(
-        /(href=["']\s*)(css\/[^"']+\.css)/gi,
-        addPrefix,
+        },
       );
       content = content.replace(
-        /(src=["']\s*)(js\/[^"']+\.js)/gi,
-        addPrefix,
-      );
-      content = content.replace(
-        /(src=["']\s*)(js\/[^"']+\.js(?:\?[^"']*)?)/gi,
+        /(src=["']\s*)(js\/[^"']+\.(?:js)(?:\?[^"']*)?)/gi,
         addPrefix,
       );
       content = content.replace(
@@ -92,7 +86,7 @@ function fixHtmlPaths() {
 }
 
 // =======================================================================
-// 🖼️ 2. АВТОГЕНЕРАТОР ТЕГОВ С ПОДДЕРЖКОЙ WEBP
+// 🖼️ 2. Автогенератор тегов с поддержкой WebP
 // =======================================================================
 const fixPictureTags = () => {
   return new Transform({
@@ -101,7 +95,7 @@ const fixPictureTags = () => {
       if (file.isBuffer()) {
         let htmlContent = file.contents.toString('utf-8');
         htmlContent = htmlContent.replace(
-          /<img\s+([^>]*?)src=["']([^"']+?\.(?:png|jpg|jpeg))["']([^>]*?)>/gi,
+          /<img\s+([^>]*?)src=["']([^"']+\.(?:png|jpg|jpeg))[="']([^>]*?)>/gi,
           (match, before, srcPath, after) => {
             const allAttributes = `${before} ${after}`;
             if (
@@ -126,7 +120,7 @@ const fixPictureTags = () => {
 };
 
 // =======================================================================
-// 🚀 3. ОСНОВНАЯ ТАСКА СБОРКИ HTML КОД КОРНЯ САЙТА
+// 🚀 3. Основная задача сборки HTML кода корня сайта
 // =======================================================================
 export function html() {
   const pipeline = [
@@ -139,7 +133,7 @@ export function html() {
     plumber({ errorHandler: onError }),
     fileInclude({ prefix: '@@', basepath: 'src', filters: {}, indent: true }),
 
-    // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ: Новые всеядные регулярные выражения (символ слэша сделан необязательным)
+    // 🔥 Максимальный контроль: Новые всеядные регулярные выражения (символ слэша сделан необязательным)
     replace(/href=["']\s*\/?\s*GO_HOME\s*["']/gi, 'href="index.html"'),
     replace(
       /href=["']\s*\/?\s*GO_PROJECTS\s*["']/gi,
@@ -157,7 +151,10 @@ export function html() {
 
     replace(/SITE_NAME/gi, config.siteName),
     replace(/SITE_AUTHOR/gi, config.repoPath),
-    replace(/js\/app\.min\.js/gi, `js/app.min.js?v=${global.buildSig || Date.now()}`),
+    replace(
+      /js\/app\.min\.js/gi,
+      `js/app.min.js?v=${global.buildSig || Date.now()}`,
+    ),
   ];
 
   if (isProd) {
@@ -201,13 +198,92 @@ export function html() {
 }
 
 // =======================================================================
-// 📑 4. СБОРКА ВСЕХ СТРАНИЦ БЛОГА С КОРРЕКТНЫМИ ОТНОСИТЕЛЬНЫМИ ПУТЯМИ
+// 📑 5. Генератор карточек категорий для главной страницы блога
+// =======================================================================
+const generateCategoryCards = async () => {
+  const contentRoot = path.join(config.srcFolder, 'content');
+  if (!fs.existsSync(contentRoot)) return '';
+
+  const categories = fs.readdirSync(contentRoot).filter((f) => {
+    const fullPath = path.join(contentRoot, f);
+    return fs.statSync(fullPath).isDirectory() && f !== 'blog';
+  });
+
+  let categoryCardsHtml = '';
+
+  for (const category of categories) {
+    const categoryDir = path.join(contentRoot, category);
+    const files = fs.readdirSync(categoryDir);
+
+    const articleFiles = files.filter((f) => {
+      if (f.toLowerCase().startsWith('index.') || f.startsWith('~$'))
+        return false;
+      const ext = path.extname(f).toLowerCase();
+      return ['.md', '.txt', '.rtf', '.docx'].includes(ext);
+    });
+
+    const articleCount = articleFiles.length;
+    if (articleCount === 0) continue;
+
+    const categoryNames = {
+      programming: 'Программирование',
+      'project-info': 'О проекте',
+      space: 'Космос',
+      poems: 'Мои стихи',
+      books: 'Книги',
+      travel: 'Путешествия',
+      games: 'Игры и развлечения',
+      psychology: 'Психология',
+    };
+
+    const categoryTitle =
+      categoryNames[category] ||
+      category.charAt(0).toUpperCase() + category.slice(1);
+
+    categoryCardsHtml += `
+    <div class="blog-category-card">
+      <div class="blog-category-card__header" role="button" aria-expanded="false">
+        <h3 class="blog-category-card__title">${categoryTitle}</h3>
+        <p class="blog-category-card__count">${articleCount} статей</p>
+      </div>
+      <ul class="blog-category-card__list" style="overflow: hidden; height: 0px;">
+    `;
+
+    for (const file of articleFiles) {
+      const fullFilePath = path.join(categoryDir, file);
+      const fileName = path.basename(file, path.extname(file));
+      const articleUrl = `/blog/${category}/${fileName}.html`;
+
+      let articleTitle = await getFirstLineOfFile(fullFilePath);
+
+      if (!articleTitle) {
+        const slugTitle = fileName.replace(/-/g, ' ');
+        articleTitle = slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
+      }
+
+      categoryCardsHtml += `
+        <li class="blog-category-card__item">
+          <a class="blog-category-card__link" href="${articleUrl}">${articleTitle}</a>
+        </li>
+      `;
+    }
+
+    categoryCardsHtml += `
+      </ul>
+    </div>`;
+  }
+  return categoryCardsHtml;
+};
+
+// =======================================================================
+// 📑 4. Сборка всех страниц блога с корректными относительными путями
 // =======================================================================
 export async function blogIndex() {
   const srcPath = path.join(config.srcFolder, 'blog', '**', '*.html');
   const folderName = 'blog';
 
   const sidebarLinks = await generateSidebarLinks(folderName);
+  const categoryCardsHtml = await generateCategoryCards();
 
   return src([path.join(config.srcFolder, 'blog', '**', '*.html')], {
     allowEmpty: true,
@@ -242,6 +318,7 @@ export async function blogIndex() {
     )
     .pipe(fixHtmlPaths())
     .pipe(replace(/@@sidebar/g, sidebarLinks))
+    .pipe(replace(/@@categories/g, categoryCardsHtml))
     .pipe(dest(path.join(config.buildFolder, 'blog')))
     .on('end', () => {
       bs.reload();

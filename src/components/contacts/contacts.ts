@@ -63,7 +63,7 @@ export const contacts = (): void => {
   const validateName = (): boolean => {
     if (!nameInput) return false;
     const isValid = nameInput.value.trim().length >= 2;
-    isValid ? clearError(nameInput) : showError(nameInput);
+    if (isValid) clearError(nameInput); else showError(nameInput);
     return isValid;
   };
 
@@ -76,14 +76,14 @@ export const contacts = (): void => {
     else if (methodSelect.value === 'phone') isValid = regexPhone.test(value);
     else if (methodSelect.value === 'email') isValid = regexEmail.test(value);
 
-    isValid ? clearError(contactInput) : showError(contactInput);
+    if (isValid) clearError(contactInput); else showError(contactInput);
     return isValid;
   };
 
   const validateMessage = (): boolean => {
     if (!messageInput) return false;
     const isValid = messageInput.value.trim().length >= 10;
-    isValid ? clearError(messageInput) : showError(messageInput);
+    if (isValid) clearError(messageInput); else showError(messageInput);
     return isValid;
   };
 

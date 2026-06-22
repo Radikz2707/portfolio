@@ -30,8 +30,6 @@ const cleanAppTs = (filePath, blockName, camelName) => {
     const lines = content.split(/\r?\n/);
     const filteredLines = lines.filter((line) => {
       const trimmed = line.trim();
-
-      // ИСПРАВЛЕНО: Более точная проверка импорта (ищет имя блока как изолированную часть пути в кавычках)
       const isTargetImport =
         trimmed.startsWith('import ') &&
         (trimmed.includes(`/${blockName}/`) ||
@@ -43,10 +41,7 @@ const cleanAppTs = (filePath, blockName, camelName) => {
           trimmed.includes(`@modules/${blockName}/`) ||
           trimmed.includes(`@modules/${blockName}"`) ||
           trimmed.includes(`@modules/${blockName}'`));
-
-      // ИСПРАВЛЕНО: Проверка вызова функции без привязки к лишним пробелам или табам по краям
       const isTargetCall = trimmed.replace(/\s+/g, '') === `${camelName}();`;
-
       return !isTargetImport && !isTargetCall;
     });
     return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n');
@@ -72,7 +67,6 @@ const cleanStyleScss = (filePath, blockName) => {
 
 const cleanIndexHtml = (filePath, blockName) => {
   updateFileContent(filePath, (content) => {
-    // ИСПРАВЛЕНО: Регулярное выражение теперь корректно вырезает инклуд вместе с переносом строки, не оставляя пустых дыр
     const htmlIncludeReg = new RegExp(
       `@@include\\(['"].*?${blockName}/${blockName}.html['"]\\)\\r?\\n?`,
       'g',
@@ -82,16 +76,58 @@ const cleanIndexHtml = (filePath, blockName) => {
   console.log('✂️ Инклуд удален из HTML.');
 };
 
+const checkDirectorySafety = (dirPath) => {
+  if (!fs.existsSync(dirPath)) return true;
+  if (!fs.statSync(dirPath).isDirectory()) return true;
+
+  const files = fs.readdirSync(dirPath);
+  for (const file of files) {
+    const fullPath = path.join(dirPath, file);
+    if (fs.statSync(fullPath).isDirectory()) return false;
+
+    const content = fs.readFileSync(fullPath, 'utf-8').trim();
+
+    if (file.endsWith('.html')) {
+      const cleanContent = content.replace(/<!--[\s\S]*?-->/g, '').trim();
+      if (
+        cleanContent.length > 0 &&
+        !cleanContent.includes('Шаблон компонента')
+      )
+        return false;
+    }
+
+    if (file.endsWith('.scss') || file.endsWith('.sass')) {
+      const cleanContent = content
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/.*/g, '')
+        .replace(/@use\s+['"][^'"]+['"]\s*as\s+\w+;/g, '')
+        .trim();
+      if (cleanContent.length > 0) return false;
+    }
+
+    if (file.endsWith('.ts') || file.endsWith('.js')) {
+      const cleanContent = content
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/.*/g, '')
+        .replace(
+          /export\s+const\s+\w+\s*=\s*\(\)\s*=>\s*\{\s*console\.log\(.*?\);\s*\};/g,
+          '',
+        )
+        .trim();
+      if (cleanContent.length > 0) return false;
+    }
+  }
+  return true;
+};
+
 export const remove = (done) => {
   const blockName = process.argv
     .find((arg) => arg.startsWith('--'))
     ?.replace('--', '');
-
   if (!blockName) {
     console.log('\n❌ Ошибка: Укажите имя! Пример: gulp remove --header\n');
     return done();
   }
-
   if (PROTECTED_NAMES.includes(blockName.toLowerCase())) {
     console.log(
       `\n❌ Ошибка: Удаление системной папки "${blockName}" запрещено!\n`,
@@ -100,8 +136,6 @@ export const remove = (done) => {
   }
 
   const camelName = toCamelCase(blockName);
-
-  // Добавлен поиск как папок, так и возможных одиночных файлов модулей/плагинов
   const possibleDirs = [
     path.join(config.structure.components, blockName),
     path.join(config.structure.modules, blockName),
@@ -112,17 +146,24 @@ export const remove = (done) => {
     path.join(config.structure.plugins, `${blockName}.ts`),
   ];
 
-  const mainJsPath = config.paths.scripts.src; // ИСПРАВЛЕНО: Динамический путь из конфигурации
+  for (const dir of possibleDirs) {
+    if (fs.existsSync(dir) && !checkDirectorySafety(dir)) {
+      console.log(
+        `\n🛑 Защита: Компонент "${blockName}" содержит рабочий код и не может быть удален автоматически!\n`,
+      );
+      return done(new Error('Попытка удаления заполненного компонента.'));
+    }
+  }
+
+  const mainJsPath = config.paths.scripts.src;
   const mainScssPath = path.join(
     config.srcFolder,
     config.scssExtension,
     `style.${config.scssExtension}`,
   );
   const indexHtmlPath = path.join(config.srcFolder, 'index.html');
-
   let dirDeleted = false;
 
-  // Удаляем папки
   possibleDirs.forEach((dir) => {
     if (fs.existsSync(dir)) {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -131,7 +172,6 @@ export const remove = (done) => {
     }
   });
 
-  // Удаляем одиночные файлы (если модуль был создан без папки)
   possibleFiles.forEach((file) => {
     if (fs.existsSync(file)) {
       fs.unlinkSync(file);

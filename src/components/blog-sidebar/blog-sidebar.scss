@@ -28,10 +28,76 @@
   &__list {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 8px;
     padding: 0;
     margin: 0;
     list-style: none;
+  }
+
+  // Категория (заголовок группы)
+  &__category {
+    margin-bottom: 10px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // Кнопка раскрытия категории
+  &__category-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    background: none;
+    border: none;
+    transition: color 0.2s ease;
+
+    &::after {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-left: 10px;
+      content: "";
+      border-right: 2px solid currentcolor;
+      border-bottom: 2px solid currentcolor;
+      transform: rotate(45deg) translateY(-2px);
+      transition: transform 0.3s ease;
+    }
+
+    &:hover {
+      color: #ffffff;
+    }
+
+    &._active {
+      color: v.$color-accent;
+
+      &::after {
+        transform: rotate(-135deg) translateY(-2px);
+      }
+    }
+  }
+
+  // Вложенный список статей
+  &__sublist {
+    display: none; // По умолчанию скрыт
+    flex-direction: column;
+    gap: 10px;
+    padding: 5px 0 10px 15px;
+    margin: 0;
+    list-style: none;
+    border-left: 1px solid #334155;
+
+    &._open {
+      display: flex;
+    }
   }
 
   // Элемент списка

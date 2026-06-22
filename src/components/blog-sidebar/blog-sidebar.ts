@@ -1,42 +1,64 @@
 export const blogSidebar = (): void => {
-  console.log('Компонент боковой панели (TS) успешно инициализирован');
+  const sidebar = document.querySelector('.blog-sidebar');
+  if (!sidebar) return;
 
-  // Находим все ссылки на статьи внутри нашего сайдбара
-  const sidebarLinks = document.querySelectorAll<HTMLElement>(
-    '.blog-sidebar__link',
-  );
+  const categoryBtns = sidebar.querySelectorAll<HTMLButtonElement>('.blog-sidebar__category-btn');
+  const sidebarLinks = sidebar.querySelectorAll<HTMLAnchorElement>('.blog-sidebar__link');
+  const currentPath = window.location.pathname;
 
-  // Получаем только имя текущего открытого HTML-файла (например, "why-gulp-ts.html")
-  const currentFileName =
-    window.location.pathname.split('/').pop() || 'index.html';
+  // 1. Логика аккордеона
+  categoryBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sublist = btn.nextElementSibling as HTMLElement;
+      const isOpen = sublist.classList.contains('_open');
 
-  sidebarLinks.forEach((link: HTMLElement) => {
-    const linkHref = link.getAttribute('href');
-    if (!linkHref) return;
-
-    // Вытаскиваем имя файла из самой ссылки (очищаем от возможных точек и папок)
-    const linkFileName = linkHref.split('/').pop();
-
-    // Если имя файла в ссылке и имя файла в браузере полностью совпали
-    if (linkFileName === currentFileName) {
-      // 1. Подсвечиваем активную статью фиолетовым цветом и делаем жирнее
-      link.style.color = '#6366f1';
-      link.style.fontWeight = '700';
-      // 2. БЛОКИРОВКА КЛИКА: меняем курсор на обычный и полностью отключаем кликабельность
-      link.style.cursor = 'default';
-      link.style.pointerEvents = 'none';
-
-      // 🔥 Исправлено: Сохраняем фокус, блокируя переход программно
-      link.setAttribute('tabindex', '0');
-      link.addEventListener('click', (e) => e.preventDefault());
-      link.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
+      // Закрываем все другие категории при открытии новой (аккордеон)
+      sidebar.querySelectorAll('.blog-sidebar__sublist').forEach(el => {
+        if (el !== sublist) {
+          el.classList.remove('_open');
+        }
+      });
+      sidebar.querySelectorAll('.blog-sidebar__category-btn').forEach(el => {
+        if (el !== btn) {
+          el.classList.remove('_active');
         }
       });
 
-      // 3. Добавляем атрибут для доступности
+      if (isOpen) {
+        sublist.classList.remove('_open');
+        btn.classList.remove('_active');
+        btn.setAttribute('aria-expanded', 'false');
+      } else {
+        sublist.classList.add('_open');
+        btn.classList.add('_active');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  // 2. Подсветка активной ссылки и авто-раскрытие категории
+  sidebarLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if (!href) return;
+
+    // Проверяем, совпадает ли ссылка с текущим URL
+    // Учитываем, что ссылки могут быть относительными (../category/file.html)
+    const linkPath = new URL(href, window.location.href).pathname;
+
+    if (currentPath === linkPath) {
+      link.classList.add('_active');
       link.setAttribute('aria-current', 'page');
+
+      // Раскрываем родительскую категорию
+      const parentSublist = link.closest('.blog-sidebar__sublist');
+      if (parentSublist) {
+        parentSublist.classList.add('_open');
+        const parentBtn = parentSublist.previousElementSibling as HTMLElement;
+        if (parentBtn) {
+          parentBtn.classList.add('_active');
+          parentBtn.setAttribute('aria-expanded', 'true');
+        }
+      }
     }
   });
 };

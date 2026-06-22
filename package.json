@@ -16,6 +16,7 @@
     "remove": "gulp --gulpfile gulp/system/gulp.remove.js remove",
     "help": "gulp --gulpfile gulp/system/gulp.help.js help",
     "lint": "gulp lintJs lintCss",
+    "lint:fix": "npx stylelint \"src/**/*.scss\" --fix",
     "clean": "gulp cleandist",
     "update-modules": "npx npm-check-updates -i --no-cache && npm install --legacy-peer-deps",
     "prepare": "husky",
