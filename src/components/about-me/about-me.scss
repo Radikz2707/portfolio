@@ -1,31 +1,43 @@
 @use './base/vars' as v;
 
 .about-me {
+  box-sizing: border-box;
+
+  // 🔥 ГАРАНТИЯ СТАБИЛЬНОСТИ: Срезаем любые скрытые распоры анимаций
+  width: 100%;
+  max-width: 100%;
   padding: 100px 0;
+  overflow: hidden;
   color: v.$color-text-main;
-  background-color: v.$bg-deep-blue; // 🔥 Автоматически посветлеет на светлой теме!
+  background-color: v.$bg-deep-blue;
 
   &__grid {
+    box-sizing: border-box;
     display: flex;
     flex-wrap: wrap;
     gap: 40px;
     align-items: center;
+    width: 100%;
     max-width: 1100px;
     margin: 0 auto;
 
-    @media (width <=768px) {
+    // 🔥 ИСПРАВЛЕНО: Порог поднят до 992px, а выравнивание отцентрировано для идеального баланса на смартфонах
+    @media (width <= 992px) {
       flex-direction: column;
       gap: 30px;
-      align-items: flex-start;
+      align-items: center;
+      text-align: center;
     }
   }
 
   &__content {
+    box-sizing: border-box;
     flex: 1;
-    min-width: 300px;
+    width: 100%;
+    min-width: 280px; // Снижено до безопасных 280px для узких экранов
     max-width: 60%;
 
-    @media (width <=768px) {
+    @media (width <= 992px) {
       max-width: 100%;
     }
   }
@@ -49,11 +61,13 @@
   }
 
   &__photo-wrapper {
+    box-sizing: border-box;
     flex: 1;
-    min-width: 300px;
+    width: 100%;
+    min-width: 280px; // Снижено до безопасных 280px
     max-width: 40%;
 
-    @media (width <=768px) {
+    @media (width <= 992px) {
       max-width: 100%;
     }
 
@@ -71,9 +85,7 @@
       height: auto;
       border-radius: 16px;
       box-shadow: 0 10px 40px rgb(0 0 0 / 50%);
-      transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
 
       &:hover {
         box-shadow: 0 15px 50px rgb(0 0 0 / 70%);
@@ -82,7 +94,7 @@
     }
   }
 
-  @media (width <=768px) {
+  @media (width <= 992px) {
     &__photo-wrapper {
       & img {
         border-radius: 16px;
@@ -109,6 +121,11 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+
+    // Отцентрируем плашки навыков на мобильном, если весь блок отцентрирован
+    @media (width <= 992px) {
+      justify-content: center;
+    }
   }
 
   &__badge {
@@ -119,12 +136,7 @@
     background-color: #1e293b;
     border: 1px solid #334155;
     border-radius: 6px;
-    transition:
-      transform 0.2s ease,
-      background-color 0.2s ease,
-      border-color 0.2s ease,
-      color 0.2s ease,
-      opacity 0.7s ease;
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.7s ease;
 
     &._active:hover {
       color: #fff;
@@ -139,15 +151,12 @@
   opacity: 1;
   transform: none;
 
-  // Скрываем только если JS активен и элемент еще не активирован
   body._js-ready &:not(._active) {
     opacity: 0;
     transform: translateY(30px);
   }
 
-  transition:
-    opacity 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1),
-    transform 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
+  transition: opacity 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1), transform 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
   will-change: opacity, transform;
 
   &._active {
@@ -166,15 +175,12 @@
   opacity: 1;
   transform: none;
 
-  // Скрываем только если JS активен и элемент еще не активирован
   body._js-ready &:not(._active) {
     opacity: 0;
     transform: translateX(-30px);
   }
 
-  transition:
-    opacity 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1),
-    transform 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
+  transition: opacity 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1), transform 0.7s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
   will-change: opacity, transform;
 
   &._active {
@@ -183,8 +189,11 @@
   }
 }
 
-.element-reveal-left {
-  opacity: 1 !important;
-  transform: none !important;
-  transition: none !important;
+// Перебиваем анимацию для мобильных, если она продолжает вызывать микросдвиги
+@media (width <= 992px) {
+  .element-reveal-left {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }

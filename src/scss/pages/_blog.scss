@@ -1,5 +1,6 @@
 @use '../base/vars' as v;
 
+// 🔥 СТИЛИ СТРАНИЦЫ: Управляют только внешним фоном и шапкой контента
 .blog-main {
   flex: 1 0 auto;
   padding: 60px 0;
@@ -22,14 +23,4 @@
     font-size: 18px;
     color: v.$color-text-muted;
   }
-}
-
-.blog-categories {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
-  gap: 24px;
-  align-items: start;
-  width: 100%;
-  margin-top: 40px;
-  contain: layout;
 }
