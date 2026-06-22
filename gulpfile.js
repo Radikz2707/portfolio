@@ -227,3 +227,5 @@ export const html = runTask('html');
 export const images = runTask('images');
 export const createWebp = runTask('createWebp');
 export const sprite = runTask('sprite');
+export const fonts = runTask('fonts');
+export const fontsStyle = runTask('fontsStyle');
