@@ -1,25 +1,48 @@
 @use '../base/vars' as v;
 
-/* Глобальные стили проекта */
+/* Глобальные стили проекта с абсолютной фиксацией центральной оси */
+html {
+  box-sizing: border-box;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+}
+
 html,
 body {
   height: 100%;
-  overflow-x: hidden !important;
 }
 
 body {
   display: flex;
-  flex-direction: column; /* Выстраивает элементы сверху вниз */
+  flex-direction: column;
+  overflow-x: hidden;
   font-family: v.$font-main;
   color: v.$color-text-main;
   background-color: v.$bg-dark;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    background-color: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgb(255 255 255 / 20%);
+    border: 2px solid transparent;
+    border-radius: 4px;
+
+    &:hover {
+      background-color: rgb(255 255 255 / 40%);
+    }
+  }
 }
 
 /* Корневая обертка для управления прижатием футера */
 .wrapper {
   display: flex;
   flex-direction: column;
-  min-height: 100%; /* Растягивает обертку на всю высоту экрана */
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden; // Дублирующий щит безопасности для обёртки контента
 }
 
 /* Сетка и контейнер */

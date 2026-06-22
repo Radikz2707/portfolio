@@ -123,6 +123,11 @@ const fixPictureTags = () => {
 // 🚀 3. Основная задача сборки HTML кода корня сайта
 // =======================================================================
 export function html() {
+  const repoName = config.repoPath
+    ? config.repoPath.split('/')[1]
+    : 'portfolio';
+  const rootPrefix = isProd ? `/${repoName}` : '';
+
   const pipeline = [
     src([
       `${config.srcFolder}/*.html`,
@@ -133,20 +138,40 @@ export function html() {
     plumber({ errorHandler: onError }),
     fileInclude({ prefix: '@@', basepath: 'src', filters: {}, indent: true }),
 
-    // 🔥 Максимальный контроль: Новые всеядные регулярные выражения (символ слэша сделан необязательным)
-    replace(/href=["']\s*\/?\s*GO_HOME\s*["']/gi, 'href="index.html"'),
+    // 🔥 ИНТЕЛЛЕКТУАЛЬНАЯ ЗАМЕНА МАРКЕРОВ В ЗАВИСИМОСТИ ОТ СТРАНИЦЫ
+    // Функция проверяет имя файла. На главной ставит чистый якорь #about, в блоге — полный путь /index.html#about
     replace(
-      /href=["']\s*\/?\s*GO_PROJECTS\s*["']/gi,
-      'href="index.html#projects"',
-    ),
-    replace(/href=["']\s*\/?\s*GO_ABOUT\s*["']/gi, 'href="index.html#about"'),
+      /href=["']\s*\/?\s*(GO_HOME|GO_PROJECTS|GO_ABOUT|GO_BLOG|GO_CONTACTS?)\s*["']/gi,
+      function (match, marker) {
+        const currentFile = this.file.path.replace(/\\/g, '/');
+        const isIndexPage =
+          currentFile.endsWith('/index.html') &&
+          !currentFile.includes('/blog/');
+        const m = marker.toUpperCase();
 
-    // Идеальный относительный путь, ловит и "/GO_BLOG", и "GO_BLOG"
-    replace(/href=["']\s*\/?\s*GO_BLOG\s*["']/gi, 'href="blog/index.html"'),
+        if (m === 'GO_HOME') {
+          return `href="${rootPrefix}/index.html"`;
+        }
+        if (m === 'GO_BLOG') {
+          return `href="${rootPrefix}/blog/index.html"`;
+        }
 
-    replace(
-      /href=["']\s*\/?\s*GO_CONTACTS?\s*["']/gi,
-      'href="index.html#contacts"',
+        const anchorMap = {
+          GO_PROJECTS: 'projects',
+          GO_ABOUT: 'about',
+          GO_CONTACTS: 'contacts',
+          GO_CONTACT: 'contacts',
+        };
+        const anchor = anchorMap[m];
+
+        // 🔥 Если мы на главной странице — отдаем СТРОГО ЧИСТЫЙ ХЭШ, чтобы не злить ваш JS-скрипт скролла
+        if (isIndexPage) {
+          return `href="#${anchor}"`;
+        } else {
+          // Если мы в блоге — отдаем полный путь для возврата на главную
+          return `href="${rootPrefix}/index.html#${anchor}"`;
+        }
+      },
     ),
 
     replace(/SITE_NAME/gi, config.siteName),
@@ -204,6 +229,16 @@ const generateCategoryCards = async () => {
   const contentRoot = path.join(config.srcFolder, 'content');
   if (!fs.existsSync(contentRoot)) return '';
 
+  // 🔥 ХЕЛПЕР СКЛОНЕНИЯ ЧИСЛИТЕЛЬНЫХ (Грамматика "1 статья", "5 статей")
+  const getPluralArticles = (count) => {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 14) return `${count} статей`;
+    if (mod10 === 1) return `${count} статья`;
+    if (mod10 >= 2 && mod10 <= 4) return `${count} статьи`;
+    return `${count} статей`;
+  };
+
   const categories = fs.readdirSync(contentRoot).filter((f) => {
     const fullPath = path.join(contentRoot, f);
     return fs.statSync(fullPath).isDirectory() && f !== 'blog';
@@ -240,13 +275,16 @@ const generateCategoryCards = async () => {
       categoryNames[category] ||
       category.charAt(0).toUpperCase() + category.slice(1);
 
+    // 🔥 ИСПРАВЛЕНО: Строго одинарные кавычки для БЭМ-классов HTML + умный счетчик pluralText
+    const pluralText = getPluralArticles(articleCount);
+
     categoryCardsHtml += `
-    <div class="blog-category-card">
-      <div class="blog-category-card__header" role="button" aria-expanded="false">
-        <h3 class="blog-category-card__title">${categoryTitle}</h3>
-        <p class="blog-category-card__count">${articleCount} статей</p>
+    <div class='blog-category-card'>
+      <div class='blog-category-card__header' role='button' aria-expanded='false'>
+        <h3 class='blog-category-card__title'>${categoryTitle}</h3>
+        <p class='blog-category-card__count'>${pluralText}</p>
       </div>
-      <ul class="blog-category-card__list" style="overflow: hidden; height: 0px;">
+      <ul class='blog-category-card__list' style='overflow: hidden; height: 0px;'>
     `;
 
     for (const file of articleFiles) {
@@ -261,9 +299,10 @@ const generateCategoryCards = async () => {
         articleTitle = slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
       }
 
+      // 🔥 ИСПРАВЛЕНО: Одинарные кавычки внутри элементов списка статей
       categoryCardsHtml += `
-        <li class="blog-category-card__item">
-          <a class="blog-category-card__link" href="${articleUrl}">${articleTitle}</a>
+        <li class='blog-category-card__item'>
+          <a class='blog-category-card__link' href='${articleUrl}'>${articleTitle}</a>
         </li>
       `;
     }

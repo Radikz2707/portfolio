@@ -1,7 +1,9 @@
 export const blogCategories = (): void => {
   console.log('Блок blog-categories (TS) инициализирован');
 
-  const categoryCards = document.querySelectorAll('.blog-category-card');
+  const categoryCards = document.querySelectorAll<HTMLElement>(
+    '.blog-category-card',
+  );
   if (categoryCards.length === 0) return;
 
   categoryCards.forEach((card) => {
@@ -17,9 +19,9 @@ export const blogCategories = (): void => {
       return;
     }
 
-    const title = header
-      .querySelector('.blog-category-card__title')
-      ?.textContent?.trim();
+    const title =
+      header.querySelector('.blog-category-card__title')?.textContent?.trim() ||
+      '';
 
     header.addEventListener('click', (event: MouseEvent) => {
       event.preventDefault();
@@ -29,16 +31,15 @@ export const blogCategories = (): void => {
       console.log(`Клик по категории "${title}", сейчас открыта: ${isOpen}`);
 
       if (
-        list.style.transition === 'height 0.3s ease 0s' ||
-        (card as HTMLElement).dataset.animating === 'true'
+        list.style.transition.includes('height') ||
+        card.dataset.animating === 'true'
       ) {
         return;
       }
-      (card as HTMLElement).dataset.animating = 'true';
+      card.dataset.animating = 'true';
 
       if (isOpen) {
-        const currentHeight = list.scrollHeight;
-        list.style.height = `${currentHeight}px`;
+        list.style.height = `${list.scrollHeight}px`;
         list.style.overflow = 'hidden';
 
         requestAnimationFrame(() => {
@@ -52,9 +53,10 @@ export const blogCategories = (): void => {
           list.style.height = '';
           list.style.overflow = '';
           list.style.transition = '';
-          (card as HTMLElement).dataset.animating = 'false';
+          card.dataset.animating = 'false';
         }, 300);
       } else {
+        // Закрываем другие открытые карточки
         categoryCards.forEach((otherCard) => {
           if (otherCard !== card) {
             const otherHeader = otherCard.querySelector<HTMLDivElement>(
@@ -63,26 +65,32 @@ export const blogCategories = (): void => {
             const otherList = otherCard.querySelector<HTMLUListElement>(
               '.blog-category-card__list',
             );
+
             if (
               otherList &&
               otherList.classList.contains('_open') &&
               otherHeader
             ) {
+              otherCard.dataset.animating = 'true';
               otherList.style.height = `${otherList.scrollHeight}px`;
+
               requestAnimationFrame(() => {
                 otherList.style.transition = 'height 300ms ease';
                 otherList.style.height = '0px';
               });
+
               setTimeout(() => {
                 otherList.classList.remove('_open');
                 otherHeader.setAttribute('aria-expanded', 'false');
                 otherList.style.height = '';
                 otherList.style.transition = '';
+                otherCard.dataset.animating = 'false';
               }, 300);
             }
           }
         });
 
+        // Открываем текущую карточку
         list.classList.add('_open');
         header.setAttribute('aria-expanded', 'true');
 
@@ -99,7 +107,7 @@ export const blogCategories = (): void => {
           list.style.height = '';
           list.style.overflow = '';
           list.style.transition = '';
-          (card as HTMLElement).dataset.animating = 'false';
+          card.dataset.animating = 'false';
         }, 300);
       }
     });

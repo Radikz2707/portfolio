@@ -34,13 +34,18 @@
   &__header {
     box-sizing: border-box;
     display: flex;
-    gap: 16px;
+    gap: 12px; // Оптимизированный безопасный зазор между флекс-элементами
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 24px;
+    padding: 20px 24px; // Базовый паддинг для десктопа
     cursor: pointer;
     transition: background-color 0.3s ease;
+
+    // 🔥 ИСПРАВЛЕНО: На узких экранах уменьшаем паддинги, давая заголовку +16px свободного места
+    @media (width <= 480px) {
+      padding: 16px;
+    }
 
     &:hover {
       background: rgba(v.$color-accent, 0.05);
@@ -49,13 +54,17 @@
 
   &__title {
     flex-grow: 1;
+    flex-shrink: 1;
     min-width: 0;
     margin: 0;
     overflow: visible;
     text-overflow: clip;
-    font-size: 20px;
+
+    // 🔥 ИСПРАВЛЕНО: Шрифт плавно адаптируется от 18px на мобильных до 20px на десктопе
+    font-size: clamp(18px, 2vw, 20px);
     font-weight: 700;
     color: v.$color-text-main;
+    word-break: keep-all;
     overflow-wrap: break-word;
     white-space: normal;
     transition: color 0.3s ease;
@@ -65,6 +74,9 @@
     flex-shrink: 0;
     margin: 0;
     margin-right: 4px;
+
+    // 🔥 ИСПРАВЛЕНО: Принудительно отталкивает счётчик и стрелку в самый правый край карточки
+    margin-left: auto;
     font-size: 14px;
     font-weight: 500;
     color: v.$color-accent;

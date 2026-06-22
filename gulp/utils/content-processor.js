@@ -148,6 +148,17 @@ export const parsePlainText = (content) => {
   return content.replace(/<[^>]*>/g, '').trim();
 };
 
+// 🔥 ФУНКЦИЯ СКЛОНЕНИЯ ЧИСЛИТЕЛЬНЫХ (РУССКИЙ ЯЗЫК)
+const getPluralArticles = (count) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+
+  if (mod100 >= 11 && mod100 <= 14) return `${count} статей`;
+  if (mod10 === 1) return `${count} статья`;
+  if (mod10 >= 2 && mod10 <= 4) return `${count} статьи`;
+  return `${count} статей`;
+};
+
 export const generateSidebarLinks = async (currentFolderName) => {
   const contentRoot = path.join(config.srcFolder, 'content');
   if (!fs.existsSync(contentRoot)) return '';
@@ -174,9 +185,21 @@ export const generateSidebarLinks = async (currentFolderName) => {
       categoryNames[category] ||
       category.charAt(0).toUpperCase() + category.slice(1);
 
-    fullSidebarHtml += `<li class="blog-sidebar__category">
-      <button class="blog-sidebar__category-btn" aria-expanded="false">${categoryTitle}</button>
-      <ul class="blog-sidebar__sublist">`;
+    // 🔥 СТАЛО (Автоматический точный счётчик с правильным окончанием):
+    const validFilesCount = files.filter(
+      (f) =>
+        ['.md', '.txt', '.rtf', '.docx'].includes(
+          path.extname(f).toLowerCase(),
+        ) && !f.toLowerCase().startsWith('index.'),
+    ).length;
+
+    const pluralText = getPluralArticles(validFilesCount);
+
+    fullSidebarHtml += `<li class='blog-sidebar__category'>
+ <button class='blog-sidebar__category-btn' aria-expanded='false'>
+   ${categoryTitle} <span class='blog-sidebar__count'>(${pluralText})</span>
+ </button>
+ <ul class='blog-sidebar__sublist'>`;
 
     const walkDirectory = async (currentDir, relativePath = '') => {
       let result = '';
@@ -233,7 +256,7 @@ export const generateSidebarLinks = async (currentFolderName) => {
             .replace(/\.(md|txt|rtf|docx)$/i, '.html');
           const finalUrl = `./${articleUrl}`;
 
-          result += `  <li class="blog-sidebar__item"><a href="${finalUrl}" class="blog-sidebar__link">${title}</a></li>\n`;
+          result += ` <li class='blog-sidebar__item'><a href='${finalUrl}' class='blog-sidebar__link'>${title}</a></li>\n`;
         }
       }
       return result;
