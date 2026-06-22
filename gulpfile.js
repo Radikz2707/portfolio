@@ -224,3 +224,6 @@ export const favs = runTask('favs');
 export const styles = runTask('styles');
 export const scripts = runTask('scripts');
 export const html = runTask('html');
+export const images = runTask('images');
+export const createWebp = runTask('createWebp');
+export const sprite = runTask('sprite');
