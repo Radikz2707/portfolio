@@ -1,20 +1,28 @@
-import { modal } from '../components/modal/modal';
+// ==========================================
+// 📦 ВНЕШНИЕ БИБЛИОТЕКИ И СИСТЕМНЫЕ МОДУЛИ
+// ==========================================
 import AOS from 'aos';
-
 import { isWebp } from './modules/isWebp';
+import { themeToggle } from './modules/theme-toggle/theme-toggle';
 import { scrollToTop } from './modules/scroll-to-top/scroll-to-top';
+
+// ==========================================
+// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ
+// ==========================================
+import { header } from '../components/header/header';
 import { menu } from '../components/menu/menu';
+import { modal } from '../components/modal/modal';
 import { blogSidebar } from '../components/blog-sidebar/blog-sidebar';
 import { blogCategories } from '../components/blog-categories/blog-categories';
 import { contacts } from '../components/contacts/contacts';
 import { aboutMe } from '../components/about-me/about-me';
 import { projectsGrid } from '../components/projects-grid/projects-grid';
-import { themeToggle } from './modules/theme-toggle/theme-toggle';
 
 // ==========================================
 // 1. ИНИЦИАЛИЗАЦИЯ БАЗОВЫХ МОДУЛЕЙ
 // ==========================================
 isWebp();
+header();
 menu();
 modal();
 scrollToTop();
@@ -22,8 +30,8 @@ themeToggle();
 // [ДИНАМИЧЕСКИЕ МОДУЛИ]
 
 // 🔥 ОПРЕДЕЛЕНИЕ ТИПА СТРАНИЦЫ
-const isBlogPage = 
-  window.location.pathname.includes('/blog/') || 
+const isBlogPage =
+  window.location.pathname.includes('/blog/') ||
   window.location.href.includes('/blog/') ||
   document.body.classList.contains('page-blog') ||
   !!document.querySelector('.blog-sidebar');
@@ -55,8 +63,10 @@ const initApp = () => {
     });
 
     // Принудительно активируем элементы в зоне видимости
-    const revealElements = document.querySelectorAll('.element-reveal, .element-reveal-left');
-    revealElements.forEach(el => {
+    const revealElements = document.querySelectorAll(
+      '.element-reveal, .element-reveal-left',
+    );
+    revealElements.forEach((el) => {
       const rect = el.getBoundingClientRect();
       if (rect.top < window.innerHeight * 1.2) {
         el.classList.add('_active');

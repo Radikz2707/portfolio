@@ -30,18 +30,19 @@ const cleanAppTs = (filePath, blockName, camelName) => {
     const lines = content.split(/\r?\n/);
     const filteredLines = lines.filter((line) => {
       const trimmed = line.trim();
-      const isTargetImport =
-        trimmed.startsWith('import ') &&
-        (trimmed.includes(`/${blockName}/`) ||
-          trimmed.includes(`/${blockName}"`) ||
-          trimmed.includes(`/${blockName}'`) ||
-          trimmed.includes(`@comp/${blockName}/`) ||
-          trimmed.includes(`@comp/${blockName}"`) ||
-          trimmed.includes(`@comp/${blockName}'`) ||
-          trimmed.includes(`@modules/${blockName}/`) ||
-          trimmed.includes(`@modules/${blockName}"`) ||
-          trimmed.includes(`@modules/${blockName}'`));
+
+      const escapeRegExp = (string) =>
+        string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedBlock = escapeRegExp(blockName);
+
+      // 🔥 БРОНЕБОЙНЫЙ REGEX: Находит ЛЮБОЙ импорт, содержащий имя компонента внутри кавычек в секции from
+      const importRegex = new RegExp(
+        `^import\\s+.*\\s+from\\s+['"].*?\\/${escapedBlock}['"];?$`,
+      );
+
+      const isTargetImport = importRegex.test(trimmed);
       const isTargetCall = trimmed.replace(/\s+/g, '') === `${camelName}();`;
+
       return !isTargetImport && !isTargetCall;
     });
     return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n');
@@ -54,11 +55,12 @@ const cleanStyleScss = (filePath, blockName) => {
     const lines = content.split(/\r?\n/);
     const filteredLines = lines.filter((line) => {
       const trimmed = line.trim();
-      return (
-        !trimmed.includes(`/${blockName}/`) &&
-        !trimmed.includes(`/${blockName}"`) &&
-        !trimmed.includes(`/${blockName}'`)
+      const escapeRegExp = (string) =>
+        string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const scssRegex = new RegExp(
+        `@use\\s+['"].*?\\/${escapeRegExp(blockName)}['"];?`,
       );
+      return !scssRegex.test(trimmed);
     });
     return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n');
   });
@@ -83,17 +85,27 @@ const checkDirectorySafety = (dirPath) => {
   const files = fs.readdirSync(dirPath);
   for (const file of files) {
     const fullPath = path.join(dirPath, file);
-    if (fs.statSync(fullPath).isDirectory()) return false;
+
+    // 🔥 ИСПРАВЛЕНО: Интеллектуальный разбор вложенных папок
+    if (fs.statSync(fullPath).isDirectory()) {
+      if (file === 'img') {
+        const imgFiles = fs
+          .readdirSync(fullPath)
+          .filter((f) => f !== '.gitkeep');
+        if (imgFiles.length === 0) continue; // Папка img пустая — пропускаем и идём дальше
+      }
+      return false; // Найдена посторонняя папка с файлами — блокируем удаление
+    }
 
     const content = fs.readFileSync(fullPath, 'utf-8').trim();
 
     if (file.endsWith('.html')) {
       const cleanContent = content.replace(/<!--[\s\S]*?-->/g, '').trim();
-      if (
-        cleanContent.length > 0 &&
-        !cleanContent.includes('Шаблон компонента')
-      )
-        return false;
+      const isAutoTemplate =
+        cleanContent.includes('Шаблон компонента') ||
+        /<h2>.*? (component|module|plugin)<\/h2>/i.test(cleanContent);
+
+      if (cleanContent.length > 0 && !isAutoTemplate) return false;
     }
 
     if (file.endsWith('.scss') || file.endsWith('.sass')) {
@@ -110,7 +122,7 @@ const checkDirectorySafety = (dirPath) => {
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/\/\/.*/g, '')
         .replace(
-          /export\s+const\s+\w+\s*=\s*\(\)\s*=>\s*\{\s*console\.log\(.*?\);\s*\};/g,
+          /export\s+const\s+\w+\s*=\s*\(\s*\)\s*=>\s*\{\s*console\.log\([\s\S]*?\);?\s*\};?/gi,
           '',
         )
         .trim();

@@ -12,33 +12,46 @@ const updateFileContent = (filePath, modifyCallback) => {
   fs.writeFileSync(filePath, updatedContent.trimEnd() + '\n');
 };
 
-const updateAppTs = (filePath, name, camelName) => {
+const updateAppTs = (filePath, name, camelName, type) => {
   updateFileContent(filePath, (content) => {
-    const lines = content.split(/\r?\n/);
-    const importLine = `import { ${camelName} } from "../modules/${name}/${name}";`;
+    const isPlugin = type === 'plugin';
+    const importLine = `import { ${camelName} } from './${isPlugin ? 'plugins' : 'modules'}/${name}/${name}';`;
     const callLine = `${camelName}();`;
 
-    // 1. ИМПОРТЫ: Находим самый последний импорт в файле и вставляем под него
-    const lastImportIndex = lines.findLastIndex((line) =>
-      line.trim().startsWith('import '),
-    );
-    if (lastImportIndex !== -1) {
-      lines.splice(lastImportIndex + 1, 0, importLine);
-    } else {
-      lines.unshift(importLine);
+    let newContent = content;
+
+    if (!newContent.includes(importLine)) {
+      // 🎯 НАДЁЖНЫЙ МАРКЕР: Ищем пустую строку прямо перед заголовком БЭМ-компонентов
+      const targetMarker =
+        /\s*\n\/\/ ==========================================\n\/\/ 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ/;
+
+      if (targetMarker.test(newContent)) {
+        // Вставляем новый импорт в самый конец списка системных модулей, перед компонентами
+        newContent = newContent.replace(
+          targetMarker,
+          `\n${importLine}\n\n// ==========================================\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ`,
+        );
+      } else {
+        const fallbackMarker =
+          '// ==========================================\n// 📦 ВНЕШНИЕ БИБЛИОТЕКИ И СИСТЕМНЫЕ МОДУЛИ\n// ==========================================';
+        newContent = newContent.replace(
+          fallbackMarker,
+          `${fallbackMarker}\n${importLine}`,
+        );
+      }
     }
 
-    // 2. ВЫЗОВЫ: Вставляем вызов новой функции по маркеру
-    if (!content.includes(callLine)) {
-      content = content.replace('// [ДИНАМИЧЕСКИЕ МОДУЛИ]', `${callLine}\n// [ДИНАМИЧЕСКИЕ МОДУЛИ]`);
+    if (!newContent.includes(callLine)) {
+      const targetCallMarker = '// [ДИНАМИЧЕСКИЕ МОДУЛИ]';
+      newContent = newContent.replace(
+        targetCallMarker,
+        `${callLine}\n${targetCallMarker}`,
+      );
     }
 
-    return lines
-      .join('\n')
-      .replace(/(import\s+.*?;)\n\s*\n\s*(import\s+.*?;)/gi, '$1\n$2')
-      .replace(/\n{3,}/g, '\n\n');
+    return newContent.replace(/\n{3,}/g, '\n\n');
   });
-  console.log('📝 Модуль успешно добавлен в app.ts');
+  console.log(`📝 ${isPlugin ? 'Плагин' : 'Модуль'} успешно добавлен в app.ts`);
 };
 
 const updateStyleScss = (filePath, dirPath, name, camelName) => {
@@ -49,44 +62,26 @@ const updateStyleScss = (filePath, dirPath, name, camelName) => {
       .replace(/\\/g, '/');
     if (!relativePath.startsWith('.')) relativePath = `./${relativePath}`;
 
-    const lines = content.split(/\r?\n/);
+    const newImport = `@use '${relativePath}' as ${camelName};`;
+    if (content.includes(newImport)) return content;
 
-    // ИСПРАВЛЕНО: Безопасный импорт стилей с уникальным пространством имен (алиасом) на основе camelName
-    const newImport = `@use "${relativePath}" as ${camelName};`;
+    const targetMarker = '// ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ';
 
-    const firstCodeIndex = lines.findIndex((line) => {
-      const trimmed = line.trim();
-      return (
-        trimmed !== '' &&
-        !trimmed.startsWith('@use') &&
-        !trimmed.startsWith('//')
-      );
-    });
-
-    if (firstCodeIndex !== -1) {
-      lines.splice(firstCodeIndex, 0, newImport);
+    if (content.includes(targetMarker)) {
+      return content.replace(targetMarker, `${targetMarker}\n${newImport}`);
     } else {
-      lines.push(newImport);
+      return content + `\n${newImport}`;
     }
-
-    return lines
-      .join('\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/(@use\s+.*?;)\n*(?![^]*@use)/i, '$1\n\n');
   });
   console.log('🎨 Стили добавлены в блок модулей style.scss');
 };
 
-// ВОТ ЭТА ФУНКЦИЯ БЫЛА УТЕРЯНА. ВОЗВРАЩАЕМ ЕЁ НА МЕСТО:
 export const createModule = (done) => {
   const name = process.argv
     .find((arg) => arg.startsWith('--'))
     ?.replace('--', '');
-
   if (!name) {
-    console.log(
-      '\n❌ Укажите имя модуля! Пример: gulp createModule --my-block\n',
-    );
+    console.log('\n❌ Укажите имя модуля! Пример: gulp module --my-block\n');
     return done();
   }
 
@@ -106,7 +101,7 @@ export const createModule = (done) => {
 
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const tsTemplate = `export const ${camelName} = (): void => {\n  console.log("Модуль ${name} (TS) инициализирован");\n};\n`;
+  const tsTemplate = `export const ${camelName} = (): void => {\n  console.log('Модуль ${name} (TS) инициализирован');\n};\n`;
   const scssTemplate = `.${name} {\n  \n}\n`;
 
   fs.writeFileSync(path.join(dirPath, `${name}.ts`), tsTemplate);

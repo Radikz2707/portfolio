@@ -16,53 +16,84 @@ const updateFileContent = (filePath, modifyCallback) => {
 
 export function create(done) {
   const args = process.argv.slice(3);
-  const name = args[0]?.replace(/^---/, '');
+  let name = args.find((arg) => arg.startsWith('--'))?.replace(/^--/, '');
 
   if (!name) {
-    console.error('❌ Ошибка: Укажите имя блока (например: npm run create ---my-block)');
+    console.error(
+      '❌ Ошибка: Укажите имя блока (например: gulp create --my-block)',
+    );
     return done();
   }
 
   const struct = config.structure;
   const scssExt = config.scssExtension;
   const blockDir = path.join(struct.components, name);
+  const imgDir = path.join(blockDir, 'img');
+  const camelName = toCamelCase(name);
 
   if (fs.existsSync(blockDir)) {
     console.error(`❌ Ошибка: Блок "${name}" уже существует!`);
     return done();
   }
 
-  // Создаем папки
+  // Создаем структуру папок
   fs.mkdirSync(blockDir, { recursive: true });
-  fs.mkdirSync(path.join(blockDir, 'img'), { recursive: true });
+  fs.mkdirSync(imgDir, { recursive: true });
+  fs.writeFileSync(path.join(imgDir, '.gitkeep'), '');
 
-  // Генерируем файлы
-  fs.writeFileSync(path.join(blockDir, `${name}.html`), `<section class="${name}">\n  <div class="${name}__container container">\n    <h2>${name} Component</h2>\n  </div>\n</section>`);
-  fs.writeFileSync(path.join(blockDir, `${name}.${scssExt}`), `.${name} {\n  padding: 50px 0;\n}`);
-  fs.writeFileSync(path.join(blockDir, `${name}.ts`), `export const ${toCamelCase(name)} = (): void => {\n  console.log('Блок ${name} (TS) инициализирован');\n};`);
+  // Генерируем файлы-заглушки
+  fs.writeFileSync(
+    path.join(blockDir, `${name}.html`),
+    `<section class="${name}">\n  <div class="${name}__container container">\n    <h2>${name} Component</h2>\n  </div>\n</section>`,
+  );
+  fs.writeFileSync(
+    path.join(blockDir, `${name}.${scssExt}`),
+    `.${name} {\n  padding: 50px 0;\n}`,
+  );
+  fs.writeFileSync(
+    path.join(blockDir, `${name}.ts`),
+    `export const ${camelName} = (): void => {\n  console.log('Блок ${name} (TS) инициализирован');\n};`,
+  );
 
-  // 1. Подключаем в style.scss
+  // 1. ПОДКЛЮЧЕНИЕ СТИЛЕЙ (Умная вставка без дублирования пустых строк)
   const stylePath = path.join(config.srcFolder, scssExt, `style.${scssExt}`);
   updateFileContent(stylePath, (content) => {
     const importStr = `@use '../components/${name}/${name}';`;
     if (content.includes(importStr)) return content;
-    const lines = content.split('\n');
-    const lastImportIndex = lines.findLastIndex(line => line.startsWith('@use'));
-    lines.splice(lastImportIndex + 1, 0, importStr);
-    return lines.join('\n');
+
+    const targetRegex = /\s*\n\/\/ ФУНКЦИОНАЛЬНЫЕ JS\/TS МОДУЛИ/;
+    if (targetRegex.test(content)) {
+      return content.replace(
+        targetRegex,
+        `\n${importStr}\n\n// ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ`,
+      );
+    } else {
+      return content + `\n${importStr}`;
+    }
   });
 
-  // 2. Подключаем в app.ts
+  // 2. ПОДКЛЮЧЕНИЕ СКРИПТОВ (Строго под маркеры группы компонентов)
   const appPath = path.join(config.srcFolder, 'js', 'app.ts');
   updateFileContent(appPath, (content) => {
-    const importStr = `import { ${toCamelCase(name)} } from '../components/${name}/${name}';`;
-    const callStr = `${toCamelCase(name)}();`;
+    const importStr = `import { ${camelName} } from '../components/${name}/${name}';`;
+    const callStr = `${camelName}();`;
+
+    const targetImportMarker =
+      '// ==========================================\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ\n// ==========================================';
+    const targetCallMarker = '// [ВЫЗОВЫ ГЛАВНАЯ]';
+
     let newContent = content;
     if (!newContent.includes(importStr)) {
-      newContent = newContent.replace('import { themeToggle }', `${importStr}\nimport { themeToggle }`);
+      newContent = newContent.replace(
+        targetImportMarker,
+        `${targetImportMarker}\n${importStr}`,
+      );
     }
     if (!newContent.includes(callStr)) {
-      newContent = newContent.replace('// [ВЫЗОВЫ ГЛАВНАЯ]', `${callStr}\n    // [ВЫЗОВЫ ГЛАВНАЯ]`);
+      newContent = newContent.replace(
+        targetCallMarker,
+        `${callStr}\n    ${targetCallMarker}`,
+      );
     }
     return newContent;
   });
