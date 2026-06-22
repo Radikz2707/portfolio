@@ -30,57 +30,12 @@ export function menu(): void {
     document.body.classList.toggle('_lock');
   });
 
+  // 🔥 ИСПРАВЛЕНО: Скрипт больше СЛЕДОМ НЕ БЛОКИРУЕТ КЛИКИ ЧЕРЕЗ preventDefault!
   menuLinks.forEach((link) => {
-    link.addEventListener('click', (e: MouseEvent) => {
-      const href = link.getAttribute('href');
-      if (!href) return;
-
-      const hasHash = href.includes('#');
-
-      if (hasHash) {
-        const targetId = href.substring(href.indexOf('#'));
-
-        if (targetId === '#') {
-          e.preventDefault();
-          closeMenu();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          return;
-        }
-
-        const targetSection = document.querySelector<HTMLElement>(targetId);
-
-        if (targetSection) {
-          // 🔥 ИСПРАВЛЕНО: Блокируем стандартный прыжок только если мы реально переходим по чистому якорю
-          // или если мы УЖЕ находимся на главной странице, чтобы не срывать переходы браузера
-          e.preventDefault();
-          closeMenu();
-
-          // Мягкая задержка для закрытия мобильной шторки меню
-          setTimeout(() => {
-            // 🔥 БРОНЕБОЙНЫЙ ИДЕАЛЬНЫЙ СКРОЛЛ: Больше никаких сложных расчетов пикселей!
-            // Метод scrollIntoView сам с точностью до микрона опустит экран к нужной секции,
-            // учитывая любые особенности рендеринга Windows, Mac, Chrome и Safari.
-            targetSection.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start',
-            });
-
-            // Если у вас фиксированная шапка перекрывает верх секции, мы делаем микро-коррекцию скролла:
-            const headerElement =
-              document.querySelector<HTMLElement>('.header');
-            if (headerElement) {
-              const headerOffset = headerElement.offsetHeight;
-              window.scrollBy(0, -headerOffset);
-            }
-          }, 50);
-        } else {
-          // Если элемент не найден на текущей странице (значит, мы в блоге) —
-          // МЫ НЕ ВЫЗЫВАЕМ e.preventDefault()! Браузер спокойно улетит на главную страницу по href!
-          closeMenu();
-        }
-      } else {
-        closeMenu();
-      }
+    link.addEventListener('click', () => {
+      // При клике на любую ссылку мы просто аккуратно прячем мобильную бургер-шторку,
+      // а сам переход по ссылке или скролл к якорю выполняет сам браузер!
+      closeMenu();
     });
   });
 

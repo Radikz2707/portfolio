@@ -138,22 +138,27 @@ export function html() {
     plumber({ errorHandler: onError }),
     fileInclude({ prefix: '@@', basepath: 'src', filters: {}, indent: true }),
 
-    // 🔥 ИНТЕЛЛЕКТУАЛЬНАЯ ЗАМЕНА МАРКЕРОВ В ЗАВИСИМОСТИ ОТ СТРАНИЦЫ
-    // Функция проверяет имя файла. На главной ставит чистый якорь #about, в блоге — полный путь /index.html#about
     replace(
       /href=["']\s*\/?\s*(GO_HOME|GO_PROJECTS|GO_ABOUT|GO_BLOG|GO_CONTACTS?)\s*["']/gi,
       function (match, marker) {
-        const currentFile = this.file.path.replace(/\\/g, '/');
-        const isIndexPage =
-          currentFile.endsWith('/index.html') &&
-          !currentFile.includes('/blog/');
+        // Вычисляем, находится ли текущий обрабатываемый HTML-файл внутри папки blog
+        const currentFilePath = this.file.path
+          .replace(/\\/g, '/')
+          .toLowerCase();
+        const isInsideBlog = currentFilePath.includes('/blog/');
+
+        // 🔥 Главный секрет: Если мы в блоге, то для возврата на главную пишем "../", если на главной — "./"
+        const pathPrefix = isInsideBlog ? '../' : './';
         const m = marker.toUpperCase();
 
         if (m === 'GO_HOME') {
-          return `href="${rootPrefix}/index.html"`;
+          return `href="${pathPrefix}index.html"`;
         }
         if (m === 'GO_BLOG') {
-          return `href="${rootPrefix}/blog/index.html"`;
+          // Если мы на главной, до блога путь "blog/index.html". Если мы уже в блоге — "index.html"
+          return isInsideBlog
+            ? `href="./index.html"`
+            : `href="./blog/index.html"`;
         }
 
         const anchorMap = {
@@ -164,16 +169,11 @@ export function html() {
         };
         const anchor = anchorMap[m];
 
-        // 🔥 Если мы на главной странице — отдаем СТРОГО ЧИСТЫЙ ХЭШ, чтобы не злить ваш JS-скрипт скролла
-        if (isIndexPage) {
-          return `href="#${anchor}"`;
-        } else {
-          // Если мы в блоге — отдаем полный путь для возврата на главную
-          return `href="${rootPrefix}/index.html#${anchor}"`;
-        }
+        // Генерируем идеальный относительный путь, который поймет любой браузер и любой сервер
+        return `href="${pathPrefix}index.html#${anchor}"`;
       },
     ),
-
+    
     replace(/SITE_NAME/gi, config.siteName),
     replace(/SITE_AUTHOR/gi, config.repoPath),
     replace(

@@ -1,39 +1,28 @@
 @use '../base/vars' as v;
 
-/* Глобальные стили проекта с абсолютной фиксацией центральной оси */
+/* Глобальные стили проекта с абсолютным прижатием футера */
 html {
   box-sizing: border-box;
+
+  // 🔥 ШАГ 1: Задаем высоту для html
+  height: 100%;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
 }
 
-html,
 body {
-  height: 100%;
-}
 
-body {
   display: flex;
   flex-direction: column;
+  // 🔥 ШАГ 2: Переводим body на min-height, чтобы он мог бесконечно расти вниз,
+  // но при пустой странице был равен ровно 100% высоты экрана монитора!
+  min-height: 100%;
   overflow-x: hidden;
   font-family: v.$font-main;
   color: v.$color-text-main;
   background-color: v.$bg-dark;
 
-  &::-webkit-scrollbar {
-    width: 8px;
-    background-color: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: rgb(255 255 255 / 20%);
-    border: 2px solid transparent;
-    border-radius: 4px;
-
-    &:hover {
-      background-color: rgb(255 255 255 / 40%);
-    }
-  }
+  // Стили кастомного скроллбара...
 }
 
 /* Корневая обертка для управления прижатием футера */
@@ -41,8 +30,12 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100%;
-  overflow-x: hidden; // Дублирующий щит безопасности для обёртки контента
+
+  // 🔥 ШАГ 3: Заставляем обертку забрать у body все 100% минимальной высоты.
+  // Теперь .wrapper растянется на весь экран, а .blog-main со своим flex: 1 0 auto
+  // мгновенно вытолкнет футер на самую нижнюю границу монитора!
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Сетка и контейнер */
