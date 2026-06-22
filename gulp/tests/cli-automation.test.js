@@ -8,19 +8,21 @@ const styleScssPath = path.join(process.cwd(), 'src', 'scss', 'style.scss');
 
 const runGulpTask = (command) => {
   try {
-    const result = execSync(command, { stdio: 'pipe' });
-    execSync('node -e "setTimeout(() => {}, 200)"');
+    // 🔥 ТОТАЛЬНЫЙ КОНТРОЛЬ КЭША: Передаем флаг сброса кэша для Gulp,
+    // чтобы тестовые папки не оседали в оперативной памяти newer/cache
+    const result = execSync(command, {
+      stdio: 'pipe',
+      env: { ...process.env, GULP_CACHE_CLEAR: 'true' },
+    });
+    execSync('node -e "setTimeout(() => {}, 250)"');
     return result.toString();
   } catch (error) {
-    // 🔥 ТОТАЛЬНЫЙ АВТОМАТИЧЕСКИЙ КОНТРОЛЬ:
-    // Если падает именно таска удаления защищенного компонента,
-    // мы НЕ бросаем ошибку, а возвращаем строку. Это тушит глобальный сбой Vitest.
+    // Мягко гасим ошибку, если это удаление защищенного компонента в Тесте 4
     if (command.includes('remove') && command.includes('autotest-secure')) {
       return (
         error.stderr?.toString() || error.stdout?.toString() || error.message
       );
     }
-
     throw new Error(
       `🛑 Ошибка команды "${command}": ${error.stderr?.toString() || error.message}`,
     );
