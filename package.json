@@ -42,6 +42,7 @@
     "@vitalets/google-translate-api": "^9.2.1",
     "ajv": "^8.20.0",
     "aos": "^2.3.4",
+    "archiver": "^8.0.0",
     "autoprefixer": "^10.5.0",
     "browser-sync": "^3.0.4",
     "cross-env": "^10.1.0",

@@ -27,15 +27,15 @@ export const blogCategories = (): void => {
       event.preventDefault();
       event.stopPropagation();
 
+      // 🛡️ Фикс блокировки: Ориентируемся СТРОГО на дата-атрибут animating.
+      // Больше никаких капризных проверок строки инлайнового transition!
+      if (card.dataset.animating === 'true') {
+        return;
+      }
+
       const isOpen = list.classList.contains('_open');
       console.log(`Клик по категории "${title}", сейчас открыта: ${isOpen}`);
 
-      if (
-        list.style.transition.includes('height') ||
-        card.dataset.animating === 'true'
-      ) {
-        return;
-      }
       card.dataset.animating = 'true';
 
       if (isOpen) {
@@ -94,9 +94,19 @@ export const blogCategories = (): void => {
         list.classList.add('_open');
         header.setAttribute('aria-expanded', 'true');
 
+        // 🛡️ ФИКС ДЛЯ IIS: Временно убираем ограничения, чтобы браузер честно посчитал высоту контента
+        list.style.height = 'auto';
+        list.style.overflow = 'visible';
+
+        // Считываем реальную высоту элементов внутри списка
         const targetHeight = list.scrollHeight;
+
+        // Возвращаем в исходную точку для старта плавной анимации
         list.style.height = '0px';
         list.style.overflow = 'hidden';
+
+        // 🛡️ FORCE REFLOW: Заставляем браузер принудительно обновить геометрию DOM-дерева в IIS
+        void list.offsetHeight;
 
         requestAnimationFrame(() => {
           list.style.transition = 'height 300ms ease';

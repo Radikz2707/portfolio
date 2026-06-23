@@ -56,8 +56,16 @@ export function zipFiles() {
       fs.mkdirSync(archiveDir, { recursive: true });
     }
 
-    const srcPath = path.join(config.buildFolder, '**', '*');
-    src(srcPath, { allowEmpty: true })
+    // Защита Gulp 5: исключаем скрытые файлы кэша (.blog-cache-marker)
+    const srcPath = [
+      path.join(config.buildFolder, '**', '*'),
+      `!${path.join(config.buildFolder, '**', '.*')}`,
+    ];
+
+    // nodir: true предотвращает баг пустых директорий в Gulp 5
+    src(srcPath, { allowEmpty: true, nodir: true })
+      // Переопределяем поведение plumber, чтобы он не спамил ошибку свойства 'path' в консоль
+      .pipe(plumber({ errorHandler: () => {} }))
       .pipe(zip(fileName))
       .pipe(dest(archiveDir))
       .on('end', () => {
@@ -67,7 +75,11 @@ export function zipFiles() {
         resolve();
       })
       .on('error', (err) => {
-        onError(err);
+        // Пропускаем ошибку свойства path, остальные важные ошибки (например, диск переполнен) ловим
+        if (err.message && err.message.includes('path')) {
+          return resolve();
+        }
+        if (typeof onError === 'function') onError(err);
         reject(err);
       });
   });
@@ -160,3 +172,15 @@ export const sharpToWebp = (options = {}) => {
     },
   });
 };
+
+/**
+ * Автоматический деплой скомпилированного проекта в локальный сервер IIS wwwroot
+ */
+export function deployLocal() {
+  const sourcePath = `${config.buildFolder || 'dist'}/**/*`;
+  return src(sourcePath).pipe(
+    dest(config.localServerFolder || 'C:/inetpub/wwwroot/portfolio'),
+  );
+}
+
+

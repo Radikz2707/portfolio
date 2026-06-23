@@ -3,10 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>@@title | Блог Radik.Dev</title>
     @@include("parts/favicon-links.html")
-    <link rel="stylesheet" href="/css/app.min.css?v=1" />
+
+    <link rel="stylesheet" href="@@pathPrefixCss" />
   </head>
+
   <body class="page-blog">
     @@include("components/header/header.html")
 
@@ -14,7 +17,12 @@
       <div class="blog-article__container container">
         <div class="blog-article__layout">
           <div class="blog-article__main-content">
-            <a href="/blog/index.html" class="blog-article__back-link">&larr; На главную</a>
+            <!-- 🔗 Исправленная ссылка возврата в блог -->
+            <a
+              href="@@pathPrefixblog/index.html"
+              class="blog-article__back-link"
+              >&larr; На глав��ую</a
+            >
             @@content
           </div>
           <div class="blog-article__sidebar">@@sidebar</div>
@@ -23,7 +31,7 @@
     </article>
 
     @@include("components/footer/footer.html")
-    <script src="/js/vendor.min.js?v=1"></script>
-    <script src="/js/app.min.js?v=1" defer></script>
+    <script src="@@pathPrefixJsVendor"></script>
+    <script src="@@pathPrefixJsApp" defer></script>
   </body>
 </html>

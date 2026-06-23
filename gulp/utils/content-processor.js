@@ -292,10 +292,10 @@ export const processHtmlContent = (html, pathPrefix) => {
   if (!html) return '';
   let processedHtml = html;
 
-  // Замена src=".\/images/ на src="pathPrefiximages/
+  // Замена src=\".\/images/ на src=\"pathPrefiximages/
   processedHtml = processedHtml.replace(/src="\.\//g, `src="${pathPrefix}`);
 
-  // Замена src="images/ на src="pathPrefiximages/
+  // Замена src=\"images/ на src=\"pathPrefiximages/
   processedHtml = processedHtml.replace(
     /src="images\//g,
     `src="${pathPrefix}images/`,
@@ -568,6 +568,23 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
       );
 
       finalPageHtml = processHtmlContent(finalPageHtml, pathPrefix);
+
+      // =========================================================================
+      // 🔥 АВТОМАТИЧЕСКИЙ КРОСС-ПЛАТФОРМЕННЫЙ ФИКС ПУТЕЙ СТИЛЕЙ И СКРИПТОВ:
+      // Используем ЧИСТО ОТНОСИТЕЛЬНЫЕ ПУТИ для универсальной работы!
+      // Работает и с Gulp dev-сервером (localhost:8080), и с IIS (localhost/portfolio/),
+      // и с GitHub Pages, и с любым другим веб-сервером!
+      // =========================================================================
+      // pathPrefix уже вычислен выше на основе разницы между tempDestPath и rootBuildDir
+      // Мы просто используем его для всех ресурсов — это гарантирует правильную работу везде!
+      
+      // Заменяем переменные-заглушки из шаблона на реальные пути
+      finalPageHtml = finalPageHtml
+        .replace(/@@pathPrefixCss/g, `${pathPrefix}css/app.min.css?v=1`)
+        .replace(/@@pathPrefixJsVendor/g, `${pathPrefix}js/vendor.min.js?v=1`)
+        .replace(/@@pathPrefixJsApp/g, `${pathPrefix}js/app.min.js?v=1`)
+        .replace(/@@pathPrefixblog/g, `${pathPrefix}blog`);
+
       const finalArticlePath = path.join(tempDestPath, cleanFileName);
       await fsPromises.writeFile(finalArticlePath, finalPageHtml, 'utf-8');
 
@@ -575,8 +592,10 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
         const tempFilePath = path.join(tempDestPath, file);
         // if (fs.existsSync(tempFilePath)) await fsPromises.unlink(tempFilePath);
       }
+        const tempFilePath = path.join(tempDestPath, file);
+        // if (fs.existsSync(tempFilePath)) await fsPromises.unlink(tempFilePath);
+      }
     }
   }
-};
 
 export default wrapInMasterLayout;

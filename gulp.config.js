@@ -32,9 +32,7 @@ const detectRepoPath = () => {
 // Получаем полный путь к репозиторию для ссылок на GitHub
 // Приоритет: переменная окружения GITHUB_REPO_PATH, затем автоматическое определение, затем 'username/repo'
 const repoPath =
-  process.env.GITHUB_REPO_PATH ||
-  detectRepoPath() ||
-  'Radik/portfolio';
+  process.env.GITHUB_REPO_PATH || detectRepoPath() || 'Radik/portfolio';
 
 export const config = {
   // Полный путь к репозиторию (username/repo) для ссылок на GitHub
@@ -43,9 +41,12 @@ export const config = {
   // Единая глобальная переменная названия вашего бренда
   siteName: 'Radik.Dev',
 
-scssExtension,
+  scssExtension,
   srcFolder,
   buildFolder,
+
+  // 💡 Добавляем путь к локальному серверу IIS для Windows (проект изолируем в подпапку portfolio)
+  localServerFolder: 'C:/inetpub/wwwroot/portfolio',
 
   // ==========================================
   // СТРУКТУРА ПРОЕКТА ДЛЯ АВТОМАТИЗАЦИИ
@@ -62,6 +63,12 @@ scssExtension,
   // ==========================================
   // ПУТИ К ФАЙЛАМ ДЛЯ СБОРЩИКА GULP
   // ==========================================
+
+  // 💡 Добавляем централизованный путь для таска деплоя
+  deploy: {
+    src: `${buildFolder}/**/*`,
+  },
+
   paths: {
     styles: {
       src: `${srcFolder}/scss/style.scss`,

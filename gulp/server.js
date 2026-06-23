@@ -3,6 +3,7 @@ import gulp from 'gulp';
 import browserSync from 'browser-sync';
 import path from 'path';
 import fs from 'fs';
+import { deployLocal } from './utils.js';
 
 const { watch, series } = gulp;
 export const bs = browserSync.create();
@@ -28,21 +29,23 @@ export const onError = function (err) {
 export function browsersync() {
   return new Promise((resolve) => {
     let allowReload = false;
-    const originalReload = bs.reload;
 
+    // Безопасный таймер блокировки раннего релоада (пока идет инициализация)
     setTimeout(() => {
       allowReload = true;
     }, 4000);
 
-    bs.reload = function (...args) {
-      if (!allowReload) return;
-      originalReload.apply(bs, args);
+    // Глобальная изолированная функция перезагрузки страниц
+    global.safeReload = function () {
+      if (allowReload) {
+        bs.reload();
+      }
     };
 
     setTimeout(() => {
       bs.init({
         server: {
-          baseDir: config.buildFolder,
+          baseDir: config.buildFolder || 'dist',
         },
         host: '127.0.0.1',
         port: 8080,
@@ -89,22 +92,38 @@ const dynamicRun = (moduleName, functionName) => {
 export function startwatch(done) {
   const watchOptions = { delay: 500, queue: true, ignoreInitial: true };
 
+  // Универсальный и безопасный асинхронный мост для нативного деплоя
+  const runWithDeploy = (actionCallback) => {
+    return () => {
+      // Сначала даем отработать таске сборки ресурса (styles, scripts и т.д.)
+      if (typeof actionCallback === 'function') actionCallback();
+
+      // Сразу следом вызываем нативный быстрый деплой и делаем безопасный релоад
+      deployLocal(() => {
+        global.safeReload();
+      });
+    };
+  };
+
+  // 1. Отслеживание стилей
   watch([`${config.srcFolder}/**/*.${config.scssExtension}`], watchOptions).on(
     'change',
     (filePath) => {
       console.log(`✨ [Style Change] Изменен: ${path.basename(filePath)}`);
-      dynamicRun('styles', 'styles')(() => {});
+      dynamicRun('styles', 'styles')(runWithDeploy());
     },
   );
 
+  // 2. Отслеживание скриптов
   watch([`${config.srcFolder}/**/*.{js,ts}`], watchOptions).on(
     'change',
     (filePath) => {
       console.log(`✨ [Script Change] Изменен: ${path.basename(filePath)}`);
-      dynamicRun('scripts', 'scripts')(() => {});
+      dynamicRun('scripts', 'scripts')(runWithDeploy());
     },
   );
 
+  // 3. Отслеживание стандартной HTML-разметки страниц сайта
   watch(
     [
       `${config.srcFolder}/*.html`,
@@ -114,60 +133,61 @@ export function startwatch(done) {
     watchOptions,
   ).on('change', (filePath) => {
     console.log(`✨ [HTML Change] Изменен: ${path.basename(filePath)}`);
-    dynamicRun(
-      'html',
-      'blogIndex',
-    )(() => {
-      bs.reload();
-    });
+    dynamicRun('html', 'html')(runWithDeploy());
   });
 
+  // 4. Отслеживание Markdown-контента блога
   watch(
     [
       config.srcFolder + '/content/**/*',
       '!' + config.srcFolder + '/content/**/~$*',
-      '!' + config.srcFolder + '/content/**/~WRD*'
-    ], 
-    watchOptions
-  ).on(
-    'change',
-    (filePath) => {
-      const relativePath = path.relative(
-        path.join(config.srcFolder, 'content'),
-        filePath,
+      '!' + config.srcFolder + '/content/**/~WRD*',
+    ],
+    watchOptions,
+  ).on('change', (filePath) => {
+    const relativePath = path.relative(
+      path.join(config.srcFolder, 'content'),
+      filePath,
+    );
+    const folder = relativePath.split(path.sep);
+
+    if (folder && folder[0]) {
+      console.log(
+        `📝 [Content Update] Обновление контента: ${path.basename(filePath)}`,
       );
-      const folder = relativePath.split(path.sep);
 
-      if (folder && folder[0]) {
-        console.log(
-          `📝 [Content Update] Обновление контента: ${path.basename(filePath)}`,
-        );
-        
-        const updateContent = async () => {
-          try {
-            const { wrapInMasterLayout } = await import('./utils/content-processor.js');
-            const { blogIndex } = await import('./html.js');
-            
-            const destFolder = path.join(config.buildFolder, 'blog');
-            if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
-            
-            fs.copyFileSync(filePath, path.join(destFolder, path.basename(filePath)));
+      const updateContent = async () => {
+        try {
+          const { wrapInMasterLayout } =
+            await import('./utils/content-processor.js');
+          const { blogIndex } = await import('./html.js');
 
-            await wrapInMasterLayout(destFolder, 'blog');
+          const destFolder = path.join(config.buildFolder, 'blog');
+          if (!fs.existsSync(destFolder))
+            fs.mkdirSync(destFolder, { recursive: true });
 
-            blogIndex(() => {
-              console.log('✅ Контент успешно обновлен');
-              bs.reload();
+          fs.copyFileSync(
+            filePath,
+            path.join(destFolder, path.basename(filePath)),
+          );
+          await wrapInMasterLayout(destFolder, 'blog');
+
+          blogIndex(() => {
+            console.log('✅ Контент успешно обновлен в dist');
+            // Деплоим обновленный контент блога в IIS на лету
+            deployLocal(() => {
+              global.safeReload();
             });
-          } catch (err) {
-            console.error('❌ Ошибка при обновлении контента:', err);
-          }
-        };
-        updateContent();
-      }
-    },
-  );
+          });
+        } catch (err) {
+          console.error('❌ Ошибка при асинхронном обновлении контента:', err);
+        }
+      };
+      updateContent();
+    }
+  });
 
+  // 5. Отслеживание графики в компонентах
   watch(
     [
       `${config.srcFolder}/components/**/*.{jpg,jpeg,png,svg,gif}`,
@@ -176,17 +196,18 @@ export function startwatch(done) {
     watchOptions,
   ).on('change', (filePath) => {
     console.log(
-      `🖼️ [Image Change] Добавлена картинка в компонент: ${path.basename(filePath)}`,
+      `🖼️ [Image Change] Добавлена картинка: ${path.basename(filePath)}`,
     );
-    dynamicRun('images', 'imagesDev')(() => {});
+    dynamicRun('images', 'imagesDev')(runWithDeploy());
   });
 
+  // 6. Отслеживание SVG-спрайтов
   if (config.paths?.images?.svg) {
     watch([config.paths.images.svg], watchOptions).on('change', (filePath) => {
       console.log(
         `🧬 [Sprite Change] Обновлена иконка: ${path.basename(filePath)}`,
       );
-      dynamicRun('images', 'sprite')(() => {});
+      dynamicRun('images', 'sprite')(runWithDeploy());
     });
   }
 

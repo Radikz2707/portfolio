@@ -7,6 +7,8 @@ import htmlhint from 'gulp-htmlhint';
 import htmlBeautify from 'gulp-html-beautify';
 import replace from 'gulp-replace';
 import path from 'path';
+import gulpIf from 'gulp-if';
+import rename from 'gulp-rename';
 import { onError, isProd, bs } from './server.js';
 import { Transform } from 'stream';
 import {
@@ -28,14 +30,15 @@ function fixHtmlPaths() {
       }
 
       // Вычисляем относительный префикс от текущего файла к корню src
+      // Замените блок расчета pathPrefix внутри replace на этот код:
       const srcRoot = config.srcFolder || 'src';
-      const relativePath = path.relative(
-        path.dirname(file.path),
+      const relativeToRoot = path.relative(
+        path.dirname(this.file.path),
         path.resolve(srcRoot),
       );
-      const pathPrefix = relativePath
-        ? relativePath.replace(/\\/g, '/') + '/'
-        : '';
+      const pathPrefix = relativeToRoot
+        ? relativeToRoot.replace(/\\/g, '/') + '/'
+        : './';
 
       let content = file.contents.toString();
 
@@ -141,24 +144,16 @@ export function html() {
     replace(
       /href=["']\s*\/?\s*(GO_HOME|GO_PROJECTS|GO_ABOUT|GO_BLOG|GO_CONTACTS?)\s*["']/gi,
       function (match, marker) {
-        // Вычисляем, находится ли текущий обрабатываемый HTML-файл внутри папки blog
-        const currentFilePath = this.file.path
-          .replace(/\\/g, '/')
-          .toLowerCase();
-        const isInsideBlog = currentFilePath.includes('/blog/');
-
-        // 🔥 Главный секрет: Если мы в блоге, то для возврата на главную пишем "../", если на главной — "./"
-        const pathPrefix = isInsideBlog ? '../' : './';
+        // 🌍 Абсолютно безопасный расчет путей без вмешательства в объекты Gulp-потока
+        // Метод использует относительное позиционирование страниц блога
         const m = marker.toUpperCase();
 
         if (m === 'GO_HOME') {
-          return `href="${pathPrefix}index.html"`;
+          return `href="./index.html"`;
         }
+
         if (m === 'GO_BLOG') {
-          // Если мы на главной, до блога путь "blog/index.html". Если мы уже в блоге — "index.html"
-          return isInsideBlog
-            ? `href="./index.html"`
-            : `href="./blog/index.html"`;
+          return `href="./blog/index.html"`;
         }
 
         const anchorMap = {
@@ -167,13 +162,12 @@ export function html() {
           GO_CONTACTS: 'contacts',
           GO_CONTACT: 'contacts',
         };
-        const anchor = anchorMap[m];
 
-        // Генерируем идеальный относительный путь, который поймет любой браузер и любой сервер
-        return `href="${pathPrefix}index.html#${anchor}"`;
+        const anchor = anchorMap[m];
+        return `href="./index.html#${anchor}"`;
       },
     ),
-    
+
     replace(/SITE_NAME/gi, config.siteName),
     replace(/SITE_AUTHOR/gi, config.repoPath),
     replace(
@@ -290,7 +284,7 @@ const generateCategoryCards = async () => {
     for (const file of articleFiles) {
       const fullFilePath = path.join(categoryDir, file);
       const fileName = path.basename(file, path.extname(file));
-      const articleUrl = `/blog/${category}/${fileName}.html`;
+      const articleUrl = `./${category}/${fileName}.html`;
 
       let articleTitle = await getFirstLineOfFile(fullFilePath);
 
@@ -317,49 +311,129 @@ const generateCategoryCards = async () => {
 // =======================================================================
 // 📑 4. Сборка всех страниц блога с корректными относительными путями
 // =======================================================================
-export async function blogIndex() {
-  const srcPath = path.join(config.srcFolder, 'blog', '**', '*.html');
+export async function blogIndex(done) {
   const folderName = 'blog';
 
+  // Генерируем динамические блоки ссылок и карточек
   const sidebarLinks = await generateSidebarLinks(folderName);
   const categoryCardsHtml = await generateCategoryCards();
 
-  return src([path.join(config.srcFolder, 'blog', '**', '*.html')], {
-    allowEmpty: true,
-  })
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(
-      fileInclude({
-        prefix: '@@',
-        basepath: 'src',
-        filters: {},
-        indent: true,
-      }),
-    )
-    .pipe(replace(/SITE_NAME/gi, config.siteName))
-    .pipe(replace(/SITE_AUTHOR/gi, config.repoPath))
-    .pipe(replace(/href=["']\s*\/?GO_HOME\s*["']/gi, 'href="../index.html"'))
-    .pipe(replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, 'href="index.html"'))
-    .pipe(
-      replace(
-        /href=["']\s*\/?GO_PROJECTS\s*["']/gi,
-        'href="../index.html#projects"',
-      ),
-    )
-    .pipe(
-      replace(/href=["']\s*\/?GO_ABOUT\s*["']/gi, 'href="../index.html#about"'),
-    )
-    .pipe(
-      replace(
-        /href=["']\s*\/?GO_CONTACTS\s*["']/gi,
-        'href="../index.html#contacts"',
-      ),
-    )
-    .pipe(fixHtmlPaths())
-    .pipe(replace(/@@sidebar/g, sidebarLinks))
-    .pipe(replace(/@@categories/g, categoryCardsHtml))
-    .pipe(dest(path.join(config.buildFolder, 'blog')))
-    .on('end', () => {
-      bs.reload();
-    });
+  // Массив источников: считываем и корень src/blog/, и все подпапки категорий
+  const sources = [
+    path.join(config.srcFolder, 'blog', '*.html'), // Главный index.html блога
+    path.join(config.srcFolder, 'blog', '**', '*.html'), // Все статьи во вложенных папках
+  ];
+
+  return (
+    src(sources, { allowEmpty: true })
+      .pipe(plumber({ errorHandler: onError }))
+      .pipe(
+        fileInclude({
+          prefix: '@@',
+          basepath: 'src',
+          filters: {},
+          indent: true,
+        }),
+      )
+      .pipe(replace(/SITE_NAME/gi, config.siteName))
+      .pipe(replace(/SITE_AUTHOR/gi, config.repoPath))
+
+      // 🔗 Безопасная относительная ЧПУ-навигация по сайту
+      .pipe(replace(/href=["']\s*\/?GO_HOME\s*["']/gi, 'href="../index.html"'))
+      .pipe(replace(/href=["']\s*\/?GO_BLOG\s*["']/gi, 'href="./index.html"'))
+      .pipe(
+        replace(
+          /href=["']\s*\/?GO_PROJECTS\s*["']/gi,
+          'href="../index.html#projects"',
+        ),
+      )
+      .pipe(
+        replace(
+          /href=["']\s*\/?GO_ABOUT\s*["']/gi,
+          'href="../index.html#about"',
+        ),
+      )
+      .pipe(
+        replace(
+          /href=["']\s*\/?GO_CONTACTS\s*["']/gi,
+          'href="../index.html#contacts"',
+        ),
+      )
+
+      // 🛡️ АВТОМАТИЧЕСКИЙ ФИЛЬТР ПУТЕЙ СТАТЕЙ:
+      // Запускаем исправление внутренних путей только для страниц во вложенных категориях.
+      // Главный индекс блога защищаем, чтобы он не улетал в корень dist.
+      .map(function (file) {
+        const isRootBlogFile =
+          file.relative.split(path.sep).length === 1 ||
+          file.dirname === '.' ||
+          file.dirname === '';
+        if (!isRootBlogFile && typeof fixHtmlPaths === 'function') {
+          return fixHtmlPaths()(file);
+        }
+        return file;
+      })
+
+      .pipe(replace(/@@sidebar/g, sidebarLinks))
+      .pipe(replace(/@@categories/g, categoryCardsHtml))
+
+      // 🌍 АВТОМАТИЧЕСКИЙ КРОСС-ПЛАТФОРМЕННЫЙ ФИКС ДИЗАЙНА (CSS / JS):
+      // Анализирует среду и на лету собирает пути для локалки, IIS и GitHub!
+      .pipe(
+        replace(
+          /(href|src)=["']\s*\/?(css\/app\.min\.css|js\/app\.min\.js)["']/gi,
+          function (match, attr, resource) {
+            // Извлекаем имя репозитория/папки из config.repoPath (например, 'portfolio')
+            const repoName =
+              config.repoPath && config.repoPath.includes('/')
+                ? config.repoPath.split('/')[1]
+                : 'portfolio';
+
+            // Определяем режим на основе флага или переменных (Gulp dev-сервер против Production билда)
+            // Если у вас в gulp/html.js используется глобальный флаг isProd, используйте его: !isProd
+            const isGulpDevServer =
+              typeof global.isProd === 'boolean' ? !global.isProd : true;
+
+            if (isGulpDevServer) {
+              // 1. Для npm run dev (http://localhost:8080) — чистый относительный подъем
+              return `${attr}="../../${resource}"`;
+            } else {
+              // 2. Для локального IIS (http://localhost/portfolio) и GitHub Pages — абсолютный путь от корня сервера
+              return `${attr}="/${repoName}/${resource}"`;
+            }
+          },
+        ),
+      )
+
+      // 🛡️ ПРИНУДИТЕЛЬНОЕ ИМЯ: Гарантируем расширение index.html для корня блога
+      .pipe(
+        rename((file) => {
+          const isRoot = file.dirname === '.' || file.dirname === '';
+          if (isRoot) {
+            file.basename = 'index';
+          }
+        }),
+      )
+
+      // 📦 ШАГ 1: Записываем готовый результат в локальный dist/blog/
+      .pipe(dest(path.join(config.buildFolder, 'blog')))
+
+      // 🚚 ШАГ 2: Принудительный деплой копии напрямую в веб-сервер Windows IIS wwwroot,
+      // чтобы файлы обновлялись в реальном времени при сохранении в редакторе
+      .pipe(
+        dest(
+          path.join(
+            config.localServerFolder || 'C:/inetpub/wwwroot/portfolio',
+            'blog',
+          ),
+        ),
+      )
+
+      .on('end', () => {
+        if (typeof bs !== 'undefined' && bs.reload) {
+          bs.reload();
+        }
+        if (typeof done === 'function') done();
+      })
+  );
 }

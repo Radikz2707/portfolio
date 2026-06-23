@@ -27,7 +27,7 @@ import {
 // Серверное ядро и утилиты отладки
 import { browsersync, startwatch, onError, isProd, bs } from './gulp/server.js';
 import { lintCss, lintJs } from './gulp/lint.js';
-import { cleandist, zipFiles } from './gulp/utils.js';
+import { cleandist, zipFiles, deployLocal } from './gulp/utils.js';
 
 // Инструменты автоматизации CLI (БЭМ CRUD & Инициализация)
 import { create } from './gulp/system/gulp.create.js';
@@ -219,6 +219,7 @@ export const build = series(
     console.log('>>> 🚀 [Gulp 5] Project successfully assembled! <<<');
     done();
   },
+  deployLocal,
 );
 
 // Сценарий локальной разработки по умолчанию (Команда: npx gulp)
