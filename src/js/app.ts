@@ -9,7 +9,6 @@ import { scrollToTop } from './modules/scroll-to-top/scroll-to-top';
 // ==========================================
 // 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ
 // ==========================================
-import { autotestComponent } from '../components/autotest-component/autotest-component';
 import { header } from '../components/header/header';
 import { menu } from '../components/menu/menu';
 import { modal } from '../components/modal/modal';
@@ -52,7 +51,7 @@ const initApp = () => {
     contacts();
     aboutMe();
     projectsGrid();
-    // [ВЫЗОВЫ ГЛАВНАЯ]
+  // [ВЫЗОВЫ ГЛАВНАЯ]
   }
 
   // Инициализация AOS и активация видимых элементов

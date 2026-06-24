@@ -78,28 +78,22 @@ export function create(done) {
     const importStr = `import { ${camelName} } from '../components/${name}/${name}';`;
     const callStr = `${camelName}();`;
 
-    // Универсальная регулярка: ищет маркер компонентов независимо от длины линии из знаков равно =====
     const targetImportRegex =
       /(\/\/ =+)\r?\n\/\/ 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ\r?\n(\/\/ =+)/;
-    const targetCallMarker = '// [ВЫЗОВЫ ГЛАВНАЯ]';
+
+    // 🔥 ИСПРАВЛЕНО: Ищет маркер вызова, даже если GigaCode приклеил к нему текст с любой стороны
+    const targetCallRegex = /(\/\/ \s*\[ВЫЗОВЫ ГЛАВНАЯ\])/m;
 
     let newContent = content;
     if (!newContent.includes(importStr)) {
-      // Заменяем маркер, сохраняя его оригинальные линии из знаков равно
       newContent = newContent.replace(
         targetImportRegex,
         `$1\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ\n$2\n${importStr}`,
       );
     }
     if (!newContent.includes(callStr)) {
-      const callMarkerRegex = new RegExp(
-        `(\\s*)${targetCallMarker.replace(/\//g, '\\/')}`,
-        'm',
-      );
-      newContent = newContent.replace(
-        callMarkerRegex,
-        `$1${callStr}\n$1${targetCallMarker}`,
-      );
+      // Вставляем вызов функции прямо НАД маркером вызова, защищая от склеек текста
+      newContent = newContent.replace(targetCallRegex, `${callStr}\n  $1`);
     }
     return newContent;
   });
