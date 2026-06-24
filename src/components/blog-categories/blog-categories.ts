@@ -7,118 +7,50 @@ export const blogCategories = (): void => {
   if (categoryCards.length === 0) return;
 
   categoryCards.forEach((card) => {
-    const header = card.querySelector<HTMLDivElement>(
+    const header = card.querySelector<HTMLElement>(
       '.blog-category-card__header',
     );
-    const list = card.querySelector<HTMLUListElement>(
-      '.blog-category-card__list',
-    );
+    const list = card.querySelector<HTMLElement>('.blog-category-card__list');
 
-    if (!header || !list) {
-      console.warn('Не найдены необходимые элементы в карточке', card);
-      return;
-    }
-
-    const title =
-      header.querySelector('.blog-category-card__title')?.textContent?.trim() ||
-      '';
+    if (!header || !list) return;
 
     header.addEventListener('click', (event: MouseEvent) => {
       event.preventDefault();
       event.stopPropagation();
 
-      // 🛡️ Фикс блокировки: Ориентируемся СТРОГО на дата-атрибут animating.
-      // Больше никаких капризных проверок строки инлайнового transition!
-      if (card.dataset.animating === 'true') {
-        return;
-      }
-
       const isOpen = list.classList.contains('_open');
-      console.log(`Клик по категории "${title}", сейчас открыта: ${isOpen}`);
-
-      card.dataset.animating = 'true';
 
       if (isOpen) {
-        list.style.height = `${list.scrollHeight}px`;
-        list.style.overflow = 'hidden';
+        list.classList.remove('_open');
+        header.setAttribute('aria-expanded', 'false');
 
-        requestAnimationFrame(() => {
-          list.style.transition = 'height 300ms ease';
-          list.style.height = '0px';
-        });
-
-        setTimeout(() => {
-          list.classList.remove('_open');
-          header.setAttribute('aria-expanded', 'false');
-          list.style.height = '';
-          list.style.overflow = '';
-          list.style.transition = '';
-          card.dataset.animating = 'false';
-        }, 300);
+        // Схлопываем обратно на мобильных
+        list.style.height = '0px';
       } else {
-        // Закрываем другие открытые карточки
+        // Закрываем все остальные открытые карточки на странице
         categoryCards.forEach((otherCard) => {
           if (otherCard !== card) {
-            const otherHeader = otherCard.querySelector<HTMLDivElement>(
+            const otherHeader = otherCard.querySelector<HTMLElement>(
               '.blog-category-card__header',
             );
-            const otherList = otherCard.querySelector<HTMLUListElement>(
+            const otherList = otherCard.querySelector<HTMLElement>(
               '.blog-category-card__list',
             );
 
-            if (
-              otherList &&
-              otherList.classList.contains('_open') &&
-              otherHeader
-            ) {
-              otherCard.dataset.animating = 'true';
-              otherList.style.height = `${otherList.scrollHeight}px`;
-
-              requestAnimationFrame(() => {
-                otherList.style.transition = 'height 300ms ease';
-                otherList.style.height = '0px';
-              });
-
-              setTimeout(() => {
-                otherList.classList.remove('_open');
-                otherHeader.setAttribute('aria-expanded', 'false');
-                otherList.style.height = '';
-                otherList.style.transition = '';
-                otherCard.dataset.animating = 'false';
-              }, 300);
+            if (otherList && otherHeader) {
+              otherList.classList.remove('_open');
+              otherHeader.setAttribute('aria-expanded', 'false');
+              otherList.style.height = '0px';
             }
           }
         });
 
-        // Открываем текущую карточку
+        // 🔥 ИСПРАВЛЕНО ДЛЯ IIS: Перебиваем инлайновые стили HTML-шаблона
         list.classList.add('_open');
         header.setAttribute('aria-expanded', 'true');
 
-        // 🛡️ ФИКС ДЛЯ IIS: Временно убираем ограничения, чтобы браузер честно посчитал высоту контента
+        // Разрешаем элементу принять его честную высоту из CSS
         list.style.height = 'auto';
-        list.style.overflow = 'visible';
-
-        // Считываем реальную высоту элементов внутри списка
-        const targetHeight = list.scrollHeight;
-
-        // Возвращаем в исходную точку для старта плавной анимации
-        list.style.height = '0px';
-        list.style.overflow = 'hidden';
-
-        // 🛡️ FORCE REFLOW: Заставляем браузер принудительно обновить геометрию DOM-дерева в IIS
-        void list.offsetHeight;
-
-        requestAnimationFrame(() => {
-          list.style.transition = 'height 300ms ease';
-          list.style.height = `${targetHeight}px`;
-        });
-
-        setTimeout(() => {
-          list.style.height = '';
-          list.style.overflow = '';
-          list.style.transition = '';
-          card.dataset.animating = 'false';
-        }, 300);
       }
     });
   });
