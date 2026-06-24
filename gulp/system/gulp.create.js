@@ -79,7 +79,7 @@ export function create(done) {
     const callStr = `${camelName}();`;
 
     const targetImportMarker =
-      '// ==========================================\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ\n// ==========================================';
+      '// =========================================\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ\n// =========================================';
     const targetCallMarker = '// [ВЫЗОВЫ ГЛАВНАЯ]';
 
     let newContent = content;
@@ -90,9 +90,11 @@ export function create(done) {
       );
     }
     if (!newContent.includes(callStr)) {
+      // Используем регулярное выражение для замены маркера вызова
+      const callMarkerRegex = new RegExp(`(\\s*)${targetCallMarker.replace(/\//g, '\\/')}`, 'm');
       newContent = newContent.replace(
-        targetCallMarker,
-        `${callStr}\n    ${targetCallMarker}`,
+        callMarkerRegex,
+        `$1${callStr}\n$1${targetCallMarker}`,
       );
     }
     return newContent;

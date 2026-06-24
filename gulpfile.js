@@ -268,6 +268,7 @@ export {
   sprite,
   fonts,
   fontsStyle,
+  deployLocal,
 };
 
 // Явная ленивая регистрация деструктурированных ссылок задач

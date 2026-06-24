@@ -178,9 +178,12 @@ export const sharpToWebp = (options = {}) => {
  */
 export function deployLocal() {
   const sourcePath = `${config.buildFolder || 'dist'}/**/*`;
-  return src(sourcePath).pipe(
-    dest(config.localServerFolder || 'C:/inetpub/wwwroot/portfolio'),
-  );
+
+  // 🔥 ДОБАВЛЕНЫ ПАРАМЕТРЫ, ЗАПРЕЩАЮЩИЕ GULP ЛОМАТЬ КАРТИНКИ ПРИ ПЕРЕНОСЕ
+  return src(sourcePath, {
+    encoding: false, // Для Gulp 5 (критично для картинок и шрифтов)
+    buffer: true, // Читаем как чистый бинарный буфер байтов
+  }).pipe(dest(config.localServerFolder || 'C:/inetpub/wwwroot/portfolio'));
 }
 
 

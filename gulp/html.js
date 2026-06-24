@@ -29,18 +29,15 @@ function fixHtmlPaths() {
         return cb(null, file);
       }
 
-      // Вычисляем относительный префикс от текущего файла к корню src
-      // Замените блок расчета pathPrefix внутри replace на этот код:
-      const srcRoot = config.srcFolder || 'src';
-      const relativeToRoot = path.relative(
-        path.dirname(this.file.path),
-        path.resolve(srcRoot),
-      );
-      const pathPrefix = relativeToRoot
-        ? relativeToRoot.replace(/\\/g, '/') + '/'
-        : './';
+      // Извлекаем имя репозитория из конфигурации
+      const repoName = config.repoPath
+        ? config.repoPath.split('/')[1]
+        : 'portfolio';
 
-      let content = file.contents.toString();
+      // Определяем режим: продакшен или локальный сервер
+      const pathPrefix = isProd ? `/${repoName}` : './';
+
+      let content = file.contents.toString('utf-8');
 
       // Функция добавления префикса, если путь ещё не содержит его
       const addPrefix = (match, p1, p2) => {
@@ -72,14 +69,22 @@ function fixHtmlPaths() {
         addPrefix,
       );
       content = content.replace(
-        /((?:src|srcset)=["']\s*)(images\/[^"']+\.(?:png|jpg|jpeg|webp|svg|gif|ico))/gi,
+        /((?:src|srcset)=["']\s*)\/?(images\/[^"']+\.(?:png|jpg|jpeg|webp|svg|gif|ico))/gi,
         addPrefix,
       );
 
-      // Корректируем пути к фавиконам, делая их относительными
+      // Корректируем пути к фавиконам
       content = content.replace(
-        /(href=["']\s*)\/?images\/favicons\//gi,
-        (match, p1) => `${p1}${pathPrefix}images/favicons/`,
+        /(href=["']\s*)(images\/favicons\/)/gi,
+        (match, p1, p2) => {
+          // Формируем полный href для проверки
+          const fullHref = p1 + p2;
+          // Если путь уже содержит правильный префикс, ничего не делаем
+          if (fullHref.includes(pathPrefix + 'images/favicons/')) {
+            return match;
+          }
+          return `${p1}${pathPrefix}${p2}`;
+        },
       );
 
       file.contents = Buffer.from(content);
@@ -98,7 +103,7 @@ const fixPictureTags = () => {
       if (file.isBuffer()) {
         let htmlContent = file.contents.toString('utf-8');
         htmlContent = htmlContent.replace(
-          /<img\s+([^>]*?)src=["']([^"']+\.(?:png|jpg|jpeg))[="']([^>]*?)>/gi,
+          /<img\s+([^>]*?)src=["']([^"']+\.(?:png|jpg|jpeg))["']([^>]*?)>/gi,
           (match, before, srcPath, after) => {
             const allAttributes = `${before} ${after}`;
             if (
@@ -191,6 +196,10 @@ export function html() {
       extra_liners: [],
     }),
   );
+
+  // 🔥 ДОБАВЛЕН ВЫЗОВ fixHtmlPaths() ДЛЯ ИСПРАВЛЕНИЯ ПУТЕЙ К ФАВИКОНКАМ И ДРУГИМ РЕСУРСАМ
+  // Вызываем до htmlhint, чтобы не потерять контекст file.path
+  pipeline.push(fixHtmlPaths());
 
   pipeline.push(
     htmlhint({
@@ -331,6 +340,7 @@ export async function blogIndex(done) {
         fileInclude({
           prefix: '@@',
           basepath: 'src',
+          resolvePaths: false,
           filters: {},
           indent: true,
         }),

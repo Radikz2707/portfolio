@@ -185,7 +185,7 @@ export const generateSidebarLinks = async (currentFolderName) => {
       categoryNames[category] ||
       category.charAt(0).toUpperCase() + category.slice(1);
 
-    // 🔥 СТАЛО (Автоматический точный счётчик с правильным окончанием):
+    // Автоматический точный счётчик статей с правильным окончанием
     const validFilesCount = files.filter(
       (f) =>
         ['.md', '.txt', '.rtf', '.docx'].includes(
@@ -195,11 +195,7 @@ export const generateSidebarLinks = async (currentFolderName) => {
 
     const pluralText = getPluralArticles(validFilesCount);
 
-    fullSidebarHtml += `<li class='blog-sidebar__category'>
- <button class='blog-sidebar__category-btn' aria-expanded='false'>
-   ${categoryTitle} <span class='blog-sidebar__count'>(${pluralText})</span>
- </button>
- <ul class='blog-sidebar__sublist'>`;
+    fullSidebarHtml += `<li class="blog-sidebar__category">${categoryTitle} (${pluralText})<ul class="blog-sidebar__subcategory-list">`;
 
     const walkDirectory = async (currentDir, relativePath = '') => {
       let result = '';
@@ -221,6 +217,7 @@ export const generateSidebarLinks = async (currentFolderName) => {
             entry.name.startsWith('~$')
           )
             continue;
+
           const ext = path.extname(entry.name).toLowerCase();
           if (!['.md', '.txt', '.rtf', '.docx'].includes(ext)) continue;
 
@@ -251,12 +248,18 @@ export const generateSidebarLinks = async (currentFolderName) => {
             title = title.charAt(0).toUpperCase() + title.slice(1);
           }
 
-          const articleUrl = entryRelativePath
-            .replace(/\\/g, '/')
-            .replace(/\.(md|txt|rtf|docx)$/i, '.html');
-          const finalUrl = `./${articleUrl}`;
+          // 🛡️ ТОЧНЫЙ ФИКС ССЫЛОК GIGACODE: Извлекаем имя файла без путей
+          const articleUrlParts = entryRelativePath.split('/');
+          const articleFileName = articleUrlParts[articleUrlParts.length - 1];
+          const articleFileNameWithoutExt = articleFileName.replace(
+            /\.(md|txt|rtf|docx)$/i,
+            '',
+          );
 
-          result += ` <li class='blog-sidebar__item'><a href='${finalUrl}' class='blog-sidebar__link'>${title}</a></li>\n`;
+          // Формируем чистый относительный путь вида: ../имя-категории/имя-статьи.html
+          const finalUrl = `../${category}/${articleFileNameWithoutExt}.html`;
+
+          result += `<li class="blog-sidebar__item"><a href="${finalUrl}" class="blog-sidebar__link">${title}</a></li>\n`;
         }
       }
       return result;
@@ -562,10 +565,9 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
           `href="${pathPrefix}index.html#contacts"`,
         );
 
-      finalPageHtml = finalPageHtml.replace(
-        /(href=["']\s*)images\/favicons\//gi,
-        `$1${pathPrefix}images/favicons/`,
-      );
+      finalPageHtml = finalPageHtml
+        .replace(/(href=["']\s*)images\/favicons\//gi, `$1${pathPrefix}images/favicons/`)
+        .replace(/(href=["'])\/images\/favicons\//gi, `$1${pathPrefix}images/favicons/`);
 
       finalPageHtml = processHtmlContent(finalPageHtml, pathPrefix);
 
@@ -577,7 +579,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
       // =========================================================================
       // pathPrefix уже вычислен выше на основе разницы между tempDestPath и rootBuildDir
       // Мы просто используем его для всех ресурсов — это гарантирует правильную работу везде!
-      
+
       // Заменяем переменные-заглушки из шаблона на реальные пути
       finalPageHtml = finalPageHtml
         .replace(/@@pathPrefixCss/g, `${pathPrefix}css/app.min.css?v=1`)
@@ -592,10 +594,10 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
         const tempFilePath = path.join(tempDestPath, file);
         // if (fs.existsSync(tempFilePath)) await fsPromises.unlink(tempFilePath);
       }
-        const tempFilePath = path.join(tempDestPath, file);
-        // if (fs.existsSync(tempFilePath)) await fsPromises.unlink(tempFilePath);
-      }
+      const tempFilePath = path.join(tempDestPath, file);
+      // if (fs.existsSync(tempFilePath)) await fsPromises.unlink(tempFilePath);
     }
   }
+};
 
 export default wrapInMasterLayout;
