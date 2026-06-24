@@ -87,23 +87,21 @@ export function scripts() {
         }),
       ],
       // Настройка автоматического разделения кода
-      splitChunks: isProd ? {
-        cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendor',
-            chunks: 'all',
-          },
-        },
-      } : false,
+      splitChunks: isProd
+        ? {
+            cacheGroups: {
+              vendor: {
+                test: /[\\/]node_modules[\\/]/,
+                name: 'vendor',
+                chunks: 'all',
+              },
+            },
+          }
+        : false,
     },
     devtool: isProd ? 'source-map' : 'eval-cheap-module-source-map',
     plugins: [
-      // 🔥 НОВОЕ: Подстановка переменных окружения из .env файла
-      new webpack.EnvironmentPlugin({
-        TELEGRAM_TOKEN: '8806317386:AAFnzU0x4ibgXkdEvqyhGgjcX3ZX6Qf1GQE',
-        TELEGRAM_CHAT_ID: '1260692042',
-      }),
+      new webpack.EnvironmentPlugin(['TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID']),
     ],
   };
 
