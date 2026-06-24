@@ -11,6 +11,11 @@
     align-items: center;
   }
 
+  &__container.container {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
   &__title {
     margin-bottom: 16px;
     font-size: clamp(28px, 4vw, 42px);
@@ -67,10 +72,10 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 32px;
+    padding: 24px;
 
     @media (width <= 480px) {
-      padding: 24px;
+      padding: 20px 16px;
     }
   }
 

@@ -10,6 +10,7 @@ import { Transform } from 'stream';
 // Получение config для тестов и production
 const getConfig = async () => {
   try {
+    // Проверяем, что мы не в тестовой среде JSDOM
     if (
       typeof process !== 'undefined' &&
       process.versions &&
@@ -38,7 +39,11 @@ const getConfig = async () => {
         dest: 'dist/css/',
         output: 'app.min.css',
       },
-      scripts: { src: 'src/js/app.ts', dest: 'dist/js/', output: 'app.min.js' },
+      scripts: {
+        src: 'src/js/app.ts',
+        dest: 'dist/js/',
+        output: 'app.min.js',
+      },
       images: {
         src: 'src/images/**/*',
         dest: 'dist/images/',
@@ -49,17 +54,24 @@ const getConfig = async () => {
         dest: 'dist/images/favicons/',
         htmlOutput: 'src/parts/favicon-links.html',
       },
-      fonts: { src: 'src/fonts/src/**/*.{ttf,otf}', dest: 'dist/fonts/' },
+      fonts: {
+        src: 'src/fonts/src/**/*.{ttf,otf}',
+        dest: 'dist/fonts/',
+      },
     },
     settings: {
       webpQuality: 70,
-      imagemin: { jpeg: 75, png: 5 },
+      imagemin: {
+        jpeg: 75,
+        png: 5,
+      },
       autoprefixer: ['> 0.5%', 'last 2 versions', 'not dead'],
     },
   };
 };
 
 const config = await getConfig();
+
 const { src } = gulp;
 
 const categoryNames = {
@@ -76,20 +88,28 @@ const categoryNames = {
 
 export const getFirstLineOfFile = async (filePath) => {
   const ext = path.extname(filePath).toLowerCase();
+
+  // 📁 Сценарий для файлов Microsoft Word
   if (ext === '.docx') {
     try {
       const docBuffer = await fsPromises.readFile(filePath);
+
+      // Шаг 1: Пробуем найти заголовок h1 через конвертацию в HTML
       const resultHtml = await mammoth.convertToHtml({ buffer: docBuffer });
       const html = resultHtml.value || '';
       const h1Match = html.match(/<h1>(.*?)<\/h1>/);
+
       if (h1Match && h1Match[1]) {
         return h1Match[1].replace(/<[^>]*>/g, '').trim();
       }
+
+      // Шаг 2: Если h1 нет, вытаскиваем сырой текст и берем первую непустую строку
       const resText = await mammoth.extractRawText({ buffer: docBuffer });
       const textValue = resText.value || '';
       const firstLine = textValue
         .split(/\r?\n/)
         .find((line) => line.trim() !== '');
+
       if (firstLine) return firstLine.trim();
     } catch (err) {
       console.log(
@@ -97,8 +117,11 @@ export const getFirstLineOfFile = async (filePath) => {
         err,
       );
     }
+    // Если файл Word пустой или поврежден, возвращаем пустую строку
     return '';
   }
+
+  // 📝 Сценарий для текстовых файлов (ваш оригинальный рабочий код один в один)
   try {
     const fileStream = fs.createReadStream(filePath, 'utf-8');
     const rl = readline.createInterface({
@@ -125,16 +148,17 @@ export const parsePlainText = (content) => {
   return content.replace(/<[^>]*>/g, '').trim();
 };
 
+// 🔥 ФУНКЦИЯ СКЛОНЕНИЯ ЧИСЛИТЕЛЬНЫХ (РУССКИЙ ЯЗЫК)
 const getPluralArticles = (count) => {
   const mod10 = count % 10;
   const mod100 = count % 100;
+
   if (mod100 >= 11 && mod100 <= 14) return `${count} статей`;
   if (mod10 === 1) return `${count} статья`;
   if (mod10 >= 2 && mod10 <= 4) return `${count} статьи`;
   return `${count} статей`;
 };
 
-// 🔥 ИСПРАВЛЕНО: Генерация нативных details/summary вместо старых li элементов для аккордеона категорий!
 export const generateSidebarLinks = async (currentFolderName) => {
   const contentRoot = path.join(config.srcFolder, 'content');
   if (!fs.existsSync(contentRoot)) return '';
@@ -142,6 +166,7 @@ export const generateSidebarLinks = async (currentFolderName) => {
   const categories = fs
     .readdirSync(contentRoot)
     .filter((f) => fs.statSync(path.join(contentRoot, f)).isDirectory());
+
   let fullSidebarHtml = '';
 
   for (const category of categories) {
@@ -159,18 +184,18 @@ export const generateSidebarLinks = async (currentFolderName) => {
     const categoryTitle =
       categoryNames[category] ||
       category.charAt(0).toUpperCase() + category.slice(1);
+
+    // Автоматический точный счётчик статей с правильным окончанием
     const validFilesCount = files.filter(
       (f) =>
         ['.md', '.txt', '.rtf', '.docx'].includes(
           path.extname(f).toLowerCase(),
         ) && !f.toLowerCase().startsWith('index.'),
-    );
-    const pluralText = getPluralArticles(validFilesCount.length);
+    ).length;
 
-    // Вставляем открывающий тег details и кнопку summary для нативной независимой работы
-    fullSidebarHtml += `  <details class="blog-sidebar__category" open>\n`;
-    fullSidebarHtml += `    <summary class="blog-sidebar__category-btn">${categoryTitle} (${pluralText})</summary>\n`;
-    fullSidebarHtml += `    <ul class="blog-sidebar__sublist">\n`;
+    const pluralText = getPluralArticles(validFilesCount);
+
+    fullSidebarHtml += `<li class="blog-sidebar__category">${categoryTitle} (${pluralText})<ul class="blog-sidebar__subcategory-list">`;
 
     const walkDirectory = async (currentDir, relativePath = '') => {
       let result = '';
@@ -223,6 +248,7 @@ export const generateSidebarLinks = async (currentFolderName) => {
             title = title.charAt(0).toUpperCase() + title.slice(1);
           }
 
+          // 🛡️ ТОЧНЫЙ ФИКС ССЫЛОК GIGACODE: Извлекаем имя файла без путей
           const articleUrlParts = entryRelativePath.split('/');
           const articleFileName = articleUrlParts[articleUrlParts.length - 1];
           const articleFileNameWithoutExt = articleFileName.replace(
@@ -230,17 +256,19 @@ export const generateSidebarLinks = async (currentFolderName) => {
             '',
           );
 
+          // Формируем чистый относительный путь вида: ../имя-категории/имя-статьи.html
           const finalUrl = `../${category}/${articleFileNameWithoutExt}.html`;
-          result += `      <li class="blog-sidebar__item"><a href="${finalUrl}" class="blog-sidebar__link">${title}</a></li>\n`;
+
+          result += `<li class="blog-sidebar__item"><a href="${finalUrl}" class="blog-sidebar__link">${title}</a></li>\n`;
         }
       }
       return result;
     };
 
     fullSidebarHtml += await walkDirectory(dirPath);
-    // Закрываем нативные теги списков и блока details
-    fullSidebarHtml += `    </ul>\n  </details>\n`;
+    fullSidebarHtml += `</ul></li>\n`;
   }
+
   return fullSidebarHtml;
 };
 
@@ -266,14 +294,16 @@ const escapeCodeBlocks = (html) => {
 export const processHtmlContent = (html, pathPrefix) => {
   if (!html) return '';
   let processedHtml = html;
-  processedHtml = processedHtml.replace(
-    /src="\.\/images\//g,
-    `src="${pathPrefix}images/`,
-  );
+
+  // Замена src=\".\/images/ на src=\"pathPrefiximages/
+  processedHtml = processedHtml.replace(/src="\.\//g, `src="${pathPrefix}`);
+
+  // Замена src=\"images/ на src=\"pathPrefiximages/
   processedHtml = processedHtml.replace(
     /src="images\//g,
     `src="${pathPrefix}images/`,
   );
+
   processedHtml = escapeCodeBlocks(processedHtml);
   return processedHtml;
 };
@@ -289,7 +319,7 @@ export const compileContentStream = () => {
             const stream = markdown();
             stream.on('error', (err) => {
               console.error(
-                `[Markdown Critical Error] ${file.relative}:`,
+                `[Markdown Сritical Error] ${file.relative}:`,
                 err.message,
               );
               callback(null, file);
@@ -402,12 +432,16 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
 
       if (ext === '.docx') {
         try {
+          // 🎯 План А: Пробуем найти файл по стандартному переданному пути
           let originalDocxPath = path.join(
             config.srcFolder,
             'content',
             folderName,
             file,
           );
+
+          // 🎯 План Б (Максимальный контроль): Если папка не совпала по регистру,
+          // динамически ищем, в какой именно подпапке content лежит этот .docx файл
           if (!fs.existsSync(originalDocxPath)) {
             const contentRoot = path.join(config.srcFolder, 'content');
             const searchSubfolders = fs
@@ -415,6 +449,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
               .filter((f) =>
                 fs.statSync(path.join(contentRoot, f)).isDirectory(),
               );
+
             for (const sub of searchSubfolders) {
               const checkPath = path.join(contentRoot, sub, file);
               if (fs.existsSync(checkPath)) {
@@ -423,6 +458,8 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
               }
             }
           }
+
+          // Если файл успешно локализован на диске — компилируем через Mammoth
           if (fs.existsSync(originalDocxPath)) {
             const docBuffer = await fsPromises.readFile(originalDocxPath);
             const options = { styleMap: ['p:first-child => h1:fresh'] };
@@ -433,7 +470,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
             rawHtml = result.value || '';
           } else {
             console.error(
-              `❌ [Content Processor] Исходный file Word не найден на диске: ${file}`,
+              `❌ [Content Processor] Исходный файл Word не найден на диске: ${file}`,
             );
             continue;
           }
@@ -459,6 +496,7 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
         continue;
       }
 
+      // Ниже идёт ваш оригинальный код формирования finalPageHtml и записи файла без изменений...
       const pageTitle = path.basename(file, ext).replace(/-/g, ' ');
       const capitalizedTitle =
         pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
@@ -487,12 +525,17 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
 
       const rootBuildDir = config.buildFolder || 'dist';
       const relativePath = path.relative(tempDestPath, rootBuildDir);
+
       let pathPrefix = relativePath
         ? relativePath.replace(/\\/g, '/') + '/'
         : './';
+
       if (pathPrefix === '/') {
         pathPrefix = './';
       }
+
+      // Дополнительная страховка: если путь пустой или точка, а мы точно знаем,
+      // что папка вложенная (содержит /blog/), принудительно ставим два шага назад
       if (
         (pathPrefix === './' || pathPrefix === '') &&
         tempDestPath.replace(/\\/g, '/').includes('/blog/')
@@ -523,17 +566,21 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
         );
 
       finalPageHtml = finalPageHtml
-        .replace(
-          /(href=["']\s*)images\/favicons\//gi,
-          `$1${pathPrefix}images/favicons/`,
-        )
-        .replace(
-          /(href=["'])\/images\/favicons\//gi,
-          `$1${pathPrefix}images/favicons/`,
-        );
+        .replace(/(href=["']\s*)images\/favicons\//gi, `$1${pathPrefix}images/favicons/`)
+        .replace(/(href=["'])\/images\/favicons\//gi, `$1${pathPrefix}images/favicons/`);
 
       finalPageHtml = processHtmlContent(finalPageHtml, pathPrefix);
 
+      // =========================================================================
+      // 🔥 АВТОМАТИЧЕСКИЙ КРОСС-ПЛАТФОРМЕННЫЙ ФИКС ПУТЕЙ СТИЛЕЙ И СКРИПТОВ:
+      // Используем ЧИСТО ОТНОСИТЕЛЬНЫЕ ПУТИ для универсальной работы!
+      // Работает и с Gulp dev-сервером (localhost:8080), и с IIS (localhost/portfolio/),
+      // и с GitHub Pages, и с любым другим веб-сервером!
+      // =========================================================================
+      // pathPrefix уже вычислен выше на основе разницы между tempDestPath и rootBuildDir
+      // Мы просто используем его для всех ресурсов — это гарантирует правильную работу везде!
+
+      // Заменяем переменные-заглушки из шаблона на реальные пути
       finalPageHtml = finalPageHtml
         .replace(/@@pathPrefixCss/g, `${pathPrefix}css/app.min.css?v=1`)
         .replace(/@@pathPrefixJsVendor/g, `${pathPrefix}js/vendor.min.js?v=1`)
@@ -542,6 +589,13 @@ export const wrapInMasterLayout = async (tempDestPath, rawFolderName) => {
 
       const finalArticlePath = path.join(tempDestPath, cleanFileName);
       await fsPromises.writeFile(finalArticlePath, finalPageHtml, 'utf-8');
+
+      if (ext === '.docx') {
+        const tempFilePath = path.join(tempDestPath, file);
+        // if (fs.existsSync(tempFilePath)) await fsPromises.unlink(tempFilePath);
+      }
+      const tempFilePath = path.join(tempDestPath, file);
+      // if (fs.existsSync(tempFilePath)) await fsPromises.unlink(tempFilePath);
     }
   }
 };

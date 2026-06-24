@@ -4,8 +4,6 @@
   width: 100%;
   padding: 24px;
   background-color: v.$bg-card;
-
-  // 🔥 ИСПРАВЛЕНО: Рамка адаптируется под тему, чтобы не выглядеть грязной на светлом фоне
   border: 1px solid v.$color-text-muted;
   border-radius: 8px;
   transition:
@@ -15,14 +13,15 @@
   @media (width >= 769px) {
     position: sticky;
     top: 140px;
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
   }
 
+  /* Чистый статичный заголовок без лишних стрелочек */
   &__title {
     margin-bottom: 20px;
     font-size: 20px;
     font-weight: 700;
-
-    // 🔥 ИСПРАВЛЕНО: Текст заголовка адаптируется и меняется с белого на темно-slate
     color: v.$color-text-main;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -38,14 +37,33 @@
     list-style: none;
   }
 
+  /* Нативная категория (тег <details>) */
   &__category {
+    display: block;
+    width: 100%;
     margin-bottom: 10px;
 
     &:last-child {
       margin-bottom: 0;
     }
+
+    /* Нативная магия: когда категория открыта, плавно поворачиваем её стрелочку */
+    &[open] {
+      .blog-sidebar__category-btn {
+        color: v.$color-accent;
+
+        &::after {
+          transform: rotate(-135deg) translateY(-2px);
+        }
+      }
+
+      .blog-sidebar__sublist {
+        display: flex; /* Открываем список статей */
+      }
+    }
   }
 
+  /* Кнопка категории (тег <summary>) */
   &__category-btn {
     display: flex;
     align-items: center;
@@ -58,10 +76,13 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     cursor: pointer;
-    background: none;
-    border: none;
-    transition: color 0.2s ease;
+    list-style: none; /* Скрывает дефолтную стрелку Chrome/Firefox */
 
+    &::-webkit-details-marker {
+      display: none; /* Скрывает дефолтную стрелку Safari */
+    }
+
+    /* Аккуратная стрелочка-маркер для каждой отдельной категории */
     &::after {
       display: inline-block;
       width: 8px;
@@ -74,36 +95,22 @@
       transition: transform 0.3s ease;
     }
 
-    // 🔥 ИСПРАВЛЕНО: Кнопка категории при ховере загорается вашим пурпурным цветом (контрастным в обеих темах)
     &:hover {
       font-weight: 500;
       color: v.$color-purple;
     }
-
-    &._active {
-      color: v.$color-accent;
-
-      &::after {
-        transform: rotate(-135deg) translateY(-2px);
-      }
-    }
   }
 
+  /* Выпадающий подсписок статей (тег <ul>) */
   &__sublist {
-    display: none;
+    display: none; /* По умолчанию скрыт, раскрывается нативно через &[open] */
     flex-direction: column;
     gap: 10px;
     padding: 5px 0 10px 15px;
     margin: 0;
     list-style: none;
-
-    // 🔥 ИСПРАВЛЕНО: Боковая линия списка адаптируется и не режет глаза
     border-left: 1px solid v.$color-text-muted;
     transition: border-color 0.3s ease;
-
-    &._open {
-      display: flex;
-    }
   }
 
   &__item {
@@ -123,7 +130,6 @@
       color 0.2s ease,
       transform 0.2s ease;
 
-    // 🔥 ИСПРАВЛЕНО: Текст ссылок при ховере плавно окрашивается в v.$color-purple и СТАНОВИТСЯ ИДЕАЛЬНО ВИДИМЫМ!
     &:hover {
       font-weight: 500;
       color: v.$color-purple;
@@ -134,6 +140,48 @@
       font-weight: 600;
       color: v.$color-accent;
       pointer-events: none;
+    }
+  }
+
+  /* Тонкие кастомные скроллбары сайдбара */
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(v.$color-text-muted, 0.25);
+    border-radius: 4px;
+  }
+}
+
+/* Мобильные и планшетные разрешения */
+@media (width <= 768px) {
+  .blog-article__sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .blog-sidebar {
+    box-sizing: border-box;
+    max-height: 420px;
+    padding: 20px 24px 20px 16px;
+    padding-inline-end: 24px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+
+    &__sublist {
+      padding-left: 10px;
+    }
+
+    &__link {
+      padding-right: 8px;
+      word-break: normal;
+      overflow-wrap: normal;
+      white-space: normal;
     }
   }
 }

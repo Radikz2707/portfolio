@@ -11,6 +11,11 @@
     align-items: center;
   }
 
+  &__container.container {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
   // 🔥 ИСПРАВЛЕНО: Делаем заголовок белым, крупным и центрированным
   &__title {
     margin-bottom: 40px;
