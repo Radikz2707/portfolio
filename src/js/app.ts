@@ -9,6 +9,7 @@ import { scrollToTop } from './modules/scroll-to-top/scroll-to-top';
 // ==========================================
 // 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ
 // ==========================================
+import { autotestComponent } from '../components/autotest-component/autotest-component';
 import { header } from '../components/header/header';
 import { menu } from '../components/menu/menu';
 import { modal } from '../components/modal/modal';
@@ -78,8 +79,6 @@ const initApp = () => {
     window.dispatchEvent(new Event('resize'));
   }, 200);
 };
-
-
 
 // [ВЫЗОВЫ ГЛАВНАЯ]апуск при полной загрузке всех ресурсов
 if (document.readyState === 'complete') {
