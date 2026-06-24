@@ -15,9 +15,7 @@ export const blogSidebar = (): void => {
   categories.forEach((currentCategory) => {
     const summary = currentCategory.querySelector('summary');
     if (!summary) return;
-
-    summary.addEventListener('click', (e) => {
-      // Предотвращаем стандартное поведение на мгновение, чтобы плавно управлять аккордеоном
+    summary.addEventListener('click', (_) => {
       const isCurrentlyOpen = currentCategory.hasAttribute('open');
 
       // Закрываем все остальные категории, кроме той, по которой кликнули
