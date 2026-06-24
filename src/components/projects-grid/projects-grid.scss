@@ -1,13 +1,9 @@
-@use "../../scss/base/vars" as v;
+@use '../../scss/base/vars' as v;
 
 .projects-grid {
   padding: 100px 0;
   background-color: v.$bg-dark;
   transition: background-color 0.3s ease;
-
-  @media (width <= 768px) {
-    padding: 60px 0;
-  }
 
   &__container {
     display: flex;
@@ -43,8 +39,7 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
     gap: 24px; /* Оптимальный зазор между карточками для мобильных */
     width: 100%;
-    max-width: 1100px;
-    padding: 0 16px;
+    max-width: 1180px;
   }
 }
 
@@ -56,7 +51,11 @@
   background-color: v.$bg-card;
   border: 1px solid rgba(v.$color-text-muted, 0.2);
   border-radius: 12px;
-  transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s ease, background-color 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    border-color 0.3s ease,
+    opacity 0.8s ease,
+    background-color 0.3s ease;
 
   &._active:hover {
     border-color: v.$color-accent;
@@ -118,7 +117,9 @@
       background-color: v.$bg-dark;
       border: 1px solid rgba(v.$color-text-muted, 0.1);
       border-radius: 4px;
-      transition: color 0.3s ease, background-color 0.3s ease;
+      transition:
+        color 0.3s ease,
+        background-color 0.3s ease;
     }
   }
 
@@ -150,7 +151,9 @@
   .element-reveal {
     opacity: 0;
     transform: translateY(40px);
-    transition: opacity 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1), transform 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
+    transition:
+      opacity 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1),
+      transform 0.8s var(--delay, 0s) cubic-bezier(0.25, 1, 0.5, 1);
     will-change: opacity, transform;
 
     &._active {
