@@ -1,10 +1,13 @@
 @use "../../scss/base/vars" as v;
 
-// Секция сетки проектов
 .projects-grid {
   padding: 100px 0;
-  background-color: v.$bg-dark; // 🔥 Исправлено: Сменит цвет с #0b0f19 на Slate 100
+  background-color: v.$bg-dark;
   transition: background-color 0.3s ease;
+
+  @media (width <= 768px) {
+    padding: 60px 0;
+  }
 
   &__container {
     display: flex;
@@ -16,7 +19,7 @@
     margin-bottom: 16px;
     font-size: clamp(28px, 4vw, 42px);
     font-weight: 700;
-    color: v.$color-text-main; // 🔥 Исправлено: станет контрастным темным на светлой теме
+    color: v.$color-text-main;
     transition: color 0.3s ease;
   }
 
@@ -26,36 +29,50 @@
     color: v.$color-text-muted;
     text-align: center;
     transition: color 0.3s ease;
+
+    @media (width <= 768px) {
+      margin-bottom: 40px; /* Делаем зазор на телефонах более аккуратным */
+    }
   }
 
   &__wrapper {
+    box-sizing: border-box;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 30px;
+
+    /* Умная адаптивная сетка: карточка плавно сжимается до 100% на любых экранах, но не шире 1100px */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 24px; /* Оптимальный зазор между карточками для мобильных */
     width: 100%;
     max-width: 1100px;
+    padding: 0 16px;
   }
 }
 
-// Стили для карточек проектов
 .card-project {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background-color: v.$bg-card; // 🔥 Исправлено: Карточка станет БЕЛОЙ в светлой теме!
-  border: 1px solid rgba(v.$color-text-muted, 0.2); // 🔥 Исправлено: аккуратная адаптивная рамка
+  width: 100%;
+  background-color: v.$bg-card;
+  border: 1px solid rgba(v.$color-text-muted, 0.2);
   border-radius: 12px;
   transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.8s ease, background-color 0.3s ease;
 
   &._active:hover {
-    border-color: v.$color-accent; // Используем переменную индиго
+    border-color: v.$color-accent;
     transform: translateY(-6px);
   }
 
   &__body {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     height: 100%;
     padding: 32px;
+
+    @media (width <= 480px) {
+      padding: 24px;
+    }
   }
 
   &__tag {
@@ -67,7 +84,7 @@
     color: v.$color-accent;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background-color: rgba(v.$color-accent, 0.1); // Полупрозрачный фон тега
+    background-color: rgba(v.$color-accent, 0.1);
     border-radius: 4px;
   }
 
@@ -75,7 +92,7 @@
     margin-bottom: 12px;
     font-size: 22px;
     font-weight: 600;
-    color: v.$color-text-main; // 🔥 Исправлено: Текст названия проекта станет темным на светлой теме
+    color: v.$color-text-main;
     transition: color 0.3s ease;
   }
 
@@ -84,7 +101,7 @@
     margin-bottom: 24px;
     font-size: 15px;
     line-height: 1.6;
-    color: v.$color-text-muted; // 🔥 Исправлено: Текст описания станет читаемым серым
+    color: v.$color-text-muted;
     transition: color 0.3s ease;
   }
 
@@ -97,8 +114,8 @@
     span {
       padding: 4px 8px;
       font-size: 12px;
-      color: v.$color-text-muted; // 🔥 Исправлено для маленьких плашек технологий
-      background-color: v.$bg-dark; // 🔥 Исправлено: подложка плашек будет контрастной фону секции
+      color: v.$color-text-muted;
+      background-color: v.$bg-dark;
       border: 1px solid rgba(v.$color-text-muted, 0.1);
       border-radius: 4px;
       transition: color 0.3s ease, background-color 0.3s ease;
@@ -130,7 +147,6 @@
     }
   }
 
-  // КЛАССЫ АНИМАЦИИ ПОЯВЛЕНИЯ
   .element-reveal {
     opacity: 0;
     transform: translateY(40px);
