@@ -78,20 +78,24 @@ export function create(done) {
     const importStr = `import { ${camelName} } from '../components/${name}/${name}';`;
     const callStr = `${camelName}();`;
 
-    const targetImportMarker =
-      '// =========================================\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ\n// =========================================';
+    // Универсальная регулярка: ищет маркер компонентов независимо от длины линии из знаков равно =====
+    const targetImportRegex =
+      /(\/\/ =+)\r?\n\/\/ 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ\r?\n(\/\/ =+)/;
     const targetCallMarker = '// [ВЫЗОВЫ ГЛАВНАЯ]';
 
     let newContent = content;
     if (!newContent.includes(importStr)) {
+      // Заменяем маркер, сохраняя его оригинальные линии из знаков равно
       newContent = newContent.replace(
-        targetImportMarker,
-        `${targetImportMarker}\n${importStr}`,
+        targetImportRegex,
+        `$1\n// 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ\n$2\n${importStr}`,
       );
     }
     if (!newContent.includes(callStr)) {
-      // Используем регулярное выражение для замены маркера вызова
-      const callMarkerRegex = new RegExp(`(\\s*)${targetCallMarker.replace(/\//g, '\\/')}`, 'm');
+      const callMarkerRegex = new RegExp(
+        `(\\s*)${targetCallMarker.replace(/\//g, '\\/')}`,
+        'm',
+      );
       newContent = newContent.replace(
         callMarkerRegex,
         `$1${callStr}\n$1${targetCallMarker}`,

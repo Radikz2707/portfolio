@@ -1,15 +1,18 @@
 @use '../../scss/base/vars' as v;
 
-// 🔥 БЭМ-КОМПОНЕНТ: Описывает сам блок и всю его внутреннюю геометрию
 .blog-categories {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 24px;
   align-items: start;
   width: 100%;
   margin-top: 40px;
   contain: layout;
+
+  @media (width <= 768px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .blog-category-card {
@@ -34,15 +37,14 @@
   &__header {
     box-sizing: border-box;
     display: flex;
-    gap: 12px; // Оптимизированный безопасный зазор между флекс-элементами
+    gap: 12px;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     width: 100%;
-    padding: 20px 24px; // Базовый паддинг для десктопа
+    padding: 20px 24px;
     cursor: pointer;
     transition: background-color 0.3s ease;
 
-    // 🔥 ИСПРАВЛЕНО: На узких экранах уменьшаем паддинги, давая заголовку +16px свободного места
     @media (width <= 480px) {
       padding: 16px;
     }
@@ -53,19 +55,18 @@
   }
 
   &__title {
-    flex-grow: 1;
+    flex-grow: 0;
     flex-shrink: 1;
     min-width: 0;
     margin: 0;
+    margin-right: auto;
     overflow: visible;
     text-overflow: clip;
-
-    // 🔥 ИСПРАВЛЕНО: Шрифт плавно адаптируется от 18px на мобильных до 20px на десктопе
-    font-size: clamp(18px, 2vw, 20px);
+    font-size: clamp(0.875rem, 0.5vw + 0.8rem, 1.1875rem);
     font-weight: 700;
     color: v.$color-text-main;
     word-break: keep-all;
-    overflow-wrap: break-word;
+    overflow-wrap: normal;
     white-space: normal;
     transition: color 0.3s ease;
   }
@@ -73,10 +74,7 @@
   &__count {
     flex-shrink: 0;
     margin: 0;
-    margin-right: 4px;
-
-    // 🔥 ИСПРАВЛЕНО: Принудительно отталкивает счётчик и стрелку в самый правый край карточки
-    margin-left: auto;
+    margin-right: 8px;
     font-size: 14px;
     font-weight: 500;
     color: v.$color-accent;

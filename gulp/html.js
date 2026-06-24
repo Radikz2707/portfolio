@@ -73,6 +73,12 @@ function fixHtmlPaths() {
         addPrefix,
       );
 
+      // 🔥 ДОБАВЛЕНО: Обрабатываем предзагрузку (preload) шрифтов в тегах <link>
+      content = content.replace(
+        /(href=["']\s*)(fonts\/[^"']+\.(?:woff2|woff|ttf|otf|eot))/gi,
+        addPrefix,
+      );
+
       // Корректируем пути к фавиконам
       content = content.replace(
         /(href=["']\s*)(images\/favicons\/)/gi,
