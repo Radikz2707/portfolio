@@ -1,0 +1,28 @@
+// =========================================================================
+// БЭМ-компонент: admin (Кастомизация интерфейса графической панели)
+// =========================================================================
+
+.admin {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f7fb;
+
+  // Элемент обёртки контента панели управления
+  &__wrapper {
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    margin: 0 auto;
+  }
+
+  // Элемент кастомной кнопки управления
+  &__button {
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+
+    &:hover {
+      background-color: #312e81;
+    }
+  }
+}

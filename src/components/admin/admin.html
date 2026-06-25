@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radik.Dev — Панель управления</title>
+
+  <!-- 🎯 ПОДКЛЮЧАЕМ ФАВИКОНКИ САЙТА (чтобы убрать ошибки 404 во вкладке Сеть) -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png" />
+  <link rel="shortcut icon" href="/images/favicons/favicon.ico" type="image/x-icon" />
+</head>
+<body>
+  <!-- Главный контейнер для монтирования графического UI -->
+  <div id="nc-root"></div>
+
+  <!-- Конфигурация локальных полей из вашего config.yml -->
+  <link rel="cms-config" type="text/yaml" href="config.yml" />
+
+  <!-- Запускаем монолитный движок Decap CMS со встроенным React -->
+  <script src="decap-cms.js"></script>
+</body>
+</html>

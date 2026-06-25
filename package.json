@@ -8,6 +8,7 @@
   "author": "Radik Zalalov",
   "license": "ISC",
   "scripts": {
+    "admin": "npx @staticcms/proxy-server",
     "dev": "cross-env NODE_NO_WARNINGS=1 G_MESSAGES_DEBUG=none gulp",
     "build": "npm run test:run && gulp build",
     "init": "gulp --gulpfile gulp/system/gulp.init.js init",
@@ -46,6 +47,7 @@
     "autoprefixer": "^10.5.2",
     "browser-sync": "^3.0.4",
     "cross-env": "^10.1.0",
+    "decap-cms": "^3.14.1",
     "dotenv": "^17.4.2",
     "eslint": "10.5.0",
     "eslint-config-prettier": "^10.1.8",
@@ -79,6 +81,8 @@
     "mammoth": "^1.12.0",
     "postcss": "^8.5.15",
     "postcss-sort-media-queries": "^6.6.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "sass": "^1.101.0",
     "sharp": "^0.35.2",
     "stylelint": "^17.13.0",
@@ -108,5 +112,8 @@
     "ttf2woff2@6.0.1": true,
     "core-js@3.49.0": true,
     "es5-ext@0.10.64": true
+  },
+  "dependencies": {
+    "@staticcms/core": "^4.3.0"
   }
 }

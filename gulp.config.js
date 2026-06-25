@@ -1,51 +1,69 @@
 import path from 'path';
 import { execSync } from 'child_process';
+import fs from 'fs'; // 🔥 Добавили нативный модуль файловой системы
+
+// ==========================================
+// ДИНАМИЧЕСКИЕ НАСТРОЙКИ ИЗ ГРАФИЧЕСКОЙ АДМИНКИ
+// ==========================================
+const settingsPath = path.join(
+  process.cwd(),
+  'src',
+  'content',
+  'system-settings.json',
+);
+
+// Дефолтные значения на случай первого запуска или отсутствия файла
+let srcFolder = 'src';
+let buildFolder = 'dist';
+let siteUrl = 'https://radik.dev';
+
+// Если админка сохранила изменения в JSON — подтягиваем новые пути на лету
+if (fs.existsSync(settingsPath)) {
+  try {
+    const settingsData = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+    if (settingsData.srcFolder) srcFolder = settingsData.srcFolder;
+    if (settingsData.buildFolder) buildFolder = settingsData.buildFolder;
+    if (settingsData.siteUrl) siteUrl = settingsData.siteUrl;
+  } catch (e) {
+    // Мягкий предохранитель: если файл в момент сохранения занят другим процессом, используем дефолты
+  }
+}
 
 // ==========================================
 // БАЗОВЫЕ НАСТРОЙКИ НАПРАВЛЕНИЙ
 // ==========================================
 const scssExtension = 'scss';
-const srcFolder = 'src'; // Папка с исходными файлами
-const buildFolder = 'dist'; // Папка готовой сборки проекта
 
 // ==========================================
 // АВТОМАТИЧЕСКОЕ ОПРЕДЕЛЕНИЕ РЕПОЗИТОРИЯ
 // ==========================================
-// Получаем полный путь к репозиторию (username/repo) для ссылок на GitHub
 const detectRepoPath = () => {
   try {
     const remoteUrl = execSync('git remote get-url origin 2>/dev/null', {
       encoding: 'utf-8',
     }).trim();
-    // Формат: https://github.com/username/repo.git или git@github.com:username/repo.git
     const match = remoteUrl.match(/github[/:]([^/]+)\/([^/.]+?)(?:\.git)?$/);
     if (match) {
-      // match[1] — имя пользователя, match[2] — имя репозитория
       return `${match[1]}/${match[2]}`;
     }
   } catch {
-    // Если git не найден или ошибка — используем значение из конфига
+    // Игнорируем ошибку выполнения команды git
   }
   return null;
 };
 
-// Получаем полный путь к репозиторию для ссылок на GitHub
-// Приоритет: переменная окружения GITHUB_REPO_PATH, затем автоматическое определение, затем 'username/repo'
 const repoPath =
   process.env.GITHUB_REPO_PATH || detectRepoPath() || 'Radik/portfolio';
 
 export const config = {
-  // Полный путь к репозиторию (username/repo) для ссылок на GitHub
   repoPath: repoPath,
-
-  // Единая глобальная переменная названия вашего бренда
   siteName: 'Radik.Dev',
+  siteUrl: siteUrl, // 🔥 Добавили динамический URL для генератора Sitemap
 
   scssExtension,
   srcFolder,
   buildFolder,
 
-  // 💡 Добавляем путь к локальному серверу IIS для Windows (проект изолируем в подпапку portfolio)
   localServerFolder: 'C:/inetpub/wwwroot/portfolio',
 
   // ==========================================
@@ -57,14 +75,11 @@ export const config = {
     plugins: path.join(srcFolder, 'js', 'plugins'),
   },
 
-  // Корень для JS алиасов (используется в webpack и jsconfig)
   aliasPath: path.join(srcFolder, 'js'),
 
   // ==========================================
   // ПУТИ К ФАЙЛАМ ДЛЯ СБОРЩИКА GULP
   // ==========================================
-
-  // 💡 Добавляем централизованный путь для таска деплоя
   deploy: {
     src: `${buildFolder}/**/*`,
   },
@@ -85,11 +100,10 @@ export const config = {
       dest: `${buildFolder}/images/`,
       svg: `${srcFolder}/images/**/*.svg`,
     },
-    // Централизованные пути для генератора фавиконок
     favicons: {
-      src: `${srcFolder}/images/src/favicon.png`, // Новый путь к исходнику
-      dest: `${buildFolder}/images/favicons/`, // Папка назначения в dist
-      htmlOutput: path.join(srcFolder, 'parts', 'favicon-links.html'), // Где лежит кусок разметки
+      src: `${srcFolder}/images/src/favicon.png`,
+      dest: `${buildFolder}/images/favicons/`,
+      htmlOutput: path.join(srcFolder, 'parts', 'favicon-links.html'),
     },
     fonts: {
       src: `${srcFolder}/fonts/src/**/*.{ttf,otf}`,

@@ -9,6 +9,7 @@ import { scrollToTop } from './modules/scroll-to-top/scroll-to-top';
 // ==========================================
 // 🧩 КОМПОНЕНТЫ И ИНТЕРФЕЙСНЫЕ БЛОКИ
 // ==========================================
+import { admin } from '../components/admin/admin';
 import { header } from '../components/header/header';
 import { menu } from '../components/menu/menu';
 import { modal } from '../components/modal/modal';
@@ -51,6 +52,7 @@ const initApp = () => {
     contacts();
     aboutMe();
     projectsGrid();
+  admin();
   // [ВЫЗОВЫ ГЛАВНАЯ]
   }
 

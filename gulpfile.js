@@ -38,6 +38,7 @@ import { createStructure as init } from './gulp/system/gulp.init.js';
 import { help } from './gulp/system/gulp.help.js';
 import { deploy } from './gulp/deploy.js';
 import { generateSitemap, generateContentMap } from './gulp/seo.js';
+import { copyAdminUI } from './gulp/admin.js';
 
 // Глобальный отпечаток сборки для инвалидации кэша ресурсов (Cache Busting)
 global.buildSig = Date.now();
@@ -194,6 +195,7 @@ const compileAssets = parallel(
   runTask('images'),
   runTask('createWebp'),
   runTask('sprite'),
+  copyAdminUI,
 );
 
 const blogContent = createDynamicContentTask('blog');
@@ -238,6 +240,7 @@ export default series(
     runTask('imagesDev'),
     runTask('createWebp'),
     runTask('sprite'),
+    copyAdminUI,
     ...dynamicContentFolderNames.map((folder) =>
       createDynamicContentTask(folder),
     ),

@@ -1,0 +1,80 @@
+# =========================================================================
+# ГЛОБАЛЬНАЯ КОНФИГУРАЦИЯ БЭКЕНДА (LOCAL PROXY GATEWAY)
+# =========================================================================
+backend:
+  name: proxy
+  proxy_url: http://localhost:8081/api/v1
+  repo: 'Radik/portfolio'
+  branch: 'main'
+
+# Флаг для прямой синхронизации с жестким диском вашего компьютера
+local_backend: true
+
+# =========================================================================
+# ЦЕНТРАЛИЗОВАННЫЙ КАТАЛОГ ДЛЯ ЗАГРУЖАЕМЫХ МЕДИА-РЕСУРСОВ
+# =========================================================================
+media_folder: 'src/images/blog'
+public_folder: '/images/blog'
+preview_styles:
+  - '/css/app.min.css'
+
+# =========================================================================
+# СТРУКТУРА ПАНЕЛИ УПРАВЛЕНИЯ И ПОЛЕЙ ВВОДА (COLLECTIONS)
+# =========================================================================
+collections:
+  # ⚙️ Вкладка динамического управления путями Gulp и глобальными настройками
+  - name: 'settings'
+    label: '⚙️ Настройки Системы'
+    delete: false
+    files:
+      # Настройки путей сборщика Gulp
+      - name: 'gulp_config'
+        label: 'Конфигурация сборщика'
+        file: 'src/content/system-settings.json'
+        format: 'json'
+        fields:
+          - {
+              label: '📁 Папка исходников (Source)',
+              name: 'srcFolder',
+              widget: 'string',
+              default: 'src',
+            }
+          - {
+              label: '📦 Папка сборки (Build/Dist)',
+              name: 'buildFolder',
+              widget: 'string',
+              default: 'dist',
+            }
+          - {
+              label: '🌐 URL Сайта (для Sitemap)',
+              name: 'siteUrl',
+              widget: 'string',
+              default: 'https://radik.dev',
+            }
+
+      # 🗂️ Синхронное управление всеми русскими названиями категорий сайта
+      - name: 'blog_categories'
+        label: '🗂️ Управление категориями'
+        file: 'src/content/categories.json'
+        format: 'json'
+        fields:
+          - {
+              label: '💻 Программирование',
+              name: 'programming',
+              widget: 'string',
+            }
+          - { label: 'ℹ️ О проекте', name: 'project-info', widget: 'string' }
+          - { label: '🚀 Космос', name: 'space', widget: 'string' }
+          - { label: '✍️ Мои стихи', name: 'poems', widget: 'string' }
+          - { label: '📚 Книги', name: 'books', widget: 'string' }
+          - { label: '✈️ Путешествия', name: 'travel', widget: 'string' }
+          - { label: '🎮 Игры и развлечения', name: 'games', widget: 'string' }
+          - { label: '🧠 Психология', name: 'psychology', widget: 'string' }
+          - { label: '📰 Общий блог', name: 'blog', widget: 'string' }
+          # Резервный мост: если захотите добавить новую папку, впишите ее название сюда
+          - {
+              label: '💵 Новая папка (finance)',
+              name: 'finance',
+              widget: 'string',
+              required: false,
+            }

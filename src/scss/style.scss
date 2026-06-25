@@ -21,6 +21,7 @@
 @use '../components/contacts/contacts';
 @use '../components/blog-categories/blog-categories';
 @use '../components/modal/modal' as modal;
+@use '../components/admin/admin';
 
 // ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
 @use '../js/modules/scroll-to-top/scroll-to-top' as *;
