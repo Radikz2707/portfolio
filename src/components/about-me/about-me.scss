@@ -2,8 +2,6 @@
 
 .about-me {
   box-sizing: border-box;
-
-  // 🔥 ГАРАНТИЯ СТАБИЛЬНОСТИ: Срезаем любые скрытые распоры анимаций
   width: 100%;
   max-width: 100%;
   padding: 100px 0;
@@ -34,7 +32,7 @@
     box-sizing: border-box;
     flex: 1;
     width: 100%;
-    min-width: 280px; // Снижено до безопасных 280px для узких экранов
+    min-width: 280px;
     max-width: 60%;
 
     @media (width <= 992px) {

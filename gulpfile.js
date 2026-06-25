@@ -37,6 +37,7 @@ import { remove } from './gulp/system/gulp.remove.js';
 import { createStructure as init } from './gulp/system/gulp.init.js';
 import { help } from './gulp/system/gulp.help.js';
 import { deploy } from './gulp/deploy.js';
+import { generateSitemap, generateContentMap } from './gulp/seo.js';
 
 // Глобальный отпечаток сборки для инвалидации кэша ресурсов (Cache Busting)
 global.buildSig = Date.now();
@@ -214,6 +215,9 @@ export const build = series(
   ),
   parallel(runTask('html')),
   runTask('blogIndex'),
+
+  parallel(generateSitemap, generateContentMap),
+
   zipFiles,
   (done) => {
     console.log('>>> 🚀 [Gulp 5] Project successfully assembled! <<<');
@@ -257,6 +261,8 @@ export {
   cleandist,
   lintJs,
   lintCss,
+  generateSitemap,
+  generateContentMap,
 
   // Изолированные задачи для точечного вызова в тестах
   favs,
