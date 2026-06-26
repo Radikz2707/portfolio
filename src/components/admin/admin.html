@@ -32,15 +32,25 @@
   </style>
 </head>
 <body>
+  <!-- Главный контейнер для монтирования графического UI -->
   <div id="nc-root"></div>
+
+  <!-- Конфигурация локальных полей из вашего config.yml -->
   <link rel="cms-config" type="text/yaml" href="config.yml" />
+
+  <!-- Запускаем монолитный движок Decap CMS со встроенным React -->
   <script src="decap-cms.js"></script>
 
-  <!-- Тут остается ваш прежний скрипт кастомизации шаблона blog_categories -->
   <script>
+    // Подключаем основной CSS-файл вашего сайта внутрь iframe превью
     CMS.registerPreviewStyle("/css/app.min.css");
-    CMS.registerPreviewStyle({ raw: "html, body { background-color: #f8fafc !important; width: 100% !important; max-width: 100% !important; min-width: 100% !important; margin: 0 !important; padding: 24px !important; }" });
 
+    // Хак для принудительного сброса отступов и флекс-выравнивания внутри фрейма
+    CMS.registerPreviewStyle({ raw: "html, body { background-color: #f8fafc !important; width: 100% !important; max-width: 100% !important; min-width: 100% !important; margin: 0 !important; padding: 24px !important; display: block !important; align-items: stretch !important; }" });
+
+    // =======================================================================
+    // 🗂️ ШАБЛОН ДЛЯ ОТОБРАЖЕНИЯ СТРУКТУРЫ КАТЕГОРИЙ (БЭМ-СЕТКА)
+    // =======================================================================
     CMS.registerPreviewTemplate("blog_categories", createClass({
       render: function() {
         var entry = this.props.entry;
@@ -70,6 +80,34 @@
         );
       }
     }));
+
+    // =======================================================================
+    // 📝 УНИВЕРСАЛЬНЫЙ КРАСИВЫЙ ШАБЛОН ДЛЯ СТАТЕЙ (С автоматической фильтрацией)
+    // =======================================================================
+    var ArticlePreview = createClass({
+      render: function() {
+        var entry = this.props.entry;
+
+        // Извлекаем заголовок из поля ввода
+        var title = entry.getIn(['data', 'title']) || 'Без заголовка';
+
+        // Чистый виджет контента (Decap CMS нативно отсекает блок frontmatter с "title:")
+        var bodyWidget = this.props.widgetFor('body');
+
+        // Оборачиваем в БЭМ-классы вашего блога
+        return h('div', { className: 'blog-article', style: { padding: '24px 0', minHeight: 'auto', background: 'transparent' } },
+          h('div', { className: 'blog-article__main-content', style: { maxWidth: '740px', margin: '0 auto' } },
+            h('h1', { className: 'blog-article__title', style: { textAlign: 'left', marginBottom: '24px' } }, title),
+            h('div', { className: 'blog-article__body-text' }, bodyWidget)
+          )
+        );
+      }
+    });
+
+    // Привязываем красивый шаблон ко всем контентным папкам сайта
+    CMS.registerPreviewTemplate("work", ArticlePreview);
+    CMS.registerPreviewTemplate("programming", ArticlePreview);
+    CMS.registerPreviewTemplate("blog", ArticlePreview);
   </script>
 </body>
 </html>
