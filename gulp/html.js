@@ -29,68 +29,69 @@ function fixHtmlPaths() {
         return cb(null, file);
       }
 
-      // Извлекаем имя репозитория из конфигурации
       const repoName = config.repoPath
-        ? config.repoPath.split('/')[1]
+        ? config.repoPath.split('/')
         : 'portfolio';
-
-      // Определяем режим: продакшен или локальный сервер
       const pathPrefix = isProd ? `/${repoName}` : './';
-
       let content = file.contents.toString('utf-8');
 
-      // Функция добавления префикса, если путь ещё не содержит его
       const addPrefix = (match, p1, p2) => {
-        // Для шаблонов статей (components/blog-article) всегда использовать ../
-        if (file.path.includes('components/blog-article')) {
-          const articlePrefix = '../';
-          return p2.startsWith(articlePrefix)
-            ? match
-            : `${p1}${articlePrefix}${p2}`;
+        const normalizedPath = file.path.replace(/\\/g, '/');
+        const fileName = path.basename(normalizedPath);
+
+        const isInBlogFolder =
+          normalizedPath.includes('/src/blog/') ||
+          normalizedPath.includes('/dist/blog/');
+        const isBlogIndex = isInBlogFolder && fileName === 'index.html';
+        const isArticle = isInBlogFolder && !isBlogIndex;
+
+        // Очищаем пришедший путь от лишних ведущих точек и слэшей, чтобы не плодить пути вида ../../
+        const cleanP2 = p2.replace(/^[.\\/]+/, '');
+
+        if (isArticle) {
+          return `${p1}../../${cleanP2}`;
         }
-        return p2.startsWith(pathPrefix) ? match : `${p1}${pathPrefix}${p2}`;
+        if (isBlogIndex) {
+          return `${p1}../${cleanP2}`;
+        }
+        if (
+          cleanP2.startsWith(pathPrefix) ||
+          (pathPrefix === './' && cleanP2.startsWith('/'))
+        ) {
+          return match;
+        }
+        return `${p1}${pathPrefix}${cleanP2}`;
       };
 
-      // Обрабатываем ссылки на CSS, JS и изображения
+      // 1. Ссылки на стили
       content = content.replace(
-        /(href=["']\s*)(css\/[^"']+\.(?:css))/gi,
+        /(href=["']\s*)(\.?\/?css\/[^"']+\.(?:css))/gi,
         addPrefix,
       );
+      // 2. Скрипты
       content = content.replace(
-        /(src=["']\s*)(js\/[^"']+\.(?:js))/gi,
+        /(src=["']\s*)(\.?\/?js\/[^"']+\.(?:js)(?:\?[^"']*)?)/gi,
         (match, p1, p2) => {
-          // Добавляем версию только для основных скриптов и только в продакшене или если это app.min.js
-          const version = isProd ? `?v=${global.buildSig || Date.now()}` : '';
+          const hasVersion = p2.includes('?v=');
+          const version =
+            isProd && !hasVersion ? `?v=${global.buildSig || Date.now()}` : '';
           return addPrefix(match, p1, p2 + version);
         },
       );
+      // 3. Изображения
       content = content.replace(
-        /(src=["']\s*)(js\/[^"']+\.(?:js)(?:\?[^"']*)?)/gi,
+        /((?:src|srcset)=["']\s*)(\.?\/?images\/[^"']+\.(?:png|jpg|jpeg|webp|svg|gif|ico))/gi,
         addPrefix,
       );
+      // 4. Шрифты
       content = content.replace(
-        /((?:src|srcset)=["']\s*)\/?(images\/[^"']+\.(?:png|jpg|jpeg|webp|svg|gif|ico))/gi,
+        /(href=["']\s*)(\.?\/?fonts\/[^"']+\.(?:woff2|woff|ttf|otf|eot))/gi,
         addPrefix,
       );
-
-      // 🔥 ДОБАВЛЕНО: Обрабатываем предзагрузку (preload) шрифтов в тегах <link>
+      // 5. 🔥 ОБНОВЛЕНО: Тотальный перехват любых путей к фавиконкам (с точками, без, со слэшами)
       content = content.replace(
-        /(href=["']\s*)(fonts\/[^"']+\.(?:woff2|woff|ttf|otf|eot))/gi,
+        /(href=["']\s*)(\.?\/?images\/favicons\/[^"']+\.(?:png|ico|svg|xml|json|webmanifest))/gi,
         addPrefix,
-      );
-
-      // Корректируем пути к фавиконам
-      content = content.replace(
-        /(href=["']\s*)(images\/favicons\/)/gi,
-        (match, p1, p2) => {
-          // Формируем полный href для проверки
-          const fullHref = p1 + p2;
-          // Если путь уже содержит правильный префикс, ничего не делаем
-          if (fullHref.includes(pathPrefix + 'images/favicons/')) {
-            return match;
-          }
-          return `${p1}${pathPrefix}${p2}`;
-        },
       );
 
       file.contents = Buffer.from(content);
@@ -120,7 +121,7 @@ const fixPictureTags = () => {
             }
             const webpPath = srcPath.replace(/\.(?:png|jpg|jpeg)$/i, '.webp');
 
-            // 🔥 ИСПРАВЛЕНО: Объявляем переменную cleanAttributes, чтобы Gulp не падал
+            // 🔥 ИСПРАВЛЕНО: Объявляем пе��еменную cleanAttributes, чтобы Gulp не падал
             const cleanAttributes = `${before.trim()} ${after.trim()}`.trim();
 
             return `<picture>\n <source srcset="${webpPath}" type="image/webp">\n <img src="${srcPath}"${cleanAttributes ? ' ' + cleanAttributes : ''}>\n</picture>`;
@@ -255,6 +256,20 @@ const generateCategoryCards = async () => {
 
   let categoryCardsHtml = '';
 
+  // Полный словарь переводов со всеми вашими категориями
+  const categoryNames = {
+    programming: 'Программирование',
+    'project-info': 'О проекте',
+    space: 'Космос',
+    poems: 'Мои стихи',
+    books: 'Книги',
+    travel: 'Путешествия',
+    games: 'Игры и развлечения',
+    psychology: 'Психология',
+    finance: 'Финансы и Инвестиции',
+    work: 'Работа и Карьера',
+  };
+
   for (const category of categories) {
     const categoryDir = path.join(contentRoot, category);
     const files = fs.readdirSync(categoryDir);
@@ -269,22 +284,12 @@ const generateCategoryCards = async () => {
     const articleCount = articleFiles.length;
     if (articleCount === 0) continue;
 
-    const categoryNames = {
-      programming: 'Программирование',
-      'project-info': 'О проекте',
-      space: 'Космос',
-      poems: 'Мои стихи',
-      books: 'Книги',
-      travel: 'Путешествия',
-      games: 'Игры и развлечения',
-      psychology: 'Психология',
-    };
-
+    // Берем русский перевод из словаря по cleanKey (в нижнем регистре)
+    const cleanKey = category.toLowerCase().trim();
     const categoryTitle =
-      categoryNames[category] ||
+      categoryNames[cleanKey] ||
       category.charAt(0).toUpperCase() + category.slice(1);
 
-    // 🔥 ИСПРАВЛЕНО: Строго одинарные кавычки для БЭМ-классов HTML + умный счетчик pluralText
     const pluralText = getPluralArticles(articleCount);
 
     categoryCardsHtml += `
@@ -297,18 +302,14 @@ const generateCategoryCards = async () => {
     `;
 
     for (const file of articleFiles) {
-      const fullFilePath = path.join(categoryDir, file);
       const fileName = path.basename(file, path.extname(file));
       const articleUrl = `./${category}/${fileName}.html`;
 
-      let articleTitle = await getFirstLineOfFile(fullFilePath);
+      // Генерация названия статьи из имени файла (slug) без вызова упавшего getFirstLineOfFile
+      const slugTitle = fileName.replace(/-/g, ' ');
+      const articleTitle =
+        slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
 
-      if (!articleTitle) {
-        const slugTitle = fileName.replace(/-/g, ' ');
-        articleTitle = slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
-      }
-
-      // 🔥 ИСПРАВЛЕНО: Одинарные кавычки внутри элементов списка статей
       categoryCardsHtml += `
         <li class='blog-category-card__item'>
           <a class='blog-category-card__link' href='${articleUrl}'>${articleTitle}</a>
@@ -377,18 +378,9 @@ export async function blogIndex(done) {
       )
 
       // 🛡️ АВТОМАТИЧЕСКИЙ ФИЛЬТР ПУТЕЙ СТАТЕЙ:
-      // Запускаем исправление внутренних путей только для страниц во вложенных категориях.
-      // Главный индекс блога защищаем, чтобы он не улетал в корень dist.
-      .map(function (file) {
-        const isRootBlogFile =
-          file.relative.split(path.sep).length === 1 ||
-          file.dirname === '.' ||
-          file.dirname === '';
-        if (!isRootBlogFile && typeof fixHtmlPaths === 'function') {
-          return fixHtmlPaths()(file);
-        }
-        return file;
-      })
+      // Запускаем исправление внутренних путей для всех страниц блога
+      // Убрана проверка isRootBlogFile, чтобы обрабатывать blog/index.html тоже
+      .pipe(fixHtmlPaths())
 
       .pipe(replace(/@@sidebar/g, sidebarLinks))
       .pipe(replace(/@@categories/g, categoryCardsHtml))
