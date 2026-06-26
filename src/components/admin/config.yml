@@ -58,23 +58,10 @@ collections:
         file: 'src/content/categories.json'
         format: 'json'
         fields:
-          - {
-              label: '💻 Программирование',
-              name: 'programming',
-              widget: 'string',
-            }
-          - { label: 'ℹ️ О проекте', name: 'project-info', widget: 'string' }
-          - { label: '🚀 Космос', name: 'space', widget: 'string' }
-          - { label: '✍️ Мои стихи', name: 'poems', widget: 'string' }
-          - { label: '📚 Книги', name: 'books', widget: 'string' }
-          - { label: '✈️ Путешествия', name: 'travel', widget: 'string' }
-          - { label: '🎮 Игры и развлечения', name: 'games', widget: 'string' }
-          - { label: '🧠 Психология', name: 'psychology', widget: 'string' }
-          - { label: '📰 Общий блог', name: 'blog', widget: 'string' }
-          # Резервный мост: если захотите добавить новую папку, впишите ее название сюда
-          - {
-              label: '💵 Новая папка (finance)',
-              name: 'finance',
-              widget: 'string',
-              required: false,
-            }
+          - label: "Список всех категорий сайта"
+            name: "categories_list"
+            widget: "list"
+            summary: "{{fields.title}} ({{fields.id}})"
+            fields:
+              - { label: "Системный ID (имя папки латиницей, например: work)", name: "id", widget: "string" }
+              - { label: "Название на сайте (например: Мои работы)", name: "title", widget: "string" }

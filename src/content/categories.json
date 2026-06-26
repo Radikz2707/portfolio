@@ -1,12 +1,15 @@
 {
-  "games": "Игры и развлечения",
-  "project-info": "О проекте",
-  "blog": "Общий блог",
-  "space": "Космос",
-  "psychology": "Психология",
-  "books": "Книги",
-  "poems": "Мои стихи",
-  "programming": "Программирование",
-  "travel": "Путешествия",
-  "finance": "Финансы и инвестиции"
+  "categories_list": [
+    { "id": "games", "title": "Игры и развлечения" },
+    { "id": "project-info", "title": "О проекте" },
+    { "id": "blog", "title": "Общий блог" },
+    { "id": "space", "title": "Космос" },
+    { "id": "psychology", "title": "Психология" },
+    { "id": "books", "title": "Книги" },
+    { "id": "poems", "title": "Мои стихи" },
+    { "id": "programming", "title": "Программирование" },
+    { "id": "travel", "title": "Путешествия" },
+    { "id": "finance", "title": "Финансы и инвестиции" },
+    { "id": "work", "title": "Работа и Карьера" }
+  ]
 }

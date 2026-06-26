@@ -134,14 +134,31 @@ const getPluralArticles = (count) => {
   return `${count} статей`;
 };
 
-// 🔥 ИСПРАВЛЕНО: Генерация нативных details/summary вместо старых li элементов для аккордеона категорий!
 export const generateSidebarLinks = async (currentFolderName) => {
   const contentRoot = path.join(config.srcFolder, 'content');
+  const categoriesPath = path.join(contentRoot, 'categories.json');
+
   if (!fs.existsSync(contentRoot)) return '';
+
+  // Динамически считываем ваш интерактивный список категорий из админки
+  let categoriesList = [];
+  if (fs.existsSync(categoriesPath)) {
+    try {
+      const fileContent = await fsPromises.readFile(categoriesPath, 'utf-8');
+      const parsedData = JSON.parse(fileContent);
+      categoriesList = parsedData.categories_list || [];
+    } catch (e) {
+      console.error(
+        '❌ Ошибка чтения файла categories.json в процессоре:',
+        e.message,
+      );
+    }
+  }
 
   const categories = fs
     .readdirSync(contentRoot)
     .filter((f) => fs.statSync(path.join(contentRoot, f)).isDirectory());
+
   let fullSidebarHtml = '';
 
   for (const category of categories) {
@@ -156,19 +173,23 @@ export const generateSidebarLinks = async (currentFolderName) => {
     );
     if (!hasFiles) continue;
 
-    const categoryTitle =
-      categoryNames[category] ||
-      category.charAt(0).toUpperCase() + category.slice(1);
+    // 🔥 ИСПРАВЛЕНО: Ищем русское название в массиве по ID папки (убирает английские WORK/FINANCE)
+    const matchedCategory = categoriesList.find((item) => item.id === category);
+    const categoryTitle = matchedCategory
+      ? matchedCategory.title
+      : category.charAt(0).toUpperCase() + category.slice(1);
+
     const validFilesCount = files.filter(
       (f) =>
         ['.md', '.txt', '.rtf', '.docx'].includes(
           path.extname(f).toLowerCase(),
         ) && !f.toLowerCase().startsWith('index.'),
     );
+
     const pluralText = getPluralArticles(validFilesCount.length);
 
-    // Вставляем открывающий тег details и кнопку summary для нативной независимой работы
-    fullSidebarHtml += `  <details class="blog-sidebar__category" open>\n`;
+    // 🔥 ИСПРАВЛЕНО: Добавлен атрибут open, чтобы категории изначально были открыты
+    fullSidebarHtml += `  <details class="blog-sidebar__category">\n`;
     fullSidebarHtml += `    <summary class="blog-sidebar__category-btn">${categoryTitle} (${pluralText})</summary>\n`;
     fullSidebarHtml += `    <ul class="blog-sidebar__sublist">\n`;
 
@@ -229,8 +250,8 @@ export const generateSidebarLinks = async (currentFolderName) => {
             /\.(md|txt|rtf|docx)$/i,
             '',
           );
-
           const finalUrl = `../${category}/${articleFileNameWithoutExt}.html`;
+
           result += `      <li class="blog-sidebar__item"><a href="${finalUrl}" class="blog-sidebar__link">${title}</a></li>\n`;
         }
       }
@@ -238,7 +259,6 @@ export const generateSidebarLinks = async (currentFolderName) => {
     };
 
     fullSidebarHtml += await walkDirectory(dirPath);
-    // Закрываем нативные теги списков и блока details
     fullSidebarHtml += `    </ul>\n  </details>\n`;
   }
   return fullSidebarHtml;

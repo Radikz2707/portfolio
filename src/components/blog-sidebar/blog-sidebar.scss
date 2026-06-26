@@ -1,11 +1,12 @@
 @use '../../scss/base/vars' as v;
 
 .blog-sidebar {
+  box-sizing: border-box;
   width: 100%;
   padding: 24px;
   background-color: v.$bg-card;
-  border: 1px solid v.$color-text-muted;
-  border-radius: 8px;
+  border: 1px solid rgba(v.$color-text-muted, 0.2);
+  border-radius: 12px;
   transition:
     background-color 0.3s ease,
     border-color 0.3s ease;
@@ -19,19 +20,19 @@
 
   /* Чистый статичный заголовок без лишних стрелочек */
   &__title {
-    margin-bottom: 20px;
-    font-size: 20px;
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 18px;
     font-weight: 700;
     color: v.$color-text-main;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    transition: color 0.3s ease;
   }
 
   &__list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     padding: 0;
     margin: 0;
     list-style: none;
@@ -41,7 +42,7 @@
   &__category {
     display: block;
     width: 100%;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
 
     &:last-child {
       margin-bottom: 0;
@@ -69,14 +70,15 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 10px 0;
-    font-size: 14px;
-    font-weight: 600;
+    padding: 8px 0;
+    font-size: 13px;
+    font-weight: 700;
     color: v.$color-text-muted;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     cursor: pointer;
     list-style: none; /* Скрывает дефолтную стрелку Chrome/Firefox */
+    transition: color 0.2s ease;
 
     &::-webkit-details-marker {
       display: none; /* Скрывает дефолтную стрелку Safari */
@@ -85,8 +87,8 @@
     /* Аккуратная стрелочка-маркер для каждой отдельной категории */
     &::after {
       display: inline-block;
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       margin-left: 10px;
       content: '';
       border-right: 2px solid currentcolor;
@@ -96,7 +98,6 @@
     }
 
     &:hover {
-      font-weight: 500;
       color: v.$color-purple;
     }
   }
@@ -106,10 +107,10 @@
     display: none; /* По умолчанию скрыт, раскрывается нативно через &[open] */
     flex-direction: column;
     gap: 10px;
-    padding: 5px 0 10px 15px;
-    margin: 0;
+    padding: 8px 0 12px 14px;
+    margin: 4px 0 8px 2px;
     list-style: none;
-    border-left: 1px solid v.$color-text-muted;
+    border-left: 1px solid rgba(v.$color-text-muted, 0.3);
     transition: border-color 0.3s ease;
   }
 
@@ -118,12 +119,13 @@
     margin: 0;
   }
 
+  /* Ссылка на саму статью */
   &__link {
     display: block;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.4;
     color: v.$color-text-muted;
-    text-transform: normal;
+    text-transform: none;
     overflow-wrap: break-word;
     text-decoration: none;
     transition:
@@ -131,14 +133,15 @@
       transform 0.2s ease;
 
     &:hover {
-      font-weight: 500;
       color: v.$color-purple;
       transform: translateX(4px);
     }
 
+    /* Активная читаемая статья */
     &._active {
       font-weight: 600;
       color: v.$color-accent;
+      text-shadow: 0 0 12px rgba(v.$color-accent, 0.25);
       pointer-events: none;
     }
   }
@@ -166,11 +169,8 @@
   }
 
   .blog-sidebar {
-    box-sizing: border-box;
     max-height: 420px;
     padding: 20px 24px 20px 16px;
-    padding-inline-end: 24px;
-    overflow-y: auto;
     scrollbar-width: thin;
 
     &__sublist {

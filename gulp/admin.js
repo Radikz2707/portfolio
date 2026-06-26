@@ -1,10 +1,8 @@
-// gulp/admin.js
 import gulp from 'gulp';
 import fs from 'fs';
 import path from 'path';
 import { config } from '../gulp.config.js';
 
-// Каркас дефолтных эмодзи-иконок для красивого отображения в админке
 const emojiMap = {
   programming: '💻',
   'project-info': 'ℹ️',
@@ -15,16 +13,14 @@ const emojiMap = {
   games: '🎮',
   psychology: '🧠',
   blog: '📰',
+  work: '💼',
 };
 
 export const copyAdminUI = (done) => {
   const adminDestDir = path.join(config.buildFolder, 'admin');
   const pkgDistDir = path.join('node_modules', 'decap-cms', 'dist');
-  const categoriesPath = path.join(
-    config.srcFolder,
-    'content',
-    'categories.json',
-  );
+  const contentSrcDir = path.join(config.srcFolder, 'content');
+  const categoriesPath = path.join(contentSrcDir, 'categories.json');
 
   // 1. Создаем целевую папку dist/admin/, если её ещё нет
   if (!fs.existsSync(adminDestDir)) {
@@ -37,27 +33,93 @@ export const copyAdminUI = (done) => {
     path.join(adminDestDir, 'admin.html'),
   );
 
-  // 3. Динамически считываем ваш файл categories.json
-  let categories = {};
+  // 3. Читаем текущий categories.json (поддерживаем структуру списка)
+  let categoriesData = { categories_list: [] };
   if (fs.existsSync(categoriesPath)) {
     try {
-      categories = JSON.parse(fs.readFileSync(categoriesPath, 'utf-8'));
+      const fileContent = fs.readFileSync(categoriesPath, 'utf-8');
+      categoriesData = JSON.parse(fileContent);
+      // Если файл был плоским объектом, аккуратно мигрируем его в массив
+      if (!categoriesData.categories_list && !Array.isArray(categoriesData)) {
+        categoriesData = {
+          categories_list: Object.keys(categoriesData).map((key) => ({
+            id: key,
+            title: categoriesData[key],
+          })),
+        };
+      }
     } catch (e) {
       console.error('❌ Ошибка чтения файла categories.json:', e.message);
     }
   }
 
-  // Считываем основу настроек из config.yml
+  if (!categoriesData.categories_list) {
+    categoriesData.categories_list = [];
+  }
+
+  // 🔥 СИНХРОНИЗАЦИЯ: Сканируем реальные папки на диске
+  if (fs.existsSync(contentSrcDir)) {
+    const files = fs.readdirSync(contentSrcDir);
+    let hasChanges = false;
+
+    files.forEach((file) => {
+      const fullPath = path.join(contentSrcDir, file);
+      const isDirectory = fs.statSync(fullPath).isDirectory();
+
+      // Проверяем, есть ли папка в текущем массиве категорий
+      const existsInList = categoriesData.categories_list.some(
+        (item) => item.id === file,
+      );
+
+      // Если это папка, и её ЕЩЁ НЕТ в списке категорий
+      if (isDirectory && !existsInList) {
+        const autoLabel = file.charAt(0).toUpperCase() + file.slice(1);
+        categoriesData.categories_list.push({
+          id: file,
+          title: autoLabel,
+        });
+        hasChanges = true;
+        console.log(
+          `✨ [Синхронизация] Найдена новая папка "${file}". Добавляем в список категорий как "${autoLabel}".`,
+        );
+      }
+    });
+
+    // Если список обновился новыми папками, перезаписываем categories.json
+    if (hasChanges) {
+      fs.writeFileSync(
+        categoriesPath,
+        JSON.stringify(categoriesData, null, 2),
+        'utf-8',
+      );
+      console.log(`💾 [Синхронизация] Файл categories.json успешно обновлен!`);
+    }
+  }
+
+  // Читаем основу настроек из config.yml
   let configYmlContent = fs.readFileSync(
     path.join(config.srcFolder, 'components', 'admin', 'config.yml'),
     'utf-8',
   );
 
-  // Генерируем YAML-блоки коллекций прямо на основе ключей вашего JSON-файла
+  // Генерируем YAML-блоки коллекций на основе элементов массива
   let dynamicCollections = '';
-  Object.keys(categories).forEach((key) => {
-    const rawLabel = categories[key];
-    const emoji = emojiMap[key] || '📝'; // Ставим эмодзи из карты или дефолтный листок
+  categoriesData.categories_list.forEach((item) => {
+    const key = item.id;
+    const rawLabel = item.title;
+
+    if (!key || !rawLabel) return;
+
+    // Проверяем: если категория есть в списке, но папки на диске нет — создаем!
+    const folderPath = path.join(contentSrcDir, key);
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath, { recursive: true });
+      console.log(
+        `📁 [Синхронизация] Создана недостающая папка на диске: src/content/${key}`,
+      );
+    }
+
+    const emoji = emojiMap[key] || '📝';
     const label = `${emoji} ${rawLabel}`;
 
     dynamicCollections += `
@@ -72,7 +134,7 @@ export const copyAdminUI = (done) => {
 `;
   });
 
-  // Записываем финальный расширенный конфиг вdist/admin/
+  // Записываем финальный расширенный конфиг в dist/admin/
   fs.writeFileSync(
     path.join(adminDestDir, 'config.yml'),
     configYmlContent + dynamicCollections,
@@ -86,9 +148,7 @@ export const copyAdminUI = (done) => {
     );
   }
 
-  console.log(
-    `✅ [Gulp 5] Графический интерфейс CMS успешно синхронизирован с файлом categories.json!`,
-  );
+  console.log(`✅ [Gulp] Графический интерфейс CMS полностью синхронизирован!`);
   done();
 };
 

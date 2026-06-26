@@ -2,7 +2,6 @@ export const blogSidebar = (): void => {
   const sidebar = document.querySelector('.blog-sidebar');
   if (!sidebar) return;
 
-  // Находим нативные элементы summary и детализированные блоки
   const categories = sidebar.querySelectorAll<HTMLDetailsElement>(
     '.blog-sidebar__category',
   );
@@ -11,32 +10,36 @@ export const blogSidebar = (): void => {
   );
   const currentPath = window.location.pathname;
 
-  // 1. Умная логика аккордеона на нативных тегах
+  // 1. 🔥 УМНАЯ ЛОГИКА АККОРДЕОНА: При старте всё закрыто, соседи закрываются сами
   categories.forEach((currentCategory) => {
     const summary = currentCategory.querySelector('summary');
     if (!summary) return;
+
+    // Изначально выставляем доступность в false, так как всё закрыто
+    summary.setAttribute('aria-expanded', 'false');
+
     summary.addEventListener('click', (_) => {
+      // Нативный <details> переключает open ПОСЛЕ клика, проверяем текущее состояние
       const isCurrentlyOpen = currentCategory.hasAttribute('open');
 
-      // Закрываем все остальные категории, кроме той, по которой кликнули
-      categories.forEach((otherCategory) => {
-        if (otherCategory !== currentCategory) {
-          otherCategory.removeAttribute('open');
-          const otherSummary = otherCategory.querySelector('summary');
-          otherSummary?.setAttribute('aria-expanded', 'false');
-        }
-      });
-
-      // Переключаем состояние текущей категории
-      if (isCurrentlyOpen) {
-        summary.setAttribute('aria-expanded', 'false');
-      } else {
+      // 🎯 Если мы ОТКРЫВАЕМ категорию, автоматически захлопываем ВСЕ ОСТАЛЬНЫЕ
+      if (!isCurrentlyOpen) {
+        categories.forEach((otherCategory) => {
+          if (otherCategory !== currentCategory) {
+            otherCategory.removeAttribute('open');
+            otherCategory
+              .querySelector('summary')
+              ?.setAttribute('aria-expanded', 'false');
+          }
+        });
         summary.setAttribute('aria-expanded', 'true');
+      } else {
+        summary.setAttribute('aria-expanded', 'false');
       }
     });
   });
 
-  // 2. Подсветка активной ссылки и автоматическое раскрытие нужного details
+  // 2. АВТО-РАСКРЫТИЕ: Находим статью, которую сейчас читает пользователь
   sidebarLinks.forEach((link) => {
     const href = link.getAttribute('href');
     if (!href) return;
@@ -47,14 +50,15 @@ export const blogSidebar = (): void => {
       link.classList.add('_active');
       link.setAttribute('aria-current', 'page');
 
-      // Находим ближайший родительский тег <details> и нативно открываем его
+      // 🎯 Находим только ту категорию, где находится активная статья, и открываем ЕЁ ОДНУ
       const parentCategory = link.closest<HTMLDetailsElement>(
         '.blog-sidebar__category',
       );
       if (parentCategory) {
         parentCategory.setAttribute('open', '');
-        const currentSummary = parentCategory.querySelector('summary');
-        currentSummary?.setAttribute('aria-expanded', 'true');
+        parentCategory
+          .querySelector('summary')
+          ?.setAttribute('aria-expanded', 'true');
       }
     }
   });
