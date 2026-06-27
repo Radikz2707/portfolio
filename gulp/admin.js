@@ -127,7 +127,7 @@ export const copyAdminUI = (done) => {
     label: "${label}"
     folder: "${config.srcFolder}/content/${key}"
     create: true
-    slug: "{{slug}}"
+    slug: "{{title | slug}}"
     fields:
       - { label: "Заголовок статьи", name: "title", widget: "string" }
       - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }

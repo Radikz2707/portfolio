@@ -304,11 +304,39 @@ const generateCategoryCards = async () => {
     for (const file of articleFiles) {
       const fileName = path.basename(file, path.extname(file));
       const articleUrl = `./${category}/${fileName}.html`;
+      const fullFilePath = path.join(categoryDir, file);
 
-      // Генерация названия статьи из имени файла (slug) без вызова упавшего getFirstLineOfFile
-      const slugTitle = fileName.replace(/-/g, ' ');
-      const articleTitle =
-        slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
+      let articleTitle = '';
+
+      // 🔥 УНИВЕРСАЛЬНЫЙ ЧИТАТЕЛЬ: Находит первый реальный текст в файле
+      try {
+        const ext = path.extname(file).toLowerCase();
+        if (ext === '.md' && fs.existsSync(fullFilePath)) {
+          const fileContent = fs.readFileSync(fullFilePath, 'utf-8');
+
+          // Разбиваем на строки, убираем пробелы по краям и удаляем системные разделители ---
+          const lines = fileContent
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0 && line !== '---');
+
+          if (lines.length > 0) {
+            // Берем самую первую строку с текстом и очищаем от знака решетки #, если он есть
+            articleTitle = lines[0].replace(/^#\s+/, '').trim();
+          }
+        }
+      } catch (err) {
+        console.error(
+          `❌ Ошибка чтения заголовка в файле ${file}:`,
+          err.message,
+        );
+      }
+
+      // Резервный вариант
+      if (!articleTitle) {
+        const slugTitle = fileName.replace(/-/g, ' ');
+        articleTitle = slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
+      }
 
       categoryCardsHtml += `
         <li class='blog-category-card__item'>
