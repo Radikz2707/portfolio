@@ -76,15 +76,19 @@ const categoryNames = {
 
 export const getFirstLineOfFile = async (filePath) => {
   const ext = path.extname(filePath).toLowerCase();
+
+  // 🔥 1. ОБРАБОТКА WORD (.DOCX)
   if (ext === '.docx') {
     try {
       const docBuffer = await fsPromises.readFile(filePath);
       const resultHtml = await mammoth.convertToHtml({ buffer: docBuffer });
       const html = resultHtml.value || '';
       const h1Match = html.match(/<h1>(.*?)<\/h1>/);
+
       if (h1Match && h1Match[1]) {
         return h1Match[1].replace(/<[^>]*>/g, '').trim();
       }
+
       const resText = await mammoth.extractRawText({ buffer: docBuffer });
       const textValue = resText.value || '';
       const firstLine = textValue
@@ -99,22 +103,44 @@ export const getFirstLineOfFile = async (filePath) => {
     }
     return '';
   }
+
+  // 🔥 2. УНИВЕРСАЛЬНАЯ ОБРАБОТКА ТЕКСТА (.MD, .TXT, .RTF)
   try {
     const fileStream = fs.createReadStream(filePath, 'utf-8');
     const rl = readline.createInterface({
       input: fileStream,
       crlfDelay: Infinity,
     });
-    let firstLine = '';
+
+    let allLines = [];
     for await (const line of rl) {
       const trimmed = line.trim();
-      if (trimmed.startsWith('# ')) {
-        firstLine = trimmed.replace(/^#\s+/, '');
-        rl.close();
-        break;
+      // Игнорируем разделители метаданных админки
+      if (trimmed && trimmed !== '---') {
+        allLines.push(trimmed);
       }
+      // Читаем только первые несколько заполненных строк для оптимизации скорости
+      if (allLines.length >= 3) break;
     }
-    return firstLine;
+    rl.close();
+
+    if (allLines.length > 0) {
+      let titleLine = allLines[0];
+
+      // Если это классическое свойство от админки (title: "Заголовок")
+      if (titleLine.startsWith('title:')) {
+        return titleLine.replace(/^title:\s*["']?([^"']+)["']?/, '$1').trim();
+      }
+
+      // Если это стандартный заголовок Markdown (# Заголовок)
+      if (titleLine.startsWith('#')) {
+        return titleLine.replace(/^#\s*/, '').trim();
+      }
+
+      // Если это просто обычная первая строчка текста
+      return titleLine;
+    }
+    return '';
   } catch {
     return '';
   }

@@ -233,7 +233,7 @@ export function html() {
 }
 
 // =======================================================================
-// 📑 5. Генератор карточек категорий для главной страницы блога
+// 📑 4. Генератор карточек категорий для главной страницы блога
 // =======================================================================
 const generateCategoryCards = async () => {
   const contentRoot = path.join(config.srcFolder, 'content');
@@ -301,38 +301,24 @@ const generateCategoryCards = async () => {
       <ul class='blog-category-card__list' style='overflow: hidden; height: 0px;'>
     `;
 
+    // 🔥 ИСПРАВЛЕНО: Цикл последовательно дожидается выполнения getFirstLineOfFile для каждого файла
     for (const file of articleFiles) {
       const fileName = path.basename(file, path.extname(file));
       const articleUrl = `./${category}/${fileName}.html`;
       const fullFilePath = path.join(categoryDir, file);
 
+      // Вызываем всеядный импортированный метод из контент-процессора
       let articleTitle = '';
-
-      // 🔥 УНИВЕРСАЛЬНЫЙ ЧИТАТЕЛЬ: Находит первый реальный текст в файле
       try {
-        const ext = path.extname(file).toLowerCase();
-        if (ext === '.md' && fs.existsSync(fullFilePath)) {
-          const fileContent = fs.readFileSync(fullFilePath, 'utf-8');
-
-          // Разбиваем на строки, убираем пробелы по краям и удаляем системные разделители ---
-          const lines = fileContent
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter((line) => line.length > 0 && line !== '---');
-
-          if (lines.length > 0) {
-            // Берем самую первую строку с текстом и очищаем от знака решетки #, если он есть
-            articleTitle = lines[0].replace(/^#\s+/, '').trim();
-          }
-        }
+        articleTitle = await getFirstLineOfFile(fullFilePath);
       } catch (err) {
         console.error(
-          `❌ Ошибка чтения заголовка в файле ${file}:`,
+          `❌ Ошибка чтения заголовка для карточки ${file}:`,
           err.message,
         );
       }
 
-      // Резервный вариант
+      // Резервный вариант (если файл пустой или вернул ошибку)
       if (!articleTitle) {
         const slugTitle = fileName.replace(/-/g, ' ');
         articleTitle = slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
@@ -353,7 +339,7 @@ const generateCategoryCards = async () => {
 };
 
 // =======================================================================
-// 📑 4. Сборка всех страниц блога с корректными относительными путями
+// 📑 5. Сборка всех страниц блога с корректными относительными путями
 // =======================================================================
 export async function blogIndex(done) {
   const folderName = 'blog';
