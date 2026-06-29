@@ -66,32 +66,41 @@ export function createWebp() {
   const webpSources = [
     // 1. Берем только те картинки, которые реально лежат в корне src/images/ и подпапках компонентов
     path.join(config.srcFolder, 'images', '**', '*.{jpg,jpeg,png}'),
-    path.join(config.srcFolder, 'components', '**', 'img', '**', '*.{jpg,jpeg,png}'),
+    path.join(
+      config.srcFolder,
+      'components',
+      '**',
+      'img',
+      '**',
+      '*.{jpg,jpeg,png}',
+    ),
 
     // 2. Глухо изолируем и полностью запрещаем трогать системную папку фавиконок
     '!' + path.join(config.srcFolder, 'images', 'favicons', '**', '*'),
   ];
 
-  return src(webpSources, {
-    allowEmpty: true,
-    encoding: false,
-    // 🔥 ЖЕСТКИЙ ФИКС БАЗЫ: заставляем Gulp считать корнем папку src/
-    // Это полностью уничтожит появление папок "src/" внутри dist!
-    base: config.srcFolder
-  })
-    .pipe(plumber({ errorHandler: onError }))
+  return (
+    src(webpSources, {
+      allowEmpty: true,
+      encoding: false,
+      // 🔥 ЖЕСТКИЙ ФИКС БАЗЫ: заставляем Gulp считать корнем папку src/
+      // Это полностью уничтожит появление папок "src/" внутри dist!
+      base: config.srcFolder,
+    })
+      .pipe(plumber({ errorHandler: onError }))
 
-    // Быстрый кэш, чтобы не пересобирать то, что уже скомпилировано
-    .pipe(newer({ dest: config.paths.images.dest, ext: '.webp' }))
+      // Быстрый кэш, чтобы не пересобирать то, что уже скомпилировано
+      .pipe(newer({ dest: config.paths.images.dest, ext: '.webp' }))
 
-    // Ваш кастомный нативный плагин на базе Sharp
-    .pipe(sharpToWebp({ quality: config.settings.webpQuality || 70 }))
+      // Ваш кастомный нативный плагин на базе Sharp
+      .pipe(sharpToWebp({ quality: config.settings.webpQuality || 70 }))
 
-    // Отправляем все готовые файлы строго в плоскую или системную dist/images/
-    // С использованием плагина flatten(), если вы хотите свалить все в корень:
-    .pipe(flatten())
-    .pipe(dest(config.paths.images.dest))
-    .pipe(bs.stream());
+      // Отправляем все готовые файлы строго в плоскую или системную dist/images/
+      // С использованием плагина flatten(), если вы хотите свалить все в корень:
+      .pipe(flatten())
+      .pipe(dest(config.paths.images.dest))
+      .pipe(bs.stream())
+  );
 }
 
 // 4. Сборка векторного SVG-спрайта
@@ -119,85 +128,96 @@ export async function favs(done) {
   const partHtmlPath = config.paths.favicons.htmlOutput;
   const faviconsSrcDir = path.join(config.srcFolder, 'images', 'favicons');
 
-  if (!fs.existsSync(srcFavicon)) return done();
+  // Безопасный Guard Clause: если исходника нет, мягко выходим из таски
+  if (!fs.existsSync(srcFavicon)) {
+    console.warn(
+      `⚠️ [CONTROL]: Исходный файл фавиконки не найден по пути: ${srcFavicon}. Таска пропущена.`,
+    );
+    return done();
+  }
 
   try {
+    // Гарантируем создание целевых директорий до запуска Sharp
     if (!fs.existsSync(faviconsSrcDir))
       fs.mkdirSync(faviconsSrcDir, { recursive: true });
-    // 🔥 НОВОЕ: Сразу создаем папку в dist, если её нет
     if (!fs.existsSync(faviconsDestDir))
       fs.mkdirSync(faviconsDestDir, { recursive: true });
 
+    // Инициализируем инстанс Sharp внутри контролируемого контекста
     const sharpInstance = sharp(srcFavicon);
 
-    // Генерируем favicon-32.png
-    await sharpInstance
-      .clone()
-      .resize(32, 32)
-      .png()
-      .toFile(path.join(faviconsSrcDir, 'favicon-32.png'));
-    await sharpInstance
-      .clone()
-      .resize(32, 32)
-      .png()
-      .toFile(path.join(faviconsDestDir, 'favicon-32.png'));
+    // Изолированная генерация ресурсов через Promise.all для предотвращения Race Conditions
+    await Promise.all([
+      // Favicon 32x32
+      sharpInstance
+        .clone()
+        .resize(32, 32)
+        .png()
+        .toFile(path.join(faviconsSrcDir, 'favicon-32.png')),
+      sharpInstance
+        .clone()
+        .resize(32, 32)
+        .png()
+        .toFile(path.join(faviconsDestDir, 'favicon-32.png')),
 
-    // 🔥 НОВОЕ: Генерируем классический favicon.ico
-    await sharpInstance
-      .clone()
-      .resize(32, 32)
-      .toFormat('png')
-      .toFile(path.join(faviconsSrcDir, 'favicon.ico'));
-    await sharpInstance
-      .clone()
-      .resize(32, 32)
-      .toFormat('png')
-      .toFile(path.join(faviconsDestDir, 'favicon.ico'));
+      // Классический ICO
+      sharpInstance
+        .clone()
+        .resize(32, 32)
+        .toFormat('png')
+        .toFile(path.join(faviconsSrcDir, 'favicon.ico')),
+      sharpInstance
+        .clone()
+        .resize(32, 32)
+        .toFormat('png')
+        .toFile(path.join(faviconsDestDir, 'favicon.ico')),
 
-    // Apple-touch
-    await sharpInstance
-      .clone()
-      .resize(180, 180)
-      .png()
-      .toFile(path.join(faviconsSrcDir, 'apple-touch-icon.png'));
-    await sharpInstance
-      .clone()
-      .resize(180, 180)
-      .png()
-      .toFile(path.join(faviconsDestDir, 'apple-touch-icon.png'));
+      // Apple Touch Icon
+      sharpInstance
+        .clone()
+        .resize(180, 180)
+        .png()
+        .toFile(path.join(faviconsSrcDir, 'apple-touch-icon.png')),
+      sharpInstance
+        .clone()
+        .resize(180, 180)
+        .png()
+        .toFile(path.join(faviconsDestDir, 'apple-touch-icon.png')),
 
-    // Icon 192
-    await sharpInstance
-      .clone()
-      .resize(192, 192)
-      .png()
-      .toFile(path.join(faviconsSrcDir, 'icon-192.png'));
-    await sharpInstance
-      .clone()
-      .resize(192, 192)
-      .png()
-      .toFile(path.join(faviconsDestDir, 'icon-192.png'));
+      // Manifest Icons
+      sharpInstance
+        .clone()
+        .resize(192, 192)
+        .png()
+        .toFile(path.join(faviconsSrcDir, 'icon-192.png')),
+      sharpInstance
+        .clone()
+        .resize(192, 192)
+        .png()
+        .toFile(path.join(faviconsDestDir, 'icon-192.png')),
+      sharpInstance
+        .clone()
+        .resize(512, 512)
+        .png()
+        .toFile(path.join(faviconsSrcDir, 'icon-512.png')),
+      sharpInstance
+        .clone()
+        .resize(512, 512)
+        .png()
+        .toFile(path.join(faviconsDestDir, 'icon-512.png')),
+    ]);
 
-    // Icon 512
-    await sharpInstance
-      .clone()
-      .resize(512, 512)
-      .png()
-      .toFile(path.join(faviconsSrcDir, 'icon-512.png'));
-    await sharpInstance
-      .clone()
-      .resize(512, 512)
-      .png()
-      .toFile(path.join(faviconsDestDir, 'icon-512.png'));
-
-    // HTML линки
+    // Атомарная запись HTML-линков
     fs.writeFileSync(
       partHtmlPath,
-      `<link rel="shortcut icon" href="images/favicons/favicon.ico" type="image/x-icon">\n<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">\n<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">\n<link rel="manifest" href="images/favicons/manifest.webmanifest">`,
+      `<link rel="shortcut icon" href="images/favicons/favicon.ico" type="image/x-icon">\n` +
+        `<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">\n` +
+        `<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">\n` +
+        `<link rel="manifest" href="images/favicons/manifest.webmanifest">`,
       'utf8',
     );
 
-    // Манифест
+    // Конструирование контента манифеста
     const manifestContent = JSON.stringify(
       {
         name: config.siteName || 'Radik.Dev',
@@ -214,6 +234,7 @@ export async function favs(done) {
       2,
     );
 
+    // Синхронная запись манифестов в обе ветки структуры
     fs.writeFileSync(
       path.join(faviconsSrcDir, 'manifest.webmanifest'),
       manifestContent,
@@ -225,9 +246,24 @@ export async function favs(done) {
       'utf8',
     );
 
-    done();
+    console.log(
+      '🟢 [CONTROL]: Автоматизация фавиконок успешно и безопасно завершена.',
+    );
+    done(); // Корректный сигнал завершения таски при успехе
   } catch (err) {
-    onError(err);
+    // Перехват любой системной ошибки ввода-вывода или сбоя Sharp
+    console.error(
+      '🔴 [CONTROL ERROR]: Критический сбой в таске автоматизации фавиконок!',
+    );
+
+    // Логируем ошибку через ваш безопасный обработчик из ядра сервера
+    if (typeof onError === 'function') {
+      onError(err);
+    } else {
+      console.error(err.message || err);
+    }
+
+    // Принудительно возвращаем ошибку в Gulp-поток, предотвращая зависание терминала
     done(err);
   }
 }
