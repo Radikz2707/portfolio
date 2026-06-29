@@ -1,33 +1,19 @@
-# =========================================================================
-# ГЛОБАЛЬНАЯ КОНФИГУРАЦИЯ БЭКЕНДА (LOCAL PROXY GATEWAY)
-# =========================================================================
 backend:
   name: proxy
-  proxy_url: http://localhost:8081/api/v1
+  proxy_url: http://localhost:8082/api/v1
   repo: 'Radik/portfolio'
   branch: 'main'
 
-# Флаг для прямой синхронизации с жестким диском вашего компьютера
 local_backend: true
 
-# =========================================================================
-# ЦЕНТРАЛИЗОВАННЫЙ КАТАЛОГ ДЛЯ ЗАГРУЖАЕМЫХ МЕДИА-РЕСУРСОВ
-# =========================================================================
 media_folder: 'src/images/blog'
 public_folder: '/images/blog'
-preview_styles:
-  - '/css/app.min.css'
 
-# =========================================================================
-# СТРУКТУРА ПАНЕЛИ УПРАВЛЕНИЯ И ПОЛЕЙ ВВОДА (COLLECTIONS)
-# =========================================================================
 collections:
-  # ⚙️ Вкладка динамического управления путями Gulp и глобальными настройками
   - name: 'settings'
     label: '⚙️ Настройки Системы'
     delete: false
     files:
-      # Настройки путей сборщика Gulp
       - name: 'gulp_config'
         label: 'Конфигурация сборщика'
         file: 'src/content/system-settings.json'
@@ -52,16 +38,15 @@ collections:
               default: 'https://radik.dev',
             }
 
-      # 🗂️ Синхронное управление всеми русскими названиями категорий сайта
       - name: 'blog_categories'
         label: '🗂️ Управление категориями'
         file: 'src/content/categories.json'
         format: 'json'
         fields:
-          - label: "Список всех категорий сайта"
-            name: "categories_list"
-            widget: "list"
-            summary: "{{fields.title}} ({{fields.id}})"
+          - label: 'Список всех категорий сайта'
+            name: 'categories_list'
+            widget: 'list'
+            summary: '{{fields.title}} ({{fields.id}})'
             fields:
-              - { label: "Системный ID (имя папки латиницей, например: work)", name: "id", widget: "string" }
-              - { label: "Название на сайте (например: Мои работы)", name: "title", widget: "string" }
+              - { label: 'Системный ID', name: 'id', widget: 'string' }
+              - { label: 'Название на сайте', name: 'title', widget: 'string' }

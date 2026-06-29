@@ -1,9 +1,11 @@
+// gulp/admin.js — Безопасная синхронизация и сборка коллекций Decap CMS через безопасный компилятор YAML
 import gulp from 'gulp';
 import fs from 'fs';
 import path from 'path';
 import plumber from 'gulp-plumber';
+import YAML from 'yaml'; // Импортируем официальный и безопасный парсер
 import { config } from '../gulp.config.js';
-import { onError } from './server.js';
+import { onError, isProd } from './server.js';
 
 const { src, dest } = gulp;
 
@@ -41,19 +43,13 @@ export const copyAdminUI = (done) => {
     );
     if (fs.existsSync(htmlSrcPath)) {
       fs.copyFileSync(htmlSrcPath, path.join(adminDestDir, 'admin.html'));
-    } else {
-      console.warn(
-        `⚠️ [CONTROL]: Исходный файл admin.html не найден по пути: ${htmlSrcPath}`,
-      );
     }
 
-    // 3. Читаем текущий categories.json (с валидацией структуры)
+    // 3. Читаем категории (categories.json)
     let categoriesData = { categories_list: [] };
     if (fs.existsSync(categoriesPath)) {
       try {
-        const fileContent = fs.readFileSync(categoriesPath, 'utf-8');
-        categoriesData = JSON.parse(fileContent);
-
+        categoriesData = JSON.parse(fs.readFileSync(categoriesPath, 'utf-8'));
         if (!categoriesData.categories_list && !Array.isArray(categoriesData)) {
           categoriesData = {
             categories_list: Object.keys(categoriesData).map((key) => ({
@@ -67,11 +63,9 @@ export const copyAdminUI = (done) => {
       }
     }
 
-    if (!categoriesData.categories_list) {
-      categoriesData.categories_list = [];
-    }
+    if (!categoriesData.categories_list) categoriesData.categories_list = [];
 
-    // 4. ДЕТЕРМИНИРОВАННАЯ СИНХРОНИЗАЦИЯ С ДИСКОМ
+    // 4. СИНХРОНИЗАЦИЯ С ДИСКОМ
     if (fs.existsSync(contentSrcDir)) {
       const files = fs.readdirSync(contentSrcDir);
       let hasChanges = false;
@@ -82,14 +76,10 @@ export const copyAdminUI = (done) => {
           const existsInList = categoriesData.categories_list.some(
             (item) => item.id === file,
           );
-
           if (!existsInList) {
             const autoLabel = file.charAt(0).toUpperCase() + file.slice(1);
             categoriesData.categories_list.push({ id: file, title: autoLabel });
             hasChanges = true;
-            console.log(
-              `✨ [Синхронизация] Добавлен отсутствующий раздел: "${file}" -> "${autoLabel}"`,
-            );
           }
         }
       });
@@ -100,24 +90,41 @@ export const copyAdminUI = (done) => {
           JSON.stringify(categoriesData, null, 2),
           'utf-8',
         );
-        console.log(
-          `💾 [Синхронизация] Файл categories.json успешно обновлен!`,
-        );
       }
     }
 
-    // 5. ГЕНЕРАЦИЯ ДИНАМИЧЕСКИХ КОЛЛЕКЦИЙ YAML
+    // 5. ДЕТЕРМИНИРОВАННАЯ СБОРКА ОБЪЕКТА CONFIG.YML ЧЕРЕЗ PARSER
     const configYmlPath = path.join(
       config.srcFolder,
       'components',
       'admin',
       'config.yml',
     );
-    let configYmlContent = fs.existsSync(configYmlPath)
-      ? fs.readFileSync(configYmlPath, 'utf-8')
-      : '';
+    let cmsConfig = { collections: [] };
 
-    let dynamicCollections = '';
+    if (fs.existsSync(configYmlPath)) {
+      try {
+        const fileContent = fs.readFileSync(configYmlPath, 'utf-8');
+        cmsConfig = YAML.parse(fileContent) || { collections: [] };
+      } catch (e) {
+        console.error('❌ Ошибка парсинга базового config.yml:', e.message);
+      }
+    }
+
+    if (!cmsConfig.collections) cmsConfig.collections = [];
+
+    // Автоматический расчет путей стилей для iframe превью
+    const repoName =
+      config.repoPath && config.repoPath.includes('/')
+        ? config.repoPath.split('/')
+        : 'portfolio';
+    const cssPreviewPath = isProd
+      ? `/${repoName}/css/app.min.css`
+      : '/css/app.min.css';
+
+    cmsConfig.preview_styles = [cssPreviewPath];
+
+    // Динамически пушим папки контента в массив коллекций
     categoriesData.categories_list.forEach((item) => {
       const key = item.id;
       const rawLabel = item.title;
@@ -127,34 +134,50 @@ export const copyAdminUI = (done) => {
       const folderPath = path.join(contentSrcDir, key);
       if (!fs.existsSync(folderPath)) {
         fs.mkdirSync(folderPath, { recursive: true });
-        console.log(
-          `📁 [Синхронизация] Создана новая пустая директория контента: src/content/${key}`,
-        );
       }
 
       const emoji = emojiMap[key] || '📝';
       const label = `${emoji} ${rawLabel}`;
 
-      dynamicCollections += `
-  - name: "${key}"
-    label: "${label}"
-    folder: "${config.srcFolder}/content/${key}"
-    create: true
-    slug: "{{title | slug}}"
-    fields:
-      - { label: "Заголовок статьи", name: "title", widget: "string" }
-      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
-`;
+      const isAlreadyAdded = cmsConfig.collections.some(
+        (col) => col.name === key,
+      );
+
+      if (!isAlreadyAdded) {
+        cmsConfig.collections.push({
+          name: key,
+          label: label,
+          folder: `src/content/${key}`,
+          create: true,
+          slug: '{{title | slug}}',
+          identifier_field: 'title',
+          fields: [
+            { label: 'Заголовок статьи', name: 'title', widget: 'string' },
+            {
+              label: 'Контент статьи (Markdown)',
+              name: 'body',
+              widget: 'markdown',
+            },
+          ],
+        });
+      }
     });
 
-    // Атомарно пишем сгенерированный конфиг в dist/admin/
+    // 🔥 СБОРКА С ТОТАЛЬНЫМ УПРАВЛЕНИЕМ СТРОКАМИ:
+    // Опция defaultStringType: 'PLAIN' принудительно удаляет ВСЕ лишние кавычки из файла
+    //config.yml, приводя его к идеальному нативному синтаксису, понятному Decap CMS.
+    const finalYamlContent = YAML.stringify(cmsConfig, {
+      defaultStringType: 'PLAIN',
+    });
+
+    // Записываем чистый готовый config.yml в dist
     fs.writeFileSync(
       path.join(adminDestDir, 'config.yml'),
-      configYmlContent + dynamicCollections,
+      finalYamlContent,
       'utf-8',
     );
 
-    // 6. Копируем монолитный движок CMS из node_modules
+    // 6. Копируем движок CMS
     if (fs.existsSync(pkgDistDir)) {
       const cmsEngineSrc = path.join(pkgDistDir, 'decap-cms.js');
       if (fs.existsSync(cmsEngineSrc)) {
@@ -162,9 +185,7 @@ export const copyAdminUI = (done) => {
       }
     }
 
-    // 🔥 АТОМАРНЫЙ ПЕРЕХВАТ ДЕПЛОЯ ДЛЯ WINDOWS IIS (Устранение Race Condition)
-    // Вместо синхронной блокировки диска передаем файлы готового дистрибутива CMS
-    // во внутренний потоковый конвейер Gulp 5, гарантирующий закрытие дескрипторов
+    // 7. АТОМАРНЫЙ ДЕПЛОЙ В WINDOWS IIS
     const localServerAdminDir = path.join(
       config.localServerFolder || 'C:/inetpub/wwwroot/portfolio',
       'admin',
@@ -175,10 +196,10 @@ export const copyAdminUI = (done) => {
       encoding: false,
     })
       .pipe(plumber({ errorHandler: onError }))
-      .pipe(dest(localServerAdminDir)) // Потоковое копирование в IIS wwwroot
+      .pipe(dest(localServerAdminDir))
       .on('end', () => {
         console.log(
-          `✅ [Gulp] Графический интерфейс CMS полностью синхронизирован и развернут в IIS!`,
+          `✅ [Gulp] Графический интерфейс CMS полностью синхронизирован и скомпилирован в YAML!`,
         );
         done();
       });
@@ -187,7 +208,7 @@ export const copyAdminUI = (done) => {
       '🔴 [CONTROL ERROR] Фатальный сбой внутри модуля синхронизации админ-панели!',
     );
     onError(err);
-    done(err); // Предотвращаем зависание планировщика Gulp при ошибках ввода-вывода
+    done(err);
   }
 };
 

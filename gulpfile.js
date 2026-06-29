@@ -11,6 +11,7 @@ import rename from 'gulp-rename';
 import newer from 'gulp-newer';
 import dotenv from 'dotenv';
 import through2 from 'through2';
+import matter from 'gray-matter';
 
 // =========================================================================
 // ДИРЕКТИВНЫЕ ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ИНФРАСТРУКТУРЫ
@@ -140,7 +141,6 @@ const createDynamicContentTask = (folderName) => {
       ),
     ];
 
-    // Исключаем индексный файл блога, если обрабатывается папка blog
     if (folderName === 'blog') {
       sourcePath.push(
         '!' +
@@ -158,15 +158,12 @@ const createDynamicContentTask = (folderName) => {
       ? path.join(config.buildFolder, folderName)
       : path.join(config.buildFolder, 'blog', folderName);
 
-    // Флаг контроля: были ли реально изменены или созданы файлы в этом прогоне?
     let hasChanges = false;
 
     return (
       src(sourcePath, { allowEmpty: true, encoding: false })
         .pipe(plumber({ errorHandler: onError }))
-        // Интеллектуальный контроль кэша: сопоставляем исходники с .html в dist
         .pipe(newer({ dest: tempDestPath, ext: '.html' }))
-        // Фиксируем, что в поток попал хотя бы один изменившийся файл
         .pipe(
           through2.obj(function (file, enc, cb) {
             hasChanges = true;
@@ -174,14 +171,42 @@ const createDynamicContentTask = (folderName) => {
             cb();
           }),
         )
-        .pipe(compileContentStream()) // Ваш оригинальный парсер DOCX/MD -> HTML
-        .pipe(dest(tempDestPath)) // Первичная запись во временный каталог dist
+
+        // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ ПОТОКА: Вырезаем frontmatter из текста ДО компиляции Markdown
+        .pipe(
+          through2.obj(function (file, enc, cb) {
+            if (
+              file.isBuffer() &&
+              (file.extname === '.md' || file.extname === '.txt')
+            ) {
+              try {
+                const fileContent = file.contents.toString('utf8');
+
+                // Парсим файл: matter Парсер разделит метаданные и чистый текст
+                const parsed = matter(fileContent);
+
+                // Передаем вашему компилятору ИСКЛЮЧИТЕЛЬНО чистый текст без "title: ..."
+                file.contents = Buffer.from(parsed.content);
+
+                // Сохраняем заголовок в свойства файла (если вашей системе это понадобится)
+                file.frontMatter = parsed.data;
+              } catch (err) {
+                console.error(
+                  `❌ [CONTROL ERROR] Ошибка разбора Frontmatter в ${file.relative}:`,
+                  err.message,
+                );
+              }
+            }
+            this.push(file);
+            cb();
+          }),
+        )
+
+        .pipe(compileContentStream()) // Ваш компилятор получает кристально чистый контент статьи
+        .pipe(dest(tempDestPath))
         .on('end', () => {
-          // Если был запущен npm run clean или изменился файл — hasChanges гарантированно равен true.
-          // Если файлы не менялись, мы полностью блокируем тяжелую синхронную пост-обработку диска!
           if (hasChanges) {
             try {
-              // Вызов оригинального процессора стилей и разметки Radik.Dev
               wrapInMasterLayout(tempDestPath, folderName);
             } catch (err) {
               console.error(
@@ -196,7 +221,6 @@ const createDynamicContentTask = (folderName) => {
     );
   };
 
-  // Динамическое присвоение имени таски для отображения в терминале Gulp
   Object.defineProperty(task, 'name', { value: `content:${folderName}` });
   return task;
 };
