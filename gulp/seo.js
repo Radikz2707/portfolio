@@ -15,7 +15,7 @@ const { src, dest } = gulp;
 /**
  * 🌐 1. Автоматический генератор sitemap.xml на основе собранного HTML
  */
-export const generateSitemap = (done) => {
+export const generateSitemap = () => {
   const siteUrl = process.env.SITE_URL || 'https://radik.dev';
 
   return src(`${config.buildFolder}/**/*.html`, {
@@ -85,7 +85,7 @@ export const generateContentMap = async (done) => {
           let articleTitle = '';
           try {
             articleTitle = await getFirstLineOfFile(fullPath);
-          } catch (e) {
+          } catch {
             // Мягкий фолбэк, если файл занят
           }
 

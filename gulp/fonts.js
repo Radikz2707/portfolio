@@ -119,7 +119,7 @@ export function fontsStyle(done) {
     // 🔥 АВТОМАТИЗАЦИЯ ИМПОРТА С УЧЕТОМ ТОТАЛЬНОГО ПРИОРИТЕТА @USE
     if (fs.existsSync(mainStyleFile)) {
       let mainStyleContent = fs.readFileSync(mainStyleFile, 'utf-8');
-      const importDirective = `@import "base/fonts";`;
+      const importDirective = '@import "base/fonts";';
 
       if (
         !mainStyleContent.includes(importDirective) &&

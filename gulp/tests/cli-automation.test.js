@@ -24,7 +24,8 @@ const runGulpTask = (command) => {
       );
     }
     throw new Error(
-      `🛑 Ошибка команды "${command}": ${error.stderr?.toString() || error.message}`,
+      `Ошибка команды "${command}": ${error.stderr?.toString() || error.message}`,
+      { cause: error },
     );
   }
 };
@@ -143,7 +144,7 @@ describe('🚀 Интеграционные тесты CLI-автоматиза�
     // 2. Ломаем шаблон «секретным» кодом
     fs.writeFileSync(
       tsFile,
-      `export const autotestSecure = (): void => { const mySecretCode = "don't touch me"; console.log(mySecretCode); };`,
+      'export const autotestSecure = (): void => { const mySecretCode = "don\'t touch me"; console.log(mySecretCode); };',
     );
 
     // 3. Пытаемся удалить. Команда вернет лог ошибки, так как сработает предохранитель Gulp

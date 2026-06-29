@@ -7,7 +7,6 @@ import htmlhint from 'gulp-htmlhint';
 import htmlBeautify from 'gulp-html-beautify';
 import replace from 'gulp-replace';
 import path from 'path';
-import gulpIf from 'gulp-if';
 import rename from 'gulp-rename';
 import { onError, isProd, bs } from './server.js';
 import { Transform } from 'stream';
@@ -167,11 +166,6 @@ const fixPictureTags = () => {
 // 🚀 3. Основная задача сборки HTML кода корня сайта
 // =======================================================================
 export function html() {
-  const repoName = config.repoPath
-    ? config.repoPath.split('/')[1]
-    : 'portfolio';
-  const rootPrefix = isProd ? `/${repoName}` : '';
-
   const pipeline = [
     src([
       `${config.srcFolder}/*.html`,
@@ -190,11 +184,11 @@ export function html() {
         const m = marker.toUpperCase();
 
         if (m === 'GO_HOME') {
-          return `href="./index.html"`;
+          return "href='./index.html'";
         }
 
         if (m === 'GO_BLOG') {
-          return `href="./blog/index.html"`;
+          return "href='./blog/index.html'";
         }
 
         const anchorMap = {
@@ -399,6 +393,61 @@ export async function blogIndex(done) {
           indent: true,
         }),
       )
+
+      // 🛡️ ШАГ 1: АВТО-ПЕРЕИМЕНОВАНИЕ (Транслитерация с одинарными кавычками для ESLint)
+      .pipe(
+        rename((file) => {
+          const isRoot = file.dirname === '.' || file.dirname === '';
+          if (isRoot) {
+            file.basename = 'index';
+          } else {
+            // Принудительно приводим к нижнему регистру и переводим кириллицу
+            file.basename = file.basename
+              .toLowerCase()
+              .replace(/[\s_]+/g, '-') // Пробелы и подчёркивания меняем на дефисы
+              .replace(/[а-яё]/g, (char) => {
+                const map = {
+                  а: 'a',
+                  б: 'b',
+                  в: 'v',
+                  г: 'g',
+                  д: 'd',
+                  е: 'e',
+                  ё: 'yo',
+                  ж: 'zh',
+                  з: 'z',
+                  и: 'i',
+                  й: 'y',
+                  к: 'k',
+                  л: 'l',
+                  м: 'm',
+                  н: 'n',
+                  о: 'o',
+                  п: 'p',
+                  р: 'r',
+                  с: 's',
+                  т: 't',
+                  у: 'u',
+                  ф: 'f',
+                  х: 'h',
+                  ц: 'c',
+                  ч: 'ch',
+                  ш: 'sh',
+                  щ: 'shch',
+                  ъ: '',
+                  ы: 'y',
+                  ь: '',
+                  э: 'e',
+                  ю: 'yu',
+                  я: 'ya',
+                };
+                return map[char] !== undefined ? map[char] : char;
+              })
+              .replace(/[^a-z0-9-]/g, ''); // Удаляем любые другие запрещённые символы
+          }
+        }),
+      )
+
       .pipe(replace(/SITE_NAME/gi, config.siteName))
       .pipe(replace(/SITE_AUTHOR/gi, config.repoPath))
 
@@ -424,57 +473,38 @@ export async function blogIndex(done) {
         ),
       )
 
-      // 🛡️ АВТОМАТИЧЕСКИЙ ФИЛЬТР ПУТЕЙ СТАТЕЙ:
-      // Запускаем исправление внутренних путей для всех страниц блога
-      // Убрана проверка isRootBlogFile, чтобы обрабатывать blog/index.html тоже
+      // 🛡️ ШАГ 2: АВТОМАТИЧЕСКИЙ ФИЛЬТР ПУТЕЙ СТАТЕЙ
       .pipe(fixHtmlPaths())
 
       .pipe(replace(/@@sidebar/g, sidebarLinks))
       .pipe(replace(/@@categories/g, categoryCardsHtml))
 
       // 🌍 АВТОМАТИЧЕСКИЙ КРОСС-ПЛАТФОРМЕННЫЙ ФИКС ДИЗАЙНА (CSS / JS):
-      // Анализирует среду и на лету собирает пути для локалки, IIS и GitHub!
       .pipe(
         replace(
           /(href|src)=["']\s*\/?(css\/app\.min\.css|js\/app\.min\.js)["']/gi,
           function (match, attr, resource) {
-            // Извлекаем имя репозитория/папки из config.repoPath (например, 'portfolio')
             const repoName =
               config.repoPath && config.repoPath.includes('/')
-                ? config.repoPath.split('/')[1]
+                ? config.repoPath.split('/')
                 : 'portfolio';
 
-            // Определяем режим на основе флага или переменных (Gulp dev-сервер против Production билда)
-            // Если у вас в gulp/html.js используется глобальный флаг isProd, используйте его: !isProd
             const isGulpDevServer =
               typeof global.isProd === 'boolean' ? !global.isProd : true;
 
             if (isGulpDevServer) {
-              // 1. Для npm run dev (http://localhost:8080) — чистый относительный подъем
               return `${attr}="../../${resource}"`;
             } else {
-              // 2. Для локального IIS (http://localhost/portfolio) и GitHub Pages — абсолютный путь от корня сервера
               return `${attr}="/${repoName}/${resource}"`;
             }
           },
         ),
       )
 
-      // 🛡️ ПРИНУДИТЕЛЬНОЕ ИМЯ: Гарантируем расширение index.html для корня блога
-      .pipe(
-        rename((file) => {
-          const isRoot = file.dirname === '.' || file.dirname === '';
-          if (isRoot) {
-            file.basename = 'index';
-          }
-        }),
-      )
-
-      // 📦 ШАГ 1: Записываем готовый результат в локальный dist/blog/
+      // 📦 ШАГ 3: Записываем готовый результат в локальный dist/blog/
       .pipe(dest(path.join(config.buildFolder, 'blog')))
 
-      // 🚚 ШАГ 2: Принудительный деплой копии напрямую в веб-сервер Windows IIS wwwroot,
-      // чтобы файлы обновлялись в реальном времени при сохранении в редакторе
+      // 🚚 ШАГ 4: Принудительный деплой копии напрямую в веб-сервер Windows IIS wwwroot
       .pipe(
         dest(
           path.join(

@@ -18,4 +18,4 @@ indent_size = 2
 [*.{ts,tsx}]
 indent_style = space
 indent_size = 2
-quote_type = double
+quote_type = single

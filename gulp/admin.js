@@ -199,7 +199,7 @@ export const copyAdminUI = (done) => {
       .pipe(dest(localServerAdminDir))
       .on('end', () => {
         console.log(
-          `✅ [Gulp] Графический интерфейс CMS полностью синхронизирован и скомпилирован в YAML!`,
+          '✅ [Gulp] Графический интерфейс CMS полностью синхронизирован и скомпилирован в YAML!',
         );
         done();
       });

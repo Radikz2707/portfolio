@@ -17,9 +17,9 @@ export function deploy(done) {
   };
 
   const isNotConfigured =
-    !process.env.FTP_HOST || 
+    !process.env.FTP_HOST ||
     process.env.FTP_HOST === 'your-hosting.com' ||
-    !process.env.FTP_USER || 
+    !process.env.FTP_USER ||
     process.env.FTP_USER === 'your_ftp_username' ||
     !process.env.FTP_PASSWORD ||
     process.env.FTP_PASSWORD === 'your_ftp_password';
@@ -28,12 +28,16 @@ export function deploy(done) {
     const yellow = '\x1b[33m';
     const reset = '\x1b[0m';
     const bold = '\x1b[1m';
-    
-    console.log(`\n${yellow}==================================================`);
-    console.warn(`${bold}⚠️  [DEPLOY WARNING]: FTP-сервер не настроен!${reset}${yellow}`);
+
+    console.log(
+      `\n${yellow}==================================================`,
+    );
+    console.warn(
+      `${bold}⚠️  [DEPLOY WARNING]: FTP-сервер не настроен!${reset}${yellow}`,
+    );
     console.warn('Пожалуйста, создайте файл .env и укажите актуальные данные:');
     console.warn('FTP_HOST, FTP_USER, FTP_PASSWORD, FTP_DEST');
-    console.log(`\nДеплой на удаленный сервер пропущен.`);
+    console.log('\nДеплой на удаленный сервер пропущен.');
     console.log(`==================================================\n${reset}`);
     return done();
   }

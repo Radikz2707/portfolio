@@ -210,10 +210,10 @@ export async function favs(done) {
     // Атомарная запись HTML-линков
     fs.writeFileSync(
       partHtmlPath,
-      `<link rel="shortcut icon" href="images/favicons/favicon.ico" type="image/x-icon">\n` +
-        `<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">\n` +
-        `<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">\n` +
-        `<link rel="manifest" href="images/favicons/manifest.webmanifest">`,
+      '<link rel="shortcut icon" href="images/favicons/favicon.ico" type="image/x-icon">\n' +
+        '<link rel="icon" href="images/favicons/favicon-32.png" sizes="32x32" type="image/png">\n' +
+        '<link rel="apple-touch-icon" href="images/favicons/apple-touch-icon.png">\n' +
+        '<link rel="manifest" href="images/favicons/manifest.webmanifest">',
       'utf8',
     );
 

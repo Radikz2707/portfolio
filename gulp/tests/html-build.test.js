@@ -14,7 +14,8 @@ const runGulpTask = (command) => {
     return result.toString();
   } catch (error) {
     throw new Error(
-      `🛑 Ошибка команды "${command}": ${error.stderr?.toString() || error.message}`,
+      `Ошибка команды "${command}": ${error.stderr?.toString() || error.message}`,
+      { cause: error },
     );
   }
 };

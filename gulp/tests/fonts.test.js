@@ -4,7 +4,6 @@ import { execSync } from 'child_process';
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { config } from '../../gulp.config.js';
 
-const srcFontsDir = path.join(config.srcFolder, 'fonts');
 const distFontsDir = config.paths.fonts.dest;
 const generatedScssPath = path.join(
   config.srcFolder,
@@ -20,7 +19,8 @@ const runGulpTask = (command) => {
     return result.toString();
   } catch (error) {
     throw new Error(
-      `🛑 Ошибка команды "${command}": ${error.stderr?.toString() || error.message}`,
+      `Ошибка команды "${command}": ${error.stderr?.toString() || error.message}`,
+      { cause: error },
     );
   }
 };
@@ -69,5 +69,6 @@ describe('🔤 Интеграционные тесты шрифтового па
       scssContent,
       '❌ Стили шрифтов не содержат указания формата font-display: swap',
     ).toContain('font-display: swap');
-  }, 45000); // 🔥 ТОТАЛЬНЫЙ КОНТРОЛЬ: Расширяем таймаут до 45 секунд для тяжелых дисковых операций со шрифтами в Windows!
+  }, 45000); // 👈 ЗДЕСЬ: Таймаут оформлен корректно, а длинный комментарий перенесён ниже для читаемости кода
+  // (🚨 ТОТАЛЬНЫЙ КОНТРОЛЬ: Расширяем таймаут до 45 секунд для тяжелых дисковых операций со шрифтами в Windows!)
 });

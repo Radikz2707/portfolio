@@ -8,8 +8,6 @@ import zip from 'gulp-zip';
 import sharp from 'sharp';
 import { onError } from './server.js';
 import { Transform } from 'stream';
-import { createRequire } from 'module';
-import { exec } from 'node:child_process';
 
 const { src, dest } = gulp;
 
@@ -185,5 +183,3 @@ export function deployLocal() {
     buffer: true, // Читаем как чистый бинарный буфер байтов
   }).pipe(dest(config.localServerFolder || 'C:/inetpub/wwwroot/portfolio'));
 }
-
-
