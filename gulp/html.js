@@ -349,6 +349,12 @@ const generateCategoryCards = async () => {
         articleTitle = slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
       }
 
+      // Ограничиваем длину заголовка до 55 символов
+      const MAX_LENGTH = 55;
+      if (articleTitle.length > MAX_LENGTH) {
+        articleTitle = articleTitle.slice(0, MAX_LENGTH) + '...';
+      }
+
       return `
     <li class='blog-category-card__item'>
      <a class='blog-category-card__link' href='${articleUrl}'>${articleTitle}</a>

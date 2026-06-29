@@ -3,7 +3,6 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
 import mammoth from 'mammoth';
-import gulp from 'gulp';
 import markdown from 'gulp-markdown';
 import { Transform } from 'stream';
 
@@ -60,19 +59,6 @@ const getConfig = async () => {
 };
 
 const config = await getConfig();
-const { src } = gulp;
-
-const categoryNames = {
-  programming: 'Программирование',
-  'project-info': 'О проекте',
-  space: 'Космос',
-  poems: 'Мои стихи',
-  books: 'Книги',
-  travel: 'Путешествия',
-  games: 'Игры и развлечения',
-  psychology: 'Психология',
-  blog: 'Общий блог',
-};
 
 export const getFirstLineOfFile = async (filePath) => {
   const ext = path.extname(filePath).toLowerCase();
@@ -160,7 +146,7 @@ const getPluralArticles = (count) => {
   return `${count} статей`;
 };
 
-export const generateSidebarLinks = async (currentFolderName) => {
+export const generateSidebarLinks = async () => {
   const contentRoot = path.join(config.srcFolder, 'content');
   const categoriesPath = path.join(contentRoot, 'categories.json');
 
@@ -215,9 +201,9 @@ export const generateSidebarLinks = async (currentFolderName) => {
     const pluralText = getPluralArticles(validFilesCount.length);
 
     // 🔥 ИСПРАВЛЕНО: Добавлен атрибут open, чтобы категории изначально были открыты
-    fullSidebarHtml += `  <details class="blog-sidebar__category">\n`;
+    fullSidebarHtml += '  <details class="blog-sidebar__category">\n';
     fullSidebarHtml += `    <summary class="blog-sidebar__category-btn">${categoryTitle} (${pluralText})</summary>\n`;
-    fullSidebarHtml += `    <ul class="blog-sidebar__sublist">\n`;
+    fullSidebarHtml += '    <ul class="blog-sidebar__sublist">\n';
 
     const walkDirectory = async (currentDir, relativePath = '') => {
       let result = '';
@@ -285,7 +271,7 @@ export const generateSidebarLinks = async (currentFolderName) => {
     };
 
     fullSidebarHtml += await walkDirectory(dirPath);
-    fullSidebarHtml += `    </ul>\n  </details>\n`;
+    fullSidebarHtml += '    </ul>\n  </details>\n';
   }
   return fullSidebarHtml;
 };
