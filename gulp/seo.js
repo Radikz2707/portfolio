@@ -5,10 +5,9 @@ import sitemap from 'gulp-sitemap';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import through2 from 'through2';
 import plumber from 'gulp-plumber';
+import { onError } from './server.js';
 import { getFirstLineOfFile } from './utils/content-processor.js';
-import { onError } from './server.js'; // Наш безопасный обработчик ошибок
 
 dotenv.config();
 const { src, dest } = gulp;
@@ -19,7 +18,6 @@ const { src, dest } = gulp;
 export const generateSitemap = (done) => {
   const siteUrl = process.env.SITE_URL || 'https://radik.dev';
 
-  // Сканируем только готовые HTML-файлы в dist/ паблике
   return src(`${config.buildFolder}/**/*.html`, {
     read: false,
     allowEmpty: true,
@@ -31,16 +29,8 @@ export const generateSitemap = (done) => {
         changefreq: 'weekly',
         priority: 0.7,
         mappings: [
-          {
-            pages: ['index.html'],
-            priority: 1.0,
-            changefreq: 'daily',
-          },
-          {
-            pages: ['blog/index.html'],
-            priority: 0.9,
-            changefreq: 'daily',
-          },
+          { pages: ['index.html'], priority: 1.0, changefreq: 'daily' },
+          { pages: ['blog/index.html'], priority: 0.9, changefreq: 'daily' },
         ],
       }),
     )
@@ -49,30 +39,56 @@ export const generateSitemap = (done) => {
 generateSitemap.displayName = 'seo:sitemap';
 
 /**
- * 📑 2. Кастомный генератор карт контента (content-map.json) из исходных MD-файлов
+ * 📑 2. Кастомный генератор карт контента (content-map.json) без использования through2
  */
-export const generateContentMap = (done) => {
+export const generateContentMap = async (done) => {
   const contentMap = [];
   const contentRoot = path.join(config.srcFolder, 'content');
   const destDir = config.buildFolder;
 
-  return src(`${contentRoot}/**/*.md`, { allowEmpty: true })
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(
-      through2.obj(async function (file, enc, cb) {
-        if (file.isNull()) return cb(null, file);
+  // Безопасный Guard Clause
+  if (!fs.existsSync(contentRoot)) {
+    console.warn('⚠️ [CONTROL SEO]: Исходная папка контента не найдена.');
+    return done();
+  }
 
-        try {
-          const relativePath = path.relative(contentRoot, file.path);
-          const fileName = path.basename(file.path, '.md');
+  try {
+    // Рекурсивный обход директории исходников через нативный Node.js fs
+    const scanDirectory = async (dir) => {
+      const items = fs.readdirSync(dir);
 
-          if (fileName.toLowerCase() === 'index' || fileName.startsWith('.')) {
-            return cb(null, file);
+      for (const item of items) {
+        const fullPath = path.join(dir, item);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          await scanDirectory(fullPath); // Рекурсивный спуск в подпапки
+        } else if (
+          stat.isFile() &&
+          path.extname(item).toLowerCase() === '.md'
+        ) {
+          const fileName = path.basename(item, '.md');
+
+          // Игнорируем индексы и временные файлы Windows / Word
+          if (
+            fileName.toLowerCase() === 'index' ||
+            fileName.startsWith('.') ||
+            fileName.startsWith('~$')
+          ) {
+            continue;
           }
 
+          const relativePath = path.relative(contentRoot, fullPath);
           const category = path.dirname(relativePath).replace(/\\/g, '/');
 
-          let articleTitle = await getFirstLineOfFile(file.path);
+          // Извлекаем первую строчку-заголовок статьи
+          let articleTitle = '';
+          try {
+            articleTitle = await getFirstLineOfFile(fullPath);
+          } catch (e) {
+            // Мягкий фолбэк, если файл занят
+          }
+
           if (!articleTitle) {
             articleTitle = fileName.replace(/-/g, ' ');
             articleTitle =
@@ -85,46 +101,31 @@ export const generateContentMap = (done) => {
             title: articleTitle,
             url: articleUrl,
             category: category,
-            modified: file.stat?.mtime || new Date().toISOString(),
+            modified: stat.mtime || new Date().toISOString(),
           });
-
-          cb(null, file); // При успешном выполнении коллбэк работает штатно
-        } catch (err) {
-          console.error(
-            `❌ [CONTROL SEO ERROR] Ошибка обработки файла ${file.relative}:`,
-            err.message,
-          );
-          // 🔥 ИСПРАВЛЕНО: Безопасно транслируем ошибку в поток plumber через контекст функции
-          this.emit('error', err);
         }
-      }),
-    )
-    .on('end', () => {
-      try {
-        // Гарантируем существование целевой папки перед записью JSON
-        if (!fs.existsSync(destDir)) {
-          fs.mkdirSync(destDir, { recursive: true });
-        }
-
-        const destPath = path.join(destDir, 'content-map.json');
-        fs.writeFileSync(
-          destPath,
-          JSON.stringify(contentMap, null, 2),
-          'utf-8',
-        );
-
-        console.log(
-          '✅ Карта контента content-map.json успешно обновлена в dist/',
-        );
-
-        // 🔥 КРИТИЧЕСКИЙ СИГНАЛ: Явно уведомляем Gulp о том, что таска завершена на 100%
-        if (typeof done === 'function') done();
-      } catch (err) {
-        console.error(
-          '🔴 [CONTROL SEO ERROR] Не удалось записать content-map.json на диск!',
-        );
-        if (typeof done === 'function') done(err);
       }
-    });
+    };
+
+    // Запускаем нативное сканирование
+    await scanDirectory(contentRoot);
+
+    // Гарантируем наличие папки dist перед записью JSON
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    const destPath = path.join(destDir, 'content-map.json');
+    fs.writeFileSync(destPath, JSON.stringify(contentMap, null, 2), 'utf-8');
+
+    console.log('✅ Карта контента content-map.json успешно обновлена в dist/');
+    done(); // Намертво закрываем таску Gulp
+  } catch (err) {
+    console.error(
+      '🔴 [CONTROL SEO ERROR] Фатальный сбой сборки карты контента!',
+    );
+    onError(err);
+    done(err);
+  }
 };
 generateContentMap.displayName = 'seo:content-map';
