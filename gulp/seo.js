@@ -66,14 +66,12 @@ export const generateContentMap = (done) => {
           const relativePath = path.relative(contentRoot, file.path);
           const fileName = path.basename(file.path, '.md');
 
-          // Пропускаем индексные и служебные файлы кэша
           if (fileName.toLowerCase() === 'index' || fileName.startsWith('.')) {
             return cb(null, file);
           }
 
           const category = path.dirname(relativePath).replace(/\\/g, '/');
 
-          // Извлекаем заголовок статьи с помощью вашего родного хелпера
           let articleTitle = await getFirstLineOfFile(file.path);
           if (!articleTitle) {
             articleTitle = fileName.replace(/-/g, ' ');
@@ -81,7 +79,6 @@ export const generateContentMap = (done) => {
               articleTitle.charAt(0).toUpperCase() + articleTitle.slice(1);
           }
 
-          // Формируем ЧПУ ссылку в соответствии с логикой blogIndex
           const articleUrl = `/blog/${category}/${fileName}.html`;
 
           contentMap.push({
@@ -91,13 +88,14 @@ export const generateContentMap = (done) => {
             modified: file.stat?.mtime || new Date().toISOString(),
           });
 
-          cb(null, file);
+          cb(null, file); // При успешном выполнении коллбэк работает штатно
         } catch (err) {
           console.error(
             `❌ [CONTROL SEO ERROR] Ошибка обработки файла ${file.relative}:`,
             err.message,
           );
-          cb(err); // Транслируем ошибку в поток plumber
+          // 🔥 ИСПРАВЛЕНО: Безопасно транслируем ошибку в поток plumber через контекст функции
+          this.emit('error', err);
         }
       }),
     )
