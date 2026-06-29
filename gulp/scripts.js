@@ -1,4 +1,4 @@
-// === ОБНОВЛЕННЫЙ GULP/SCRIPTS.JS ===
+// gulp/scripts.js — Абсолютный контроль компиляции TypeScript/JavaScript сред
 import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
@@ -8,20 +8,21 @@ import dotenv from 'dotenv';
 import plumber from 'gulp-plumber';
 import { createRequire } from 'module';
 
-// Загружаем переменные окружения из .env файла
 dotenv.config();
 
 const require = createRequire(import.meta.url);
 const webpackStream = require('webpack-stream');
 const webpack = require('webpack');
 const TerserPlugin = require('terser-webpack-plugin');
-import { onError, isProd, bs } from './server.js';
+import { onError, isProd, safeReload } from './server.js'; // Используем безопасный safeReload
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const { src, dest } = gulp;
+
 export function scripts() {
+  // Конфигурация Webpack вынесена в изолированную область
   const webpackConfig = {
     mode: isProd ? 'production' : 'development',
     target: ['web', 'es2015'],
@@ -31,7 +32,6 @@ export function scripts() {
       app: path.resolve(config.paths.scripts.src),
     },
     output: {
-      // Поддерживаем динамическое имя в зависимости от чанка
       filename: '[name].min.js',
       chunkFilename: 'js/chunks/chunk-[name].js',
       publicPath: '',
@@ -69,7 +69,6 @@ export function scripts() {
         },
       ],
     },
-    // 🔥 КРИТИЧЕСКИЙ БЛОК: ОПТИМИЗАЦИЯ И РАЗДЕЛЕНИЕ КОДА
     optimization: {
       minimize: isProd,
       minimizer: [
@@ -86,7 +85,6 @@ export function scripts() {
           },
         }),
       ],
-      // Настройка автоматического разделения кода
       splitChunks: isProd
         ? {
             cacheGroups: {
@@ -105,25 +103,51 @@ export function scripts() {
     ],
   };
 
+  // Локальная копия потока для безопасной трансляции контекста ошибок
+  let gulpStream;
+
   const pipeline = [
     src(config.paths.scripts.src, { encoding: false }),
     plumber({ errorHandler: onError }),
+
+    // Передаем кастомный обработчик логирования Webpack-статистики
     webpackStream(webpackConfig, webpack, function (err, stats) {
       if (err) return;
+
       if (stats.hasErrors()) {
         const info = stats.toJson();
-        console.error('\x1b[31m[Webpack Error]\x1b[0m', info.errors[0].message);
-        if (typeof onError === 'function') {
-          onError.call(this, new Error('Webpack compilation failed.'));
+        console.error(
+          '\n🔴 \x1b[31m[Webpack Error]\x1b[0m',
+          info.errors[0].message,
+        );
+
+        // 🔥 ИСПРАВЛЕНИЕ ЗАВИСАНИЯ: Передаем управление в Gulp-поток через сохраненную ссылку
+        if (gulpStream && typeof gulpStream.emit === 'function') {
+          gulpStream.emit('end');
         }
       }
     }),
+
+    // Запись готовых файлов в локальный dist
     dest(config.paths.scripts.dest),
+
+    // 🔥 СИНХРОНИЗАЦИЯ С ЛОКАЛЬНЫМ СЕРВЕРОМ IIS
+    dest(
+      path.join(
+        config.localServerFolder || 'C:/inetpub/wwwroot/portfolio',
+        'js',
+      ),
+    ),
   ];
 
-  return pipeline
-    .reduce((stream, plugin) => stream.pipe(plugin))
-    .on('end', () => {
-      bs.reload();
-    });
+  // Сохраняем ссылку на собранный конвейер до возврата в Gulp планировщик
+  gulpStream = pipeline.reduce((stream, plugin) => stream.pipe(plugin));
+
+  // Возвращаем детерминированный поток с безопасной перезагрузкой
+  return gulpStream.on('end', () => {
+    // Даем микро-задержку в 100мс, чтобы ОС успела закрыть дескрипторы всех чанков (vendor, app)
+    setTimeout(() => {
+      safeReload();
+    }, 100);
+  });
 }

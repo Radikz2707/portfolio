@@ -4,7 +4,6 @@
 // Нацеливаемся на body внутри iframe, чтобы нейтрализовать глобальный align-items: center
 iframe,
 body {
-
   // 🔥 СБРАСЫВАЕМ ЦЕНТРИРОВАНИЕ ИЗ _global.scss
   display: block !important;
   align-items: stretch !important;

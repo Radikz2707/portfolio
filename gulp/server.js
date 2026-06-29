@@ -5,10 +5,14 @@ import path from 'path';
 import fs from 'fs';
 import { deployLocal } from './utils.js';
 
-const { watch, series } = gulp;
+const { watch } = gulp;
 export const bs = browserSync.create();
 
 export const isProd = process.env.NODE_ENV === 'production';
+
+// Инкапсулированные семафоры состояния (защищены от внешних мутаций)
+let allowReload = false;
+let isServerInitialized = false;
 
 // =========================================================================
 // 🎛️ 1. БЕЗОПАСНЫЙ ОБРАБОТЧИК ОШИБОК ДЛЯ ПОТОКОВ GULP 5 (STREAMX)
@@ -18,29 +22,30 @@ export const onError = function (err) {
     '\x1b[31m%s\x1b[0m',
     `[Error] ${err.plugin || 'Gulp'}: ${err.message || err.toString()}`,
   );
-  if (err.plugin !== 'webpack-stream') {
+  if (err.plugin !== 'webpack-stream' && typeof this?.emit === 'function') {
     this.emit('end');
   }
 };
 
+/**
+ * ИЗОЛИРОВАННЫЙ И БЕЗОПАСНЫЙ ТРИГГЕР ПЕРЕЗАГРУЗКИ СТРАНИЦ
+ * (Полная замена global.safeReload)
+ */
+export const safeReload = () => {
+  if (isServerInitialized && allowReload && typeof bs.reload === 'function') {
+    bs.reload();
+  }
+};
+
 // =========================================================================
-// 🌐 2. ИНИЦИАЛИЗАЦИЯ ЛОКАЛЬНОГО СЕРВЕРА BROWSER-SYNC (ИСПРАВЛЕНО)
+// 🌐 2. ИНИЦИАЛИЗАЦИЯ ЛОКАЛЬНОГО СЕРВЕРА BROWSER-SYNC
 // =========================================================================
 export function browsersync() {
   return new Promise((resolve) => {
-    let allowReload = false;
-
     // Безопасный таймер блокировки раннего релоада (пока идет инициализация)
     setTimeout(() => {
       allowReload = true;
     }, 4000);
-
-    // Глобальная изолированная функция перезагрузки страниц
-    global.safeReload = function () {
-      if (allowReload) {
-        bs.reload();
-      }
-    };
 
     setTimeout(() => {
       bs.init({
@@ -62,6 +67,7 @@ export function browsersync() {
         },
       });
 
+      isServerInitialized = true;
       resolve();
     }, 1000);
   });
@@ -95,12 +101,11 @@ export function startwatch(done) {
   // Универсальный и безопасный асинхронный мост для нативного деплоя
   const runWithDeploy = (actionCallback) => {
     return () => {
-      // Сначала даем отработать таске сборки ресурса (styles, scripts и т.д.)
       if (typeof actionCallback === 'function') actionCallback();
 
       // Сразу следом вызываем нативный быстрый деплой и делаем безопасный релоад
       deployLocal(() => {
-        global.safeReload();
+        safeReload(); // <-- Используем безопасный именованный экспорт
       });
     };
   };
@@ -136,7 +141,7 @@ export function startwatch(done) {
     dynamicRun('html', 'html')(runWithDeploy());
   });
 
-  // 4. Отслеживание Markdown-контента блога
+  // 4. Отслеживание Markdown-контента блога и Word-документов
   watch(
     [
       config.srcFolder + '/content/**/*',
@@ -152,8 +157,9 @@ export function startwatch(done) {
     const folder = relativePath.split(path.sep);
 
     if (folder && folder[0]) {
+      const currentCategory = folder[0];
       console.log(
-        `📝 [Content Update] Обновление контента: ${path.basename(filePath)}`,
+        `📝 [Content Update] Обновление подкатегории [${currentCategory}]: ${path.basename(filePath)}`,
       );
 
       const updateContent = async () => {
@@ -162,21 +168,32 @@ export function startwatch(done) {
             await import('./utils/content-processor.js');
           const { blogIndex } = await import('./html.js');
 
-          const destFolder = path.join(config.buildFolder, 'blog');
-          if (!fs.existsSync(destFolder))
-            fs.mkdirSync(destFolder, { recursive: true });
+          // 🔥 ИСПРАВЛЕНИЕ РЕЙС-КОНДИШЕНА ПУТЕЙ:
+          // Вычисляем корректную целевую вложенность для сохранения структуры категорий блога
+          const isMainBlog = currentCategory === 'blog';
+          const destFolder = isMainBlog
+            ? path.join(config.buildFolder, currentCategory)
+            : path.join(config.buildFolder, 'blog', currentCategory);
 
+          if (!fs.existsSync(destFolder)) {
+            fs.mkdirSync(destFolder, { recursive: true });
+          }
+
+          // Атомарное копирование с сохранением имени
           fs.copyFileSync(
             filePath,
             path.join(destFolder, path.basename(filePath)),
           );
-          await wrapInMasterLayout(destFolder, 'blog');
+
+          // Запускаем пересборку структуры стилей и метаданных конкретной папки
+          await wrapInMasterLayout(destFolder, currentCategory);
 
           blogIndex(() => {
-            console.log('✅ Контент успешно обновлен в dist');
-            // Деплоим обновленный контент блога в IIS на лету
+            console.log(
+              `✅ Контент категории ${currentCategory} успешно обновлен в dist`,
+            );
             deployLocal(() => {
-              global.safeReload();
+              safeReload(); // <-- Используем безопасный экспортируемый метод
             });
           });
         } catch (err) {

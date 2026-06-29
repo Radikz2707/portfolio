@@ -16,7 +16,7 @@
     "module": "gulp --gulpfile gulp/system/gulp.module.js module",
     "remove": "gulp --gulpfile gulp/system/gulp.remove.js remove",
     "help": "gulp --gulpfile gulp/system/gulp.help.js help",
-    "lint": "gulp lintJs lintCss",
+    "lint": "cross-env NODE_NO_WARNINGS=1 G_MESSAGES_DEBUG=none node --no-deprecation node_modules/gulp/bin/gulp.js lintJs lintCss",
     "lint:fix": "npx stylelint \"src/**/*.scss\" --fix",
     "clean": "gulp cleandist",
     "update-modules": "npx npm-check-updates -i --no-cache && npm install --legacy-peer-deps",

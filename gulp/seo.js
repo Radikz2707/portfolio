@@ -1,4 +1,4 @@
-// gulp/seo.js
+// gulp/seo.js — Абсолютный контроль поисковой оптимизации и карт контента
 import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import sitemap from 'gulp-sitemap';
@@ -6,7 +6,9 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import through2 from 'through2';
+import plumber from 'gulp-plumber';
 import { getFirstLineOfFile } from './utils/content-processor.js';
+import { onError } from './server.js'; // Наш безопасный обработчик ошибок
 
 dotenv.config();
 const { src, dest } = gulp;
@@ -22,6 +24,7 @@ export const generateSitemap = (done) => {
     read: false,
     allowEmpty: true,
   })
+    .pipe(plumber({ errorHandler: onError }))
     .pipe(
       sitemap({
         siteUrl: siteUrl,
@@ -48,51 +51,82 @@ generateSitemap.displayName = 'seo:sitemap';
 /**
  * 📑 2. Кастомный генератор карт контента (content-map.json) из исходных MD-файлов
  */
-export const generateContentMap = () => {
+export const generateContentMap = (done) => {
   const contentMap = [];
   const contentRoot = path.join(config.srcFolder, 'content');
+  const destDir = config.buildFolder;
 
   return src(`${contentRoot}/**/*.md`, { allowEmpty: true })
+    .pipe(plumber({ errorHandler: onError }))
     .pipe(
       through2.obj(async function (file, enc, cb) {
         if (file.isNull()) return cb(null, file);
 
-        const relativePath = path.relative(contentRoot, file.path);
-        const fileName = path.basename(file.path, '.md');
+        try {
+          const relativePath = path.relative(contentRoot, file.path);
+          const fileName = path.basename(file.path, '.md');
 
-        // Пропускаем индексные и служебные файлы кэша
-        if (fileName.toLowerCase() === 'index' || fileName.startsWith('.')) {
-          return cb(null, file);
+          // Пропускаем индексные и служебные файлы кэша
+          if (fileName.toLowerCase() === 'index' || fileName.startsWith('.')) {
+            return cb(null, file);
+          }
+
+          const category = path.dirname(relativePath).replace(/\\/g, '/');
+
+          // Извлекаем заголовок статьи с помощью вашего родного хелпера
+          let articleTitle = await getFirstLineOfFile(file.path);
+          if (!articleTitle) {
+            articleTitle = fileName.replace(/-/g, ' ');
+            articleTitle =
+              articleTitle.charAt(0).toUpperCase() + articleTitle.slice(1);
+          }
+
+          // Формируем ЧПУ ссылку в соответствии с логикой blogIndex
+          const articleUrl = `/blog/${category}/${fileName}.html`;
+
+          contentMap.push({
+            title: articleTitle,
+            url: articleUrl,
+            category: category,
+            modified: file.stat?.mtime || new Date().toISOString(),
+          });
+
+          cb(null, file);
+        } catch (err) {
+          console.error(
+            `❌ [CONTROL SEO ERROR] Ошибка обработки файла ${file.relative}:`,
+            err.message,
+          );
+          cb(err); // Транслируем ошибку в поток plumber
         }
-
-        const category = path.dirname(relativePath).replace(/\\/g, '/');
-        // Извлекаем заголовок статьи с помощью вашего родного хелпера
-        let articleTitle = await getFirstLineOfFile(file.path);
-        if (!articleTitle) {
-          articleTitle = fileName.replace(/-/g, ' ');
-          articleTitle =
-            articleTitle.charAt(0).toUpperCase() + articleTitle.slice(1);
-        }
-
-        // Формируем ЧПУ ссылку в соответствии с логикой blogIndex
-        const articleUrl = `/blog/${category}/${fileName}.html`;
-
-        contentMap.push({
-          title: articleTitle,
-          url: articleUrl,
-          category: category,
-          modified: file.stat?.mtime || new Date().toISOString(),
-        });
-
-        cb(null, file);
       }),
     )
     .on('end', () => {
-      const destPath = path.join(config.buildFolder, 'content-map.json');
-      fs.writeFileSync(destPath, JSON.stringify(contentMap, null, 2), 'utf-8');
-      console.log(
-        '✅ Карта контента content-map.json успешно обновлена в dist/',
-      );
+      try {
+        // Гарантируем существование целевой папки перед записью JSON
+        if (!fs.existsSync(destDir)) {
+          fs.mkdirSync(destDir, { recursive: true });
+        }
+
+        const destPath = path.join(destDir, 'content-map.json');
+        fs.writeFileSync(
+          destPath,
+          JSON.stringify(contentMap, null, 2),
+          'utf-8',
+        );
+
+        console.log(
+          '✅ Карта контента content-map.json успешно обновлена в dist/',
+        );
+
+        // 🔥 КРИТИЧЕСКИЙ СИГНАЛ: Явно уведомляем Gulp о том, что таска завершена на 100%
+        if (typeof done === 'function') done();
+      } catch (err) {
+        console.error(
+          '🔴 [CONTROL SEO ERROR] Не удалось записать content-map.json на диск!',
+        );
+        if (typeof done === 'function') done(err);
+      }
     });
 };
 generateContentMap.displayName = 'seo:content-map';

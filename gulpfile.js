@@ -10,6 +10,7 @@ import htmlBeautify from 'gulp-html-beautify';
 import rename from 'gulp-rename';
 import newer from 'gulp-newer';
 import dotenv from 'dotenv';
+import through2 from 'through2';
 
 // =========================================================================
 // ДИРЕКТИВНЫЕ ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ИНФРАСТРУКТУРЫ
@@ -28,6 +29,7 @@ import {
 import { browsersync, startwatch, onError, isProd, bs } from './gulp/server.js';
 import { lintCss, lintJs } from './gulp/lint.js';
 import { cleandist, zipFiles, deployLocal } from './gulp/utils.js';
+import { getBuildSignature } from './gulp/system/gulp.cache.js';
 
 // Инструменты автоматизации CLI (БЭМ CRUD & Инициализация)
 import { create } from './gulp/system/gulp.create.js';
@@ -41,7 +43,8 @@ import { generateSitemap, generateContentMap } from './gulp/seo.js';
 import { copyAdminUI } from './gulp/admin.js';
 
 // Глобальный отпечаток сборки для инвалидации кэша ресурсов (Cache Busting)
-global.buildSig = Date.now();
+const version = getBuildSignature();
+console.log(`📦 [CONTROL]: Сборка выполняется под сигнатурой: ${version}`);
 
 const { parallel, series, src, dest } = gulp;
 const loadedModules = {};
@@ -137,6 +140,7 @@ const createDynamicContentTask = (folderName) => {
       ),
     ];
 
+    // Исключаем индексный файл блога, если обрабатывается папка blog
     if (folderName === 'blog') {
       sourcePath.push(
         '!' +
@@ -154,18 +158,45 @@ const createDynamicContentTask = (folderName) => {
       ? path.join(config.buildFolder, folderName)
       : path.join(config.buildFolder, 'blog', folderName);
 
-    return src(sourcePath, { allowEmpty: true, encoding: false })
-      .pipe(plumber({ errorHandler: onError }))
-      .pipe(newer(tempDestPath))
-      .pipe(compileContentStream())
-      .pipe(dest(tempDestPath))
-      .on('end', () => {
-        wrapInMasterLayout(tempDestPath, folderName)
-          .then(() => done())
-          .catch((err) => done(err));
-      });
+    // Флаг контроля: были ли реально изменены или созданы файлы в этом прогоне?
+    let hasChanges = false;
+
+    return (
+      src(sourcePath, { allowEmpty: true, encoding: false })
+        .pipe(plumber({ errorHandler: onError }))
+        // Интеллектуальный контроль кэша: сопоставляем исходники с .html в dist
+        .pipe(newer({ dest: tempDestPath, ext: '.html' }))
+        // Фиксируем, что в поток попал хотя бы один изменившийся файл
+        .pipe(
+          through2.obj(function (file, enc, cb) {
+            hasChanges = true;
+            this.push(file);
+            cb();
+          }),
+        )
+        .pipe(compileContentStream()) // Ваш оригинальный парсер DOCX/MD -> HTML
+        .pipe(dest(tempDestPath)) // Первичная запись во временный каталог dist
+        .on('end', () => {
+          // Если был запущен npm run clean или изменился файл — hasChanges гарантированно равен true.
+          // Если файлы не менялись, мы полностью блокируем тяжелую синхронную пост-обработку диска!
+          if (hasChanges) {
+            try {
+              // Вызов оригинального процессора стилей и разметки Radik.Dev
+              wrapInMasterLayout(tempDestPath, folderName);
+            } catch (err) {
+              console.error(
+                `❌ [CONTROL ERROR] Сбой wrapInMasterLayout для папки ${folderName}:`,
+                err.message,
+              );
+              return done(err);
+            }
+          }
+          done();
+        })
+    );
   };
 
+  // Динамическое присвоение имени таски для отображения в терминале Gulp
   Object.defineProperty(task, 'name', { value: `content:${folderName}` });
   return task;
 };
@@ -234,16 +265,18 @@ export default series(
   parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
   runTask('scripts'),
   runTask('html'),
-  parallel(
-    runTask('blogIndex'),
-    runTask('styles'),
-    runTask('imagesDev'),
-    runTask('createWebp'),
-    runTask('sprite'),
-    copyAdminUI,
-    ...dynamicContentFolderNames.map((folder) =>
-      createDynamicContentTask(folder),
+  series(
+    parallel(
+      runTask('styles'),
+      runTask('imagesDev'),
+      runTask('createWebp'),
+      runTask('sprite'),
+      copyAdminUI,
+      ...dynamicContentFolderNames.map((folder) =>
+        createDynamicContentTask(folder),
+      ),
     ),
+    runTask('blogIndex'),
   ),
   browsersync,
   startwatch,

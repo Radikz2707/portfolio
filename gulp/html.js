@@ -15,12 +15,14 @@ import {
   generateSidebarLinks,
   getFirstLineOfFile,
 } from './utils/content-processor.js';
+import { getBuildSignature } from './system/gulp.cache.js';
 
 const { src, dest } = gulp;
 
 // =======================================================================
 // 🌐 1. Умный оптимизатор ссылок и адаптер относительных путей фавиконов
 // =======================================================================
+
 function fixHtmlPaths() {
   return new Transform({
     objectMode: true,
@@ -35,17 +37,27 @@ function fixHtmlPaths() {
       const pathPrefix = isProd ? `/${repoName}` : './';
       let content = file.contents.toString('utf-8');
 
+      // 1. ЗАЩИТНЫЙ БЛОК ДЛЯ СТАТЕЙ И БЛОКОВ КОДА
+      // Вырезаем блоки кода в память, чтобы регулярки ниже не испортили текст статей
+      const codeBlocks = [];
+      content = content.replace(
+        /(<(code|pre)[^>]*>[\s\S]*?<\/\2>)/gi,
+        (match) => {
+          const token = `__CONTROL_CODE_BLOCK_${codeBlocks.length}__`;
+          codeBlocks.push({ token, original: match });
+          return token;
+        },
+      );
+
       const addPrefix = (match, p1, p2) => {
         const normalizedPath = file.path.replace(/\\/g, '/');
         const fileName = path.basename(normalizedPath);
-
         const isInBlogFolder =
           normalizedPath.includes('/src/blog/') ||
           normalizedPath.includes('/dist/blog/');
         const isBlogIndex = isInBlogFolder && fileName === 'index.html';
         const isArticle = isInBlogFolder && !isBlogIndex;
 
-        // Очищаем пришедший путь от лишних ведущих точек и слэшей, чтобы не плодить пути вида ../../
         const cleanP2 = p2.replace(/^[.\\/]+/, '');
 
         if (isArticle) {
@@ -63,36 +75,53 @@ function fixHtmlPaths() {
         return `${p1}${pathPrefix}${cleanP2}`;
       };
 
+      // =========================================================================
+      // БЕЗОПАСНАЯ ЗОНА ЗАМЕНЫ ПУТЕЙ (Регулярные выражения не затронут ваши статьи)
+      // =========================================================================
+
       // 1. Ссылки на стили
       content = content.replace(
         /(href=["']\s*)(\.?\/?css\/[^"']+\.(?:css))/gi,
         addPrefix,
       );
-      // 2. Скрипты
+
+      // 2. Скрипты с интеграцией безопасного Cache Busting
       content = content.replace(
         /(src=["']\s*)(\.?\/?js\/[^"']+\.(?:js)(?:\?[^"']*)?)/gi,
         (match, p1, p2) => {
           const hasVersion = p2.includes('?v=');
+          // Используем инкапсулированный экспорт getBuildSignature() вместо global
           const version =
-            isProd && !hasVersion ? `?v=${global.buildSig || Date.now()}` : '';
+            isProd && !hasVersion ? `?v=${getBuildSignature()}` : '';
           return addPrefix(match, p1, p2 + version);
         },
       );
+
       // 3. Изображения
       content = content.replace(
         /((?:src|srcset)=["']\s*)(\.?\/?images\/[^"']+\.(?:png|jpg|jpeg|webp|svg|gif|ico))/gi,
         addPrefix,
       );
+
       // 4. Шрифты
       content = content.replace(
         /(href=["']\s*)(\.?\/?fonts\/[^"']+\.(?:woff2|woff|ttf|otf|eot))/gi,
         addPrefix,
       );
-      // 5. 🔥 ОБНОВЛЕНО: Тотальный перехват любых путей к фавиконкам (с точками, без, со слэшами)
+
+      // 5. Тотальный перехват любых путей к фавиконкам
       content = content.replace(
         /(href=["']\s*)(\.?\/?images\/favicons\/[^"']+\.(?:png|ico|svg|xml|json|webmanifest))/gi,
         addPrefix,
       );
+
+      // =========================================================================
+
+      // 2. ВОССТАНОВЛЕНИЕ ПОЛЬЗОВАТЕЛЬСКОГО КОНТЕНТА
+      // Возвращаем сохраненные блоки кода обратно на свои места в HTML
+      codeBlocks.forEach(({ token, original }) => {
+        content = content.replace(token, original);
+      });
 
       file.contents = Buffer.from(content);
       cb(null, file);
@@ -182,10 +211,7 @@ export function html() {
 
     replace(/SITE_NAME/gi, config.siteName),
     replace(/SITE_AUTHOR/gi, config.repoPath),
-    replace(
-      /js\/app\.min\.js/gi,
-      `js/app.min.js?v=${global.buildSig || Date.now()}`,
-    ),
+    replace(/js\/app\.min\.js/gi, `js/app.min.js?v=${getBuildSignature()}`),
   ];
 
   if (isProd) {
@@ -302,35 +328,36 @@ const generateCategoryCards = async () => {
     `;
 
     // 🔥 ИСПРАВЛЕНО: Цикл последовательно дожидается выполнения getFirstLineOfFile для каждого файла
-    for (const file of articleFiles) {
+    const articlePromises = articleFiles.map(async (file) => {
       const fileName = path.basename(file, path.extname(file));
       const articleUrl = `./${category}/${fileName}.html`;
       const fullFilePath = path.join(categoryDir, file);
-
-      // Вызываем всеядный импортированный метод из контент-процессора
       let articleTitle = '';
+
       try {
+        // Запуск параллельного чтения заголовка
         articleTitle = await getFirstLineOfFile(fullFilePath);
       } catch (err) {
         console.error(
-          `❌ Ошибка чтения заголовка для карточки ${file}:`,
+          `❌ [CONTROL ERROR] Ошибка чтения заголовка ${file}:`,
           err.message,
         );
       }
 
-      // Резервный вариант (если файл пустой или вернул ошибку)
       if (!articleTitle) {
         const slugTitle = fileName.replace(/-/g, ' ');
         articleTitle = slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
       }
 
-      categoryCardsHtml += `
-        <li class='blog-category-card__item'>
-          <a class='blog-category-card__link' href='${articleUrl}'>${articleTitle}</a>
-        </li>
-      `;
-    }
+      return `
+    <li class='blog-category-card__item'>
+     <a class='blog-category-card__link' href='${articleUrl}'>${articleTitle}</a>
+    </li>`;
+    });
 
+    // Дожидаемся выполнения всех потоков чтения одновременно
+    const cardsArray = await Promise.all(articlePromises);
+    categoryCardsHtml += cardsArray.join('');
     categoryCardsHtml += `
       </ul>
     </div>`;
