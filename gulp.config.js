@@ -1,6 +1,9 @@
 import path from 'path';
 import { execSync } from 'child_process';
 import fs from 'fs'; // 🔥 Добавили нативный модуль файловой системы
+import dotenv from 'dotenv'; // 🔥 Добавили импорт dotenv для чтения .env
+
+dotenv.config(); // 🔥 Инициализируем конфигурацию среды перед экспортом настроек
 
 // ==========================================
 // ДИНАМИЧЕСКИЕ НАСТРОЙКИ ИЗ ГРАФИЧЕСКОЙ АДМИНКИ
@@ -24,7 +27,7 @@ if (fs.existsSync(settingsPath)) {
     if (settingsData.srcFolder) srcFolder = settingsData.srcFolder;
     if (settingsData.buildFolder) buildFolder = settingsData.buildFolder;
     if (settingsData.siteUrl) siteUrl = settingsData.siteUrl;
-  } catch (e) {
+  } catch {
     // Мягкий предохранитель: если файл в момент сохранения занят другим процессом, используем дефолты
   }
 }
@@ -58,13 +61,14 @@ const repoPath =
 export const config = {
   repoPath: repoPath,
   siteName: 'Radik.Dev',
-  siteUrl: siteUrl, // 🔥 Добавили динамический URL для генератора Sitemap
+  siteUrl: siteUrl,
 
   scssExtension,
   srcFolder,
   buildFolder,
 
-  localServerFolder: 'C:/inetpub/wwwroot/portfolio',
+  // 🔥 Заменили жестко зашитую строку на динамическую переменную из .env с мягким возвратом в null
+  localServerFolder: process.env.LOCAL_SERVER_FOLDER || null,
 
   // ==========================================
   // СТРУКТУРА ПРОЕКТА ДЛЯ АВТОМАТИЗАЦИИ

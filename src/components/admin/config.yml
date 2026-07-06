@@ -6,10 +6,6 @@ backend:
 
 local_backend: true
 
-slug:
-  encoding: "ascii"
-  clean_accents: true
-
 media_folder: 'src/images/blog'
 public_folder: '/images/blog'
 

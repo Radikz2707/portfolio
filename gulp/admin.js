@@ -3,9 +3,8 @@ import gulp from 'gulp';
 import fs from 'fs';
 import path from 'path';
 import plumber from 'gulp-plumber';
-import YAML from 'yaml'; // Импортируем официальный и безопасный парсер
 import { config } from '../gulp.config.js';
-import { onError, isProd } from './server.js';
+import { onError } from './server.js';
 
 const { src, dest } = gulp;
 
@@ -93,38 +92,31 @@ export const copyAdminUI = (done) => {
       }
     }
 
-    // 5. ДЕТЕРМИНИРОВАННАЯ СБОРКА ОБЪЕКТА CONFIG.YML ЧЕРЕЗ PARSER
-    const configYmlPath = path.join(
+    // 5. НАДЕЖНЫЙ СТРОКОВЫЙ ДВИЖОК СБОРКИ CONFIG.YML
+    // Считываем базовый конфиг как чистый текст, полностью сохраняя backend, media_folder и кавычки
+    const baseConfigYmlPath = path.join(
       config.srcFolder,
       'components',
       'admin',
       'config.yml',
     );
-    let cmsConfig = { collections: [] };
+    let finalYamlContent = '';
 
-    if (fs.existsSync(configYmlPath)) {
-      try {
-        const fileContent = fs.readFileSync(configYmlPath, 'utf-8');
-        cmsConfig = YAML.parse(fileContent) || { collections: [] };
-      } catch (e) {
-        console.error('❌ Ошибка парсинга базового config.yml:', e.message);
-      }
+    if (fs.existsSync(baseConfigYmlPath)) {
+      finalYamlContent =
+        fs.readFileSync(baseConfigYmlPath, 'utf-8').trim() + '\n\n';
+    } else {
+      // Автономный фолбэк, если исходный файл в компонентах был случайно удален
+      finalYamlContent =
+        "backend:\n  name: proxy\n  proxy_url: http://localhost:8082/api/v1\n  repo: 'Radik/portfolio'\n  branch: 'main'\n\nlocal_backend: true\n\nmedia_folder: 'src/images/blog'\npublic_folder: '/images/blog'\n\ncollections:\n";
     }
 
-    if (!cmsConfig.collections) cmsConfig.collections = [];
+    // Проверяем, объявлен ли уже блок collections: в базовом файле
+    if (!finalYamlContent.includes('collections:')) {
+      finalYamlContent += 'collections:\n';
+    }
 
-    // Автоматический расчет путей стилей для iframe превью
-    const repoName =
-      config.repoPath && config.repoPath.includes('/')
-        ? config.repoPath.split('/')
-        : 'portfolio';
-    const cssPreviewPath = isProd
-      ? `/${repoName}/css/app.min.css`
-      : '/css/app.min.css';
-
-    cmsConfig.preview_styles = [cssPreviewPath];
-
-    // Динамически пушим папки контента в массив коллекций
+    // Динамически дописываем папки контента в конец текстового файла в виде валидных YAML-строк
     categoriesData.categories_list.forEach((item) => {
       const key = item.id;
       const rawLabel = item.title;
@@ -137,40 +129,22 @@ export const copyAdminUI = (done) => {
       }
 
       const emoji = emojiMap[key] || '📝';
-      const label = `${emoji} ${rawLabel}`;
+      const label = emoji + ' ' + rawLabel;
 
-      const isAlreadyAdded = cmsConfig.collections.some(
-        (col) => col.name === key,
-      );
-
-      if (!isAlreadyAdded) {
-        cmsConfig.collections.push({
-          name: key,
-          label: label,
-          folder: `src/content/${key}`,
-          create: true,
-          slug: '{{title | slug}}',
-          identifier_field: 'title',
-          fields: [
-            { label: 'Заголовок статьи', name: 'title', widget: 'string' },
-            {
-              label: 'Контент статьи (Markdown)',
-              name: 'body',
-              widget: 'markdown',
-            },
-          ],
-        });
-      }
+      finalYamlContent += '  - name: "' + key + '"\n';
+      finalYamlContent += '    label: "' + label + '"\n';
+      finalYamlContent += '    folder: "src/content/' + key + '"\n';
+      finalYamlContent += '    create: true\n';
+      finalYamlContent += '    slug: "{{title}}"\n'; // 🟢 Железно передаем тег генерации ЧПУ из заголовка прямо в коллекцию
+      finalYamlContent += '    identifier_field: "title"\n';
+      finalYamlContent += '    fields:\n';
+      finalYamlContent +=
+        '      - { label: "Заголовок статьи", name: "title", widget: "string" }\n';
+      finalYamlContent +=
+        '      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }\n\n';
     });
 
-    // 🔥 СБОРКА С ТОТАЛЬНЫМ УПРАВЛЕНИЕМ СТРОКАМИ:
-    // Опция defaultStringType: 'PLAIN' принудительно удаляет ВСЕ лишние кавычки из файла
-    //config.yml, приводя его к идеальному нативному синтаксису, понятному Decap CMS.
-    const finalYamlContent = YAML.stringify(cmsConfig, {
-      defaultStringType: 'PLAIN',
-    });
-
-    // Записываем чистый готовый config.yml в dist
+    // Записываем чистый готовый config.yml в dist/admin
     fs.writeFileSync(
       path.join(adminDestDir, 'config.yml'),
       finalYamlContent,
@@ -185,11 +159,18 @@ export const copyAdminUI = (done) => {
       }
     }
 
-    // 7. АТОМАРНЫЙ ДЕПЛОЙ В WINDOWS IIS
-    const localServerAdminDir = path.join(
-      config.localServerFolder || 'C:/inetpub/wwwroot/portfolio',
-      'admin',
-    );
+    // 7. АТОМАРНЫЙ ДЕПЛОЙ В WINDOWS IIS с Guard Clause защитой среды
+    if (!config.localServerFolder) {
+      console.log(
+        '✅ [Gulp] Графический интерфейс CMS успешно скомпилирован в dist/admin!',
+      );
+      console.log(
+        'ℹ️ Локальный сервер IIS не настроен в .env, копирование в wwwroot пропущено.',
+      );
+      return done();
+    }
+
+    const localServerAdminDir = path.join(config.localServerFolder, 'admin');
 
     return src(path.join(adminDestDir, '**', '*'), {
       allowEmpty: true,
@@ -199,7 +180,7 @@ export const copyAdminUI = (done) => {
       .pipe(dest(localServerAdminDir))
       .on('end', () => {
         console.log(
-          '✅ [Gulp] Графический интерфейс CMS полностью синхронизирован и скомпилирован в YAML!',
+          '✅ [Gulp] Графический интерфейс CMS полностью синхронизирован и скомпилирован в локальный IIS!',
         );
         done();
       });

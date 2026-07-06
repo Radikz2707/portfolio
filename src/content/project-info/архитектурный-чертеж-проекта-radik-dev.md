@@ -1,15 +1,13 @@
 ---
-title: Архитектурный чертеж проекта Radik.Dev
+title: "Архитектурный чертеж проекта Radik.Dev"
 ---
-# 🗺️ Архитектурный чертеж проекта Radik.Dev
 
 ```text
+
 . (root)
 ├── .clinerules
 ├── .editorconfig
 ├── .env
-├── .gigacode
-│   └── plans
 ├── .gitignore
 ├── .htmlhintrc
 ├── .husky
@@ -155,7 +153,8 @@ title: Архитектурный чертеж проекта Radik.Dev
 │   │   │   ├── how-i-created-a-smart-gulp-robot.md
 │   │   │   ├── my-very-first-blog-post.docx
 │   │   │   ├── opisanie-moego-lichnogo-portfolio.docx
-│   │   │   └── why-gulp-ts.md
+│   │   │   ├── why-gulp-ts.md
+│   │   │   └── архитектурный-чертеж-проекта-radik-dev.md
 │   │   ├── psychology
 │   │   ├── space
 │   │   ├── system-settings.json

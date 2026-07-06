@@ -8,9 +8,10 @@
   "bracketSpacing": true,
   "arrowParens": "always",
   "endOfLine": "lf",
+  "plugins": ["@prettier/plugin-xml"],
   "overrides": [
     {
-      "files": ["*.html", "*.json"],
+      "files": ["*.html", "*.json", "*.config", "*.xml"],
       "options": {
         "singleQuote": false
       }

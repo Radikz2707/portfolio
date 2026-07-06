@@ -184,11 +184,11 @@ export function html() {
         const m = marker.toUpperCase();
 
         if (m === 'GO_HOME') {
-          return "href='./index.html'";
+          return 'href="./index.html"';
         }
 
         if (m === 'GO_BLOG') {
-          return "href='./blog/index.html'";
+          return 'href="./blog/index.html"';
         }
 
         const anchorMap = {

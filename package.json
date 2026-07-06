@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@prettier/plugin-xml": "^3.4.2",
     "@testing-library/dom": "^10.4.1",
     "@types/aos": "^3.0.8",
     "@types/browser-sync": "^2.29.1",
