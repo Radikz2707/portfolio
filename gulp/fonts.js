@@ -10,7 +10,7 @@ import { onError } from './server.js'; // Используем безопасн�
 const { src, dest } = gulp;
 
 /**
- * 🔤 1. Конвертация шрифтов TTF в WOFF/WOFF2 (Изолированный Stream Gulp 5)
+ * 🔤 1. Конвертация шрифтов TTF в WOFF/WOFF2 (Изолированные параллельные потоки для Gulp 5)
  */
 export function fonts(done) {
   const sourceDir = path.dirname(config.paths.fonts.src).replace(/\*\*$/, '');
@@ -21,17 +21,21 @@ export function fonts(done) {
     return done();
   }
 
-  // Возвращаем нативный поток сборщика. Планировщик Gulp 5 сам поймет, когда закрыть дескрипторы.
-  return (
-    src(config.paths.fonts.src, { encoding: false, allowEmpty: true })
-      .pipe(plumber({ errorHandler: onError }))
-      .pipe(fonter({ formats: ['woff'] }))
-      .pipe(dest(config.paths.fonts.dest))
-      // Перенаправляем бинарный поток на WOFF2 компиляцию
-      .pipe(src(config.paths.fonts.src, { encoding: false, allowEmpty: true }))
-      .pipe(ttf2woff2())
-      .pipe(dest(config.paths.fonts.dest))
-  );
+  // 1. Поток конвертации в формат WOFF
+  const woffStream = src(config.paths.fonts.src, { encoding: false, allowEmpty: true })
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(fonter({ formats: ['woff'] }))
+    .pipe(dest(config.paths.fonts.dest));
+
+  // 2. Поток конвертации в формат WOFF2
+  const woff2Stream = src(config.paths.fonts.src, { encoding: false, allowEmpty: true })
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(ttf2woff2())
+    .pipe(dest(config.paths.fonts.dest));
+
+  // Запускаем оба потока параллельно через оркестратор Gulp.
+  // Он корректно дождется завершения обоих и сам вызовет колбэк done().
+  return gulp.parallel(() => woffStream, () => woff2Stream)(done);
 }
 
 /**
