@@ -2,8 +2,6 @@
 import { config } from '../gulp.config.js';
 import gulp from 'gulp';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import dotenv from 'dotenv';
 import plumber from 'gulp-plumber';
 import { createRequire } from 'module';
@@ -15,17 +13,13 @@ const webpackStream = require('webpack-stream');
 const webpack = require('webpack');
 const TerserPlugin = require('terser-webpack-plugin');
 import { onError, isProd, safeReload } from './server.js'; // Используем безопасный safeReload
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 const { src, dest } = gulp;
 
 export function scripts() {
   // Конфигурация Webpack вынесена в изолированную область
   const webpackConfig = {
     mode: isProd ? 'production' : 'development',
-    target: ['web', 'es2015'],
+    target: ['web', 'browserslist'],
     watch: false,
     performance: { hints: false },
     entry: {
@@ -51,13 +45,10 @@ export function scripts() {
           exclude: /node_modules/,
           use: [
             {
-              loader: 'ts-loader',
+              loader: 'esbuild-loader',
               options: {
-                configFile: path.resolve(__dirname, '../tsconfig.json'),
-                transpileOnly: !isProd,
-                compilerOptions: {
-                  noEmit: false,
-                },
+                loader: 'ts',
+                target: 'esnext',
               },
             },
           ],
