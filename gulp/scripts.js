@@ -11,7 +11,8 @@ dotenv.config();
 const require = createRequire(import.meta.url);
 const webpackStream = require('webpack-stream');
 const webpack = require('webpack');
-const TerserPlugin = require('terser-webpack-plugin');
+const { EsbuildPlugin } = require('esbuild-loader');
+
 import { onError, isProd, safeReload } from './server.js'; // Используем безопасный safeReload
 const { src, dest } = gulp;
 
@@ -63,24 +64,16 @@ export function scripts() {
     optimization: {
       minimize: isProd,
       minimizer: [
-        new TerserPlugin({
-          extractComments: false,
-          terserOptions: {
-            compress: {
-              drop_console: isProd,
-              drop_debugger: isProd,
-              dead_code: true,
-              passes: 2,
-            },
-            format: { comments: false },
-          },
+        new EsbuildPlugin({
+          target: 'esnext',
+          css: true, // Дополнительно сожмет CSS, если Webpack его обрабатывает
         }),
       ],
       splitChunks: isProd
         ? {
             cacheGroups: {
               vendor: {
-                test: /[\\/]node_modules[\\/]/,
+                test: /[/[ ]node_modules[/]/,
                 name: 'vendor',
                 chunks: 'all',
               },
