@@ -169,8 +169,8 @@
   }
 
   .blog-sidebar {
-    max-height: 420px;
-    padding: 20px 24px 20px 16px;
+    max-height: none;
+    padding: 20px 24px 32px 16px;
     scrollbar-width: thin;
 
     &__sublist {
