@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radik.Dev — Панель управления</title>
+
+  <!-- 🎯 ПОДКЛЮЧАЕМ ФАВИКОНКИ САЙТА -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png" />
+  <link rel="shortcut icon" href="/images/favicons/favicon.ico" type="image/x-icon" />
+
+  <!-- 🔥 ХАК ДЛЯ ВНЕШНЕГО ИНТЕРФЕЙСА: Стираем черные боковины эмулятора CMS -->
+  <style>
+    /* Находим контейнер превью-панели во внешней разметке CMS */
+    div[class*="PreviewPaneContainer"] {
+      background-color: #f8fafc !important; /* Перекрашиваем черные бока в светлый цвет */
+    }
+    /* Убираем жесткое ограничение ширины мобильного эмулятора, если оно включено */
+    div[class*="PreviewFrameContainer"] {
+      max-width: 100% !important;
+      width: 100% !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }
+    /* Заставляем сам фрейм занять все доступное пространство */
+    iframe[class*="PreviewFrame"] {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- Главный контейнер для монтирования графического UI -->
+  <div id="nc-root"></div>
+
+  <!-- Конфигурация локальных полей из вашего config.yml -->
+  <link rel="cms-config" type="text/yaml" href="config.yml" />
+
+  <!-- Запускаем монолитный движок Decap CMS со встроенным React -->
+  <script src="decap-cms.js"></script>
+
+  <script>
+    // Подключаем основной CSS-файл вашего сайта внутрь iframe превью
+    CMS.registerPreviewStyle("/css/app.min.css");
+
+    // Хак для принудительного сброса отступов и флекс-выравнивания внутри фрейма
+    CMS.registerPreviewStyle({ raw: "html, body { background-color: #f8fafc !important; width: 100% !important; max-width: 100% !important; min-width: 100% !important; margin: 0 !important; padding: 24px !important; display: block !important; align-items: stretch !important; }" });
+
+    // =======================================================================
+    // 🗂️ ШАБЛОН ДЛЯ ОТОБРАЖЕНИЯ СТРУКТУРЫ КАТЕГОРИЙ (БЭМ-СЕТКА)
+    // =======================================================================
+    CMS.registerPreviewTemplate("blog_categories", createClass({
+      render: function() {
+        var entry = this.props.entry;
+        var list = entry.getIn(['data', 'categories_list']);
+
+        if (!list) {
+          return h('div', { className: 'admin' },
+            h('div', { className: 'admin__wrapper' }, 'Список категорий пуст...')
+          );
+        }
+
+        return h('div', { className: 'admin' },
+          h('div', { className: 'admin__wrapper' },
+            h('h2', { className: 'admin__title' }, '🗂️ Текущая структура категорий сайта'),
+            h('div', { className: 'admin__grid' },
+              list.map(function(item, index) {
+                var id = item.get('id') || 'нет id';
+                var title = item.get('title') || 'Без названия';
+
+                return h('div', { key: index, className: 'admin__card' },
+                  h('div', { className: 'admin__badge' }, id),
+                  h('div', { className: 'admin__name' }, title)
+                );
+              })
+            )
+          )
+        );
+      }
+    }));
+
+    // =======================================================================
+    // 📝 УНИВЕРСАЛЬНЫЙ КРАСИВЫЙ ШАБЛОН ДЛЯ СТАТЕЙ (С автоматической фильтрацией)
+    // =======================================================================
+    var ArticlePreview = createClass({
+      render: function() {
+        var entry = this.props.entry;
+
+        // Извлекаем заголовок из поля ввода
+        var title = entry.getIn(['data', 'title']) || 'Без заголовка';
+
+        // Чистый виджет контента (Decap CMS нативно отсекает блок frontmatter с "title:")
+        var bodyWidget = this.props.widgetFor('body');
+
+        // Оборачиваем в БЭМ-классы вашего блога
+        return h('div', { className: 'blog-article', style: { padding: '24px 0', minHeight: 'auto', background: 'transparent' } },
+          h('div', { className: 'blog-article__main-content', style: { maxWidth: '740px', margin: '0 auto' } },
+            h('h1', { className: 'blog-article__title', style: { textAlign: 'left', marginBottom: '24px' } }, title),
+            h('div', { className: 'blog-article__body-text' }, bodyWidget)
+          )
+        );
+      }
+    });
+
+    // Привязываем красивый шаблон ко всем контентным папкам сайта
+    CMS.registerPreviewTemplate("work", ArticlePreview);
+    CMS.registerPreviewTemplate("programming", ArticlePreview);
+    CMS.registerPreviewTemplate("blog", ArticlePreview);
+  </script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Kompleksnoe rukovodstvo po komandam sistemy klub u dlya lokomotivnyh brigad | Блог Radik.Dev</title>
+    <link rel="shortcut icon" href="../../images/favicons/favicon.ico" type="image/x-icon">
+<link rel="icon" href="../../images/favicons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="../../images/favicons/apple-touch-icon.png">
+<link rel="manifest" href="../../images/favicons/manifest.webmanifest">
+
+    <link rel="stylesheet" href="../../css/app.min.css?v=1" />
+  </head>
+
+  <body class="page-blog">
+    <header class="header">
+  <div class="header__container container">
+    <a href="../index.html" class="header__logo">Radik.Dev</a>
+
+    <!-- 🔥 ДОБАВЛЕНА СЕМАНТИЧЕСКАЯ КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМ ОФОРМЛЕНИЯ -->
+    <button class="theme-toggle-btn" aria-label="Включить светлую тему">
+      <!-- Иконка Луны (для темной темы) -->
+      <svg
+        class="theme-icon theme-icon--moon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+      <!-- Иконка Солнца (для светлой темы) -->
+      <svg
+        class="theme-icon theme-icon--sun"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+    </button>
+
+    <!-- Выходим из папки header на уровень вверх к components/menu -->
+      <nav class="menu">
+    <div class="menu__body">
+      <ul class="menu__list">
+        <li class="menu__item">
+          <a href="../../index.html" class="menu__link">Главная</a>
+        </li>
+        <li class="menu__item">
+          <a href="../../index.html#projects" class="menu__link">Проекты</a>
+        </li>
+        <li class="menu__item">
+          <a href="../../index.html#about" class="menu__link">Обо мне</a>
+        </li>
+        <li class="menu__item"><a href="../../blog/index.html" class="menu__link">Блог</a></li>
+        <li class="menu__item">
+          <a href="../../index.html#contacts" class="menu__link">Контакты</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <button type="button" class="menu__icon menu-icon" aria-label="Открыть меню">
+    <span></span>
+  </button>
+
+  </div>
+</header>
+
+
+    <article class="blog-article">
+      <div class="blog-article__container container">
+        <div class="blog-article__layout">
+          <div class="blog-article__main-content">
+            <!-- 🔗 Исправленная ссылка возврата в блог -->
+            <a
+              href="../../blog/index.html"
+              class="blog-article__back-link"
+              >&larr; На главную</a
+            >
+            <h1>Комплексное локомотивное устройство безопасности</h1>
+<p>Комплексное локомотивное устройство безопасности (<strong>КЛУБ-У</strong>) — это ключевой элемент защиты в современном железнодорожном движении. Взаимодействие машиниста с системой осуществляется через клавиатуру Блока индикации локомотивного (<strong>БИЛ</strong>). </p>
+<p>Все команды КЛУБ-У строго регламентированы и делятся на два типа: <strong>прямые буквенные клавиши</strong> (для оперативного управления) и <strong>технологические цифровые коды</strong>. Цифровые команды всегда вводятся через префикс-клавишу <strong>«К»</strong>, после чего набирается номер команды и нажимается кнопка ввода <strong>«Δ»</strong>.</p>
+<hr>
+<h2>📅 Стандартные функциональные клавиши (Прямой ввод)</h2>
+<p>Эти кнопки вынесены на панель управления БИЛ для быстрого доступа. Для их активации не нужно нажимать клавишу «К».</p>
+<ul>
+<li><strong><code>Л</code> — Ввод поездных и локомотивных характеристик</strong><br>Команда выполняется исключительно на стоянке перед отправлением. После нажатия клавиши машинист обязан пошагово ввести параметры рейса: свой табельный номер, номер поезда, длину состава в вагонах, длину в осях и общую массу поезда в тоннах. Каждое значение подтверждается кнопкой <code>Δ</code>.</li>
+<li><strong><code>РМП</code> — Смена эксплуатационного режима движения</strong><br>Переключает внутренние алгоритмы КЛУБ-У под текущий характер работы. Доступны режимы:<ul>
+<li><code>П</code> (Поездной) — базовый режим для движения по перегонам.</li>
+<li><code>М</code> (Маневровый) — для работы на станционных путях. Автоматически устанавливает жесткое ограничение скорости (как правило, до 40 км/ч).</li>
+</ul>
+</li>
+<li><strong><code>F</code> / <code>f</code> — Изменение частоты канала АЛСН</strong><br>Используется для ручного переключения частоты приема кодовых сигналов из рельсовых цепей. В зависимости от технического оснащения участка дороги выбирается значение <code>25 Гц</code>, <code>50 Гц</code> или <code>75 Гц</code>.</li>
+<li><strong><code>ВК</code> — Вспомогательная кнопка бдительности</strong><br>Применяется в нестандартных ситуациях совместно с рукоятками бдительности. Позволяет искусственно зажечь «Белый» сигнал вместо запрещающего «Красного» при отправлении на некодированный путь, либо обеспечивает подтягивание к закрытому светофору со скоростью не более 20 км/ч.</li>
+</ul>
+<hr>
+<h2>🛠 Цифровые технологические команды (Ввод через «К»)</h2>
+<h3>1. Системный блок и самодиагностика</h3>
+<p>Данные команды используются для контроля работоспособности аппаратной части КЛУБ-У при приемке локомотива или при возникновении сбоев в пути.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Команда</th>
+<th align="left">Официальное назначение</th>
+<th align="left">Порядок применения и описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>К0</code></strong></td>
+<td align="left">Версия программного обеспечения</td>
+<td align="left">Выводит на экран версию прошивки КЛУБ-У и ее контрольную сумму. Используется ремонтным персоналом и бригадой для проверки актуальности ПО.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К31</code></strong></td>
+<td align="left">Активация теста БИЛ</td>
+<td align="left">Включает полную проверку дисплея. Загораются все светодиоды, сегменты и шкалы, что позволяет визуально выявить перегоревшие элементы индикации.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К30</code></strong></td>
+<td align="left">Деактивация теста БИЛ</td>
+<td align="left">Выключает тестовый режим дисплея и возвращает Блок индикации в стандартное рабочее состояние.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К46</code></strong></td>
+<td align="left">Определение активного полукомплекта</td>
+<td align="left">КЛУБ-У имеет двухканальную структуру. Команда показывает, какой именно полукомплект (№1 или №2) сейчас является ведущим.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К71</code></strong></td>
+<td align="left">Строка комплексной диагностики (Вкл)</td>
+<td align="left">Отображает на БИЛ буквенно-цифровой код состояния всех периферийных модулей (САУТ, ТСКБМ, ИПД и др.). Помогает быстро найти отказавший узел.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К70</code></strong></td>
+<td align="left">Строка комплексной диагностики (Выкл)</td>
+<td align="left">Скрывает диагностическую строку, возвращая экран к стандартному интерфейсу.</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>2. Пневматика и контроль тормозного оборудования</h3>
+<p>Позволяет выводить на электронное табло точные показания датчиков давления, заменяя или дублируя механические манометры.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Команда</th>
+<th align="left">Официальное назначение</th>
+<th align="left">Порядок применения и описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>К80</code></strong></td>
+<td align="left">Индикация давления в ТМ</td>
+<td align="left">Выводит на дисплей БИЛ текущее значение давления в тормозной магистрали состава в реальном времени.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К81</code></strong></td>
+<td align="left">Индикация давления в ТЦ</td>
+<td align="left">Отображает уровень давления в тормозных цилиндрах локомотива для контроля силы торможения.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К83</code></strong></td>
+<td align="left">Индикация давления в УР (Кабина 1)</td>
+<td align="left">Показывает давление в уравнительном резервуаре при управлении поездом из первой кабины.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К82</code></strong></td>
+<td align="left">Индикация давления в УР (Кабина 2)</td>
+<td align="left">Показывает давление в уравнительном резервуаре при управлении поездом из второй кабины.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К123</code></strong></td>
+<td align="left">Перевод в метрику кгс/см²</td>
+<td align="left">Устанавливает отображение давления во всех вышеуказанных магистралях в привычных килограмм-силах на квадратный сантиметр.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К122</code></strong></td>
+<td align="left">Перевод в метрику МПа</td>
+<td align="left">Переключает индикацию давления в международную систему единиц — Мегапаскали.</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>3. Электронная карта и координатная навигация</h3>
+<p>КЛУБ-У использует данные со спутников и встроенную Электронную карту (ЭК) для определения профиля пути, мостов, переездов и станций.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Команда</th>
+<th align="left">Официальное назначение</th>
+<th align="left">Порядок применения и описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>К1</code></strong></td>
+<td align="left">Принудительная смена ветви маршрута</td>
+<td align="left">Применяется на крупных ж/д узлах и развилках. Если автоматика ошибочно выбрала не тот путь, машинист вручную переключает карту на нужную ветку.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К6</code></strong></td>
+<td align="left">Ручной ввод координаты километра</td>
+<td align="left">Позволяет скорректировать текущую координату (километр и пикет) при сбоях навигации, а также задать направление счета (на увеличение/уменьшение).</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К10</code></strong> / <strong><code>К522</code></strong></td>
+<td align="left">Проверка номера электронной карты</td>
+<td align="left">Кратковременно (на 5 секунд) выводит на экран номер текущей базы данных ЭК для сверки со штамп-справкой депо.</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>4. Особые, путевые и аварийные режимы движения</h3>
+<p>Команды, коренным образом меняющие логику работы систем безопасности в нестандартных ситуациях.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Команда</th>
+<th align="left">Официальное назначение</th>
+<th align="left">Порядок применения и описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>К799</code></strong></td>
+<td align="left">Движение по некодированному пути (Вкл)</td>
+<td align="left">Вводится при отправлении на участки без сигналов АЛСН или при неисправности путевых устройств. Включает «Белый» огонь и задает допустимую скорость.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К800</code></strong></td>
+<td align="left">Движение по некодированному пути (Выкл)</td>
+<td align="left">Отменяет действие команды К799 и возвращает КЛУБ-У в штатный режим приема кодов из рельсовой цепи.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К262</code></strong></td>
+<td align="left">Режим «Двойной тяги»</td>
+<td align="left">Включается на втором (ведомом) локомотиве при работе по СМЕ. Полностью отключает периодическую проверку бдительности для ведомого машиниста.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К257</code></strong></td>
+<td align="left">Искусственный срыв ЭПК (Тест)</td>
+<td align="left">Проверочная команда. Провоцирует экстренную разрядку тормозов через электропневматический клапан для проверки его исправности при приемке.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К258</code></strong></td>
+<td align="left">Отмена теста срыва ЭПК</td>
+<td align="left">Завершает диагностику тормозных цепей автостопа и возвращает систему в дежурный режим охраны.</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>5. Сервисные и интерфейсные команды</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Команда</th>
+<th align="left">Официальное назначение</th>
+<th align="left">Порядок применения и описание</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>К2</code></strong></td>
+<td align="left">Регулировка яркости подсветки</td>
+<td align="left">Ступенчато изменяет интенсивность свечения дисплеев БИЛ и БИЛ-ПОМ. Помогает приглушить свет ночью или усилить его в солнечный день.</td>
+</tr>
+<tr>
+<td align="left"><strong><code>К4</code></strong></td>
+<td align="left">Фиксация метки времени</td>
+<td align="left">Выставляет электронный маркер точного времени на съемную кассету регистрации (КР) для упрощения последующей расшифровки поездки.</td>
+</tr>
+</tbody></table>
+
+          </div>
+          <div class="blog-article__sidebar"><aside class="blog-sidebar">
+  <h3 class="blog-sidebar__title">Популярные статьи</h3>
+  <!-- 🔥 ИСПРАВЛЕНО: Заменили тег <ul> на <div>, чтобы убрать конфликт тегов в браузере -->
+  <div class="blog-sidebar__list">
+    <!-- Сюда Gulp автоматически вставит сгенерированные БЭМ-ссылки -->
+      <details class="blog-sidebar__category">
+    <summary class="blog-sidebar__category-btn">Мои стихи (6 статей)</summary>
+    <ul class="blog-sidebar__sublist">
+      <li class="blog-sidebar__item"><a href="../poems/А любви моей все нет и нет.html" class="blog-sidebar__link">А любви моей все нет и нет,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Доброе утро мой ангелочек.html" class="blog-sidebar__link">Доброе утро мой ангелочек,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Как сильно ждал поры я этой.html" class="blog-sidebar__link">Как сильно ждал поры я этой,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Родная.html" class="blog-sidebar__link">Родная, проснувшись ты с утра сегодня,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Стихи о любви.html" class="blog-sidebar__link">Пишу стихи я той, которой обещал,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Усрльнение Ксении Петряшовой.html" class="blog-sidebar__link">Настал не лучший день календаря,</a></li>
+    </ul>
+  </details>
+  <details class="blog-sidebar__category">
+    <summary class="blog-sidebar__category-btn">О проекте (5 статей)</summary>
+    <ul class="blog-sidebar__sublist">
+      <li class="blog-sidebar__item"><a href="../project-info/how-i-created-a-smart-gulp-robot.html" class="blog-sidebar__link">Как я создал умного Gulp робота</a></li>
+      <li class="blog-sidebar__item"><a href="../project-info/my-very-first-blog-post.html" class="blog-sidebar__link">Мой самый первый пост в блоге.</a></li>
+      <li class="blog-sidebar__item"><a href="../project-info/opisanie-moego-lichnogo-portfolio.html" class="blog-sidebar__link">Техническое описание архитектуры и компонентной базы проекта Radik.Dev.</a></li>
+      <li class="blog-sidebar__item"><a href="../project-info/why-gulp-ts.html" class="blog-sidebar__link">Почему Gulp + TypeScript — это идеальный стек для статических сайтов в</a></li>
+      <li class="blog-sidebar__item"><a href="../project-info/архитектурный-чертеж-проекта-radik-dev.html" class="blog-sidebar__link">Архитектурный чертеж проекта Radik.Dev</a></li>
+    </ul>
+  </details>
+  <details class="blog-sidebar__category">
+    <summary class="blog-sidebar__category-btn">Работа и Карьера (6 статей)</summary>
+    <ul class="blog-sidebar__sublist">
+      <li class="blog-sidebar__item"><a href="../work/kompleksnoe-rukovodstvo-po-komandam-sistemy-klub-u-dlya-lokomotivnyh-brigad.html" class="blog-sidebar__link">Комплексное локомотивное устройство безопасности</a></li>
+      <li class="blog-sidebar__item"><a href="../work/reglament-peregovorov-minuta-gotovnosti-dlya-lokomotivnoj-brigady-gruzovogo-poezda.html" class="blog-sidebar__link">Минута готовности: Полное руководство по регламенту переговоров</a></li>
+      <li class="blog-sidebar__item"><a href="../work/Полное опробование автотормозов в грузовых поездах.html" class="blog-sidebar__link">Полное опробование тормозов в грузовых поездах</a></li>
+      <li class="blog-sidebar__item"><a href="../work/Светофоры на жд транспорте.html" class="blog-sidebar__link">Типы железнодорожных светофоров</a></li>
+      <li class="blog-sidebar__item"><a href="../work/Сигналы светофоров.html" class="blog-sidebar__link">Сигналы железнодорожных светофоров</a></li>
+      <li class="blog-sidebar__item"><a href="../work/Сокращенное опробование тормозов в грузовых поездах.html" class="blog-sidebar__link">Сокращенное опробование тормозов в грузовых поездах</a></li>
+    </ul>
+  </details>
+
+  </div>
+</aside>
+</div>
+        </div>
+      </div>
+    </article>
+
+    <footer class="footer">
+  <div class="container">
+    <div class="footer__wrapper">
+      <!-- Левая часть: Копирайт -->
+      <div class="footer__left">
+        <span class="footer__copy"
+          >&copy; 2026 Radik.Dev — Портфолио. Все права защищены.</span
+        >
+        <p class="footer__subtitle">
+          Создано с душой на Gulp 5, TypeScript и БЭМ.
+        </p>
+      </div>
+
+      <!-- Правая часть: Ссылки на соцсети -->
+      <div class="footer__social social-links">
+        <ul class="social-links__list">
+          <li class="social-links__item">
+            <!-- 🔥 ИСПРАВЛЕНО: Укажите вашу точную ссылку на Telegram-аккаунт или канал -->
+            <a
+              href="https://t.me/Radik2707"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-links__link"
+              >Telegram</a
+            >
+          </li>
+          <li class="social-links__item">
+            <!-- Ссылка на профиль GitHub -->
+            <a
+              href="https://github.com/Radikz2707"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-links__link"
+              >GitHub</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../js/vendor.min.js?v=1"></script>
+    <script src="../../js/app.min.js?v=1" defer></script>
+  </body>
+</html>

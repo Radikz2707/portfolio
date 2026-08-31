@@ -1,0 +1,209 @@
+<pre><code class="language-text">
+. (root)
+├── .clinerules
+├── .editorconfig
+├── .env
+├── .gitignore
+├── .htmlhintrc
+├── .husky
+│   ├── pre-commit
+│   └── _
+│       ├── .gitignore
+│       ├── applypatch-msg
+│       ├── commit-msg
+│       ├── h
+│       ├── husky.sh
+│       ├── post-applypatch
+│       ├── post-checkout
+│       ├── post-commit
+│       ├── post-merge
+│       ├── post-rewrite
+│       ├── pre-applypatch
+│       ├── pre-auto-gc
+│       ├── pre-commit
+│       ├── pre-merge-commit
+│       ├── pre-push
+│       ├── pre-rebase
+│       └── prepare-commit-msg
+├── .npmrc
+├── .prettierrc
+├── .stylelintrc.json
+├── .vscode
+│   └── settings.json
+├── eslint.config.js
+├── gulp
+│   ├── admin.js
+│   ├── deploy.js
+│   ├── fonts.js
+│   ├── html.js
+│   ├── images.js
+│   ├── lint.js
+│   ├── scripts.js
+│   ├── seo.js
+│   ├── server.js
+│   ├── styles.js
+│   ├── system
+│   │   ├── gulp.cache.js
+│   │   ├── gulp.create.js
+│   │   ├── gulp.help.js
+│   │   ├── gulp.init.js
+│   │   ├── gulp.module.js
+│   │   ├── gulp.plugin.js
+│   │   ├── gulp.post.js
+│   │   └── gulp.remove.js
+│   ├── tests
+│   │   ├── cli-automation.test.js
+│   │   ├── content-processor.test.js
+│   │   ├── fonts.test.js
+│   │   ├── html-build.test.js
+│   │   ├── images.test.js
+│   │   ├── README.md
+│   │   ├── scripts-build.test.js
+│   │   └── styles-build.test.js
+│   ├── utils
+│   │   └── content-processor.js
+│   └── utils.js
+├── gulp.config.js
+├── gulpfile.js
+├── package-lock.json
+├── package.json
+├── README.md
+├── src
+│   ├── blog
+│   │   └── index.html
+│   ├── components
+│   │   ├── about-me
+│   │   │   ├── about-me.html
+│   │   │   ├── about-me.scss
+│   │   │   ├── about-me.ts
+│   │   │   └── img
+│   │   │       └── photo.jpg
+│   │   ├── admin
+│   │   │   ├── admin.html
+│   │   │   ├── admin.scss
+│   │   │   ├── admin.ts
+│   │   │   └── config.yml
+│   │   ├── blog-article
+│   │   │   ├── blog-article.html
+│   │   │   ├── blog-article.scss
+│   │   │   └── blog-article.ts
+│   │   ├── blog-categories
+│   │   │   ├── blog-categories.html
+│   │   │   ├── blog-categories.scss
+│   │   │   └── blog-categories.ts
+│   │   ├── blog-sidebar
+│   │   │   ├── blog-sidebar.html
+│   │   │   ├── blog-sidebar.scss
+│   │   │   └── blog-sidebar.ts
+│   │   ├── contacts
+│   │   │   ├── contacts.html
+│   │   │   ├── contacts.scss
+│   │   │   ├── contacts.test.ts
+│   │   │   └── contacts.ts
+│   │   ├── footer
+│   │   │   ├── footer.html
+│   │   │   ├── footer.scss
+│   │   │   └── footer.ts
+│   │   ├── header
+│   │   │   ├── header.html
+│   │   │   ├── header.scss
+│   │   │   └── header.ts
+│   │   ├── hero
+│   │   │   ├── hero.html
+│   │   │   ├── hero.scss
+│   │   │   └── hero.ts
+│   │   ├── main
+│   │   │   ├── main.html
+│   │   │   ├── main.scss
+│   │   │   └── main.ts
+│   │   ├── menu
+│   │   │   ├── menu.html
+│   │   │   ├── menu.scss
+│   │   │   └── menu.ts
+│   │   ├── modal
+│   │   │   ├── modal.html
+│   │   │   ├── modal.scss
+│   │   │   ├── modal.test.ts
+│   │   │   └── modal.ts
+│   │   └── projects-grid
+│   │       ├── projects-grid.html
+│   │       ├── projects-grid.scss
+│   │       └── projects-grid.ts
+│   ├── content
+│   │   ├── .blog-cache-marker
+│   │   ├── blog
+│   │   ├── books
+│   │   ├── categories.json
+│   │   ├── finance
+│   │   ├── games
+│   │   ├── poems
+│   │   │   ├── А любви моей все нет и нет.docx
+│   │   │   ├── Доброе утро мой ангелочек.docx
+│   │   │   ├── Как сильно ждал поры я этой.docx
+│   │   │   ├── Родная.docx
+│   │   │   ├── Стихи о любви.docx
+│   │   │   └── Усрльнение Ксении Петряшовой.docx
+│   │   ├── programming
+│   │   ├── project-info
+│   │   │   ├── how-i-created-a-smart-gulp-robot.md
+│   │   │   ├── my-very-first-blog-post.docx
+│   │   │   ├── opisanie-moego-lichnogo-portfolio.docx
+│   │   │   ├── why-gulp-ts.md
+│   │   │   └── архитектурный-чертеж-проекта-radik-dev.md
+│   │   ├── psychology
+│   │   ├── space
+│   │   ├── system-settings.json
+│   │   ├── travel
+│   │   └── work
+│   │       ├── kompleksnoe-rukovodstvo-po-komandam-sistemy-klub-u-dlya-lokomotivnyh-brigad.md
+│   │       └── reglament-peregovorov-minuta-gotovnosti-dlya-lokomotivnoj-brigady-gruzovogo-poezda.md
+│   ├── fonts
+│   │   └── src
+│   │       ├── .gitkeep
+│   │       ├── Montserrat-Black.ttf
+│   │       ├── Montserrat-Bold.ttf
+│   │       ├── Montserrat-Medium.ttf
+│   │       ├── Montserrat-Regular.ttf
+│   │       └── Montserrat-SemiBold.ttf
+│   ├── images
+│   │   ├── favicons
+│   │   │   ├── apple-touch-icon.png
+│   │   │   ├── favicon-32.png
+│   │   │   ├── favicon.ico
+│   │   │   ├── icon-192.png
+│   │   │   ├── icon-512.png
+│   │   │   └── manifest.webmanifest
+│   │   └── src
+│   │       ├── .gitkeep
+│   │       └── favicon.png
+│   ├── index.html
+│   ├── js
+│   │   ├── app.ts
+│   │   ├── declarations.d.ts
+│   │   ├── env-config.js
+│   │   ├── modules
+│   │   │   ├── isWebp.ts
+│   │   │   ├── scroll-to-top
+│   │   │   │   ├── scroll-to-top.scss
+│   │   │   │   └── scroll-to-top.ts
+│   │   │   └── theme-toggle
+│   │   │       ├── theme-toggle.scss
+│   │   │       └── theme-toggle.ts
+│   │   └── plugins
+│   ├── parts
+│   │   └── favicon-links.html
+│   └── scss
+│       ├── base
+│       │   ├── _fonts.scss
+│       │   ├── _global.scss
+│       │   ├── _vars.scss
+│       │   ├── _vendors.scss
+│       │   └── _zero.scss
+│       ├── pages
+│       │   └── _blog.scss
+│       └── style.scss
+├── TESTING.md
+├── tsconfig.json
+├── vitest.config.ts
+└── vitest.setup.ts
+</code></pre>

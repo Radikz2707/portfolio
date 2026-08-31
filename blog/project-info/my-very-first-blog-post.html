@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>My very first blog post | Блог Radik.Dev</title>
+    <link rel="shortcut icon" href="../../images/favicons/favicon.ico" type="image/x-icon">
+<link rel="icon" href="../../images/favicons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="../../images/favicons/apple-touch-icon.png">
+<link rel="manifest" href="../../images/favicons/manifest.webmanifest">
+
+    <link rel="stylesheet" href="../../css/app.min.css?v=1" />
+  </head>
+
+  <body class="page-blog">
+    <header class="header">
+  <div class="header__container container">
+    <a href="../index.html" class="header__logo">Radik.Dev</a>
+
+    <!-- 🔥 ДОБАВЛЕНА СЕМАНТИЧЕСКАЯ КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМ ОФОРМЛЕНИЯ -->
+    <button class="theme-toggle-btn" aria-label="Включить светлую тему">
+      <!-- Иконка Луны (для темной темы) -->
+      <svg
+        class="theme-icon theme-icon--moon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+      <!-- Иконка Солнца (для светлой темы) -->
+      <svg
+        class="theme-icon theme-icon--sun"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+    </button>
+
+    <!-- Выходим из папки header на уровень вверх к components/menu -->
+      <nav class="menu">
+    <div class="menu__body">
+      <ul class="menu__list">
+        <li class="menu__item">
+          <a href="../../index.html" class="menu__link">Главная</a>
+        </li>
+        <li class="menu__item">
+          <a href="../../index.html#projects" class="menu__link">Проекты</a>
+        </li>
+        <li class="menu__item">
+          <a href="../../index.html#about" class="menu__link">Обо мне</a>
+        </li>
+        <li class="menu__item"><a href="../../blog/index.html" class="menu__link">Блог</a></li>
+        <li class="menu__item">
+          <a href="../../index.html#contacts" class="menu__link">Контакты</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <button type="button" class="menu__icon menu-icon" aria-label="Открыть меню">
+    <span></span>
+  </button>
+
+  </div>
+</header>
+
+
+    <article class="blog-article">
+      <div class="blog-article__container container">
+        <div class="blog-article__layout">
+          <div class="blog-article__main-content">
+            <!-- 🔗 Исправленная ссылка возврата в блог -->
+            <a
+              href="../../blog/index.html"
+              class="blog-article__back-link"
+              >&larr; На главную</a
+            >
+            <p>Мой самый первый пост в блоге.</p>
+<p>Привет всем! Если вы читаете этот текст, значит, эксперимент по созданию абсолютно всеядной, автономной экосистемы для моего блога завершился полным триумфом. Этот текст я пишу не в привычном редакторе кода VSCodium и не в разметке Markdown, а в самом обычном, классическом приложении Microsoft Word.</p>
+<p>Как зародилась эта идея?</p>
+<p>Когда я только начинал создавать это портфолио, передо мной стояла простая задача — развернуть красивый статичный сайт, где я мог бы делиться своими проектами и писать небольшие заметки. Первые шаги казались легкими: стек из Gulp 5, TypeScript и БЭМ-верстки работал отлично. Но как только я решил добавить полноценный блог, началась настоящая техническая драма, которая и подтолкнула меня к созданию этого робота.</p>
+<p>Сначала файлы статей приходилось создавать вручную. Нужно было следить за спецсимволами Markdown, проверять пути и каждый раз руками копировать готовую сборку dist на сервер GitHub Pages. Стоило пользователю зайти на сайт по ссылке без слэша на конце, как относительные пути ломались, и сайт открывался абсолютно «голым» — без стилей и картинок. Вдобавок к этому, оптимизатор PurgeCSS работал настолько агрессивно, что при продакшн-сборке вырезал из файла стилей абсолютно все мои БЭМ-компоненты секций «О себе» и «Мои проекты», посчитав их лишними.</p>
+<p>Каждый раз, когда я добавлял новый пост, мне приходилось вручную обновлять правый сайдбар с популярными статьями на всех старых страницах. Стоило забыть про одну страницу, и навигация ломалась. А браузеры пользователей намертво кэшировали старый CSS, из-за чего приходилось бесконечно нажимать Ctrl + F5, чтобы увидеть изменения.</p>
+<p>Тогда я понял: рутина убивает желание писать контент. А что, если я захочу попросить свою девушку написать статью в блог? Нагружать её изучением синтаксиса Markdown, установкой консоли, плагинов и терминала Git — это безумие. Мне хотелось абсолютной свободы: чтобы любой человек мог просто открыть привычный Ворд, набросать свои мысли, выделить важные моменты стандартными кнопками жирности и размера шрифта, а всю сложнейшую техническую цепочку отдать умной автоматике.</p>
+<p>Почему именно Word, а не код?</p>
+<p>Благодаря интеграции интеллектуального конвертера Mammoth и кастомного Node.js стрима through2.obj прямо в мой gulpfile.js, проект стал полностью автономным. Больше нет никаких жестких привязок к пикселям или коэффициентам размеров. Робот сам сканирует документ Word, динамически находит базовый размер текста (даже если вся статья написана мелким 8-пиксельным шрифтом), выстраивает математическую лестницу уникальных заголовков от меньшего к большему и бережно раскладывает их по правильным семантическим тегам HTML.</p>
+<p>Параллельно я написал умный CLI-скрипт create-post.js с искусственным интеллектом переводчика от Google. Теперь я просто пишу название темы в консоли на русском языке, а робот за долю секунды переводит фразу на чистый английский смысл для идеального URL-адреса, генерирует заготовку и сам лезет в код компонента сайдбара, чтобы встроить туда готовую БЭМ-ссылку.</p>
+<p>При каждом деплое команда npm run deploy запускает полную очистку системного кэша компиляторов и генерирует уникальный таймштамп версии сайта. Браузер любого пользователя в мире мгновенно считывает эту метку и скачивает самые свежие стили без зависаний.</p>
+<p>Теперь ведение блога — это чистое творчество. Робот полностью победил рутину!</p>
+<p>Внезапный босс: Борьба с ошибкой Corrupted zip</p>
+<p>Пока я тестировал этого «всеядного» робота, мне пришлось столкнуться с багом, который чуть не свёл меня с ума. Как только я закинул свой первый вордовский файл .docx в сборщик, консоль взорвалась страшной ошибкой: Gulp Error in Plugin: Corrupted zip: missing 1087919057 bytes [⚡].</p>
+<p>Самое безумное здесь — это цифра. Робот утверждал, что в моем крошечном текстовом файле весом в пару килобайт не хватает... ровно ОДНОГО ГИГАБАЙТА данных [⚡]!</p>
+<p>Сначала я подумал, что файл заблокирован самой Windows или Word не успел его сохранить. Но правда оказалась гораздо глубже, в самой архитектуре Gulp 5. По умолчанию Gulp считывает все файлы через метод src() как текстовые буферы [⚡]. Но файл .docx — это, по сути, заархивированный бинарный zip-пакет. Пытаясь прочитать его как текст, Node.js намертво ломал внутренние zip-заголовки структуры файла [⚡]. В итоге плагин Mammoth получал искажённый цифровой шум и думал, что перед ним гигантский повреждённый архив.</p>
+<p>Я решил эту проблему красивым инженерным маневром. Вместо того чтобы мучить Gulp чтением бинарных потоков, я переписал таск так, чтобы Mammoth самостоятельно считывал файл .docx напрямую с жесткого диска компьютера через системный путь file.path, полностью минуя буферы Gulp [⚡]! Это было стопроцентное, железное попадание. Ошибка исчезла навсегда, а компиляция стала занимать доли секунды.</p>
+
+          </div>
+          <div class="blog-article__sidebar"><aside class="blog-sidebar">
+  <h3 class="blog-sidebar__title">Популярные статьи</h3>
+  <!-- 🔥 ИСПРАВЛЕНО: Заменили тег <ul> на <div>, чтобы убрать конфликт тегов в браузере -->
+  <div class="blog-sidebar__list">
+    <!-- Сюда Gulp автоматически вставит сгенерированные БЭМ-ссылки -->
+      <details class="blog-sidebar__category">
+    <summary class="blog-sidebar__category-btn">Мои стихи (6 статей)</summary>
+    <ul class="blog-sidebar__sublist">
+      <li class="blog-sidebar__item"><a href="../poems/А любви моей все нет и нет.html" class="blog-sidebar__link">А любви моей все нет и нет,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Доброе утро мой ангелочек.html" class="blog-sidebar__link">Доброе утро мой ангелочек,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Как сильно ждал поры я этой.html" class="blog-sidebar__link">Как сильно ждал поры я этой,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Родная.html" class="blog-sidebar__link">Родная, проснувшись ты с утра сегодня,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Стихи о любви.html" class="blog-sidebar__link">Пишу стихи я той, которой обещал,</a></li>
+      <li class="blog-sidebar__item"><a href="../poems/Усрльнение Ксении Петряшовой.html" class="blog-sidebar__link">Настал не лучший день календаря,</a></li>
+    </ul>
+  </details>
+  <details class="blog-sidebar__category">
+    <summary class="blog-sidebar__category-btn">О проекте (5 статей)</summary>
+    <ul class="blog-sidebar__sublist">
+      <li class="blog-sidebar__item"><a href="../project-info/how-i-created-a-smart-gulp-robot.html" class="blog-sidebar__link">Как я создал умного Gulp робота</a></li>
+      <li class="blog-sidebar__item"><a href="../project-info/my-very-first-blog-post.html" class="blog-sidebar__link">Мой самый первый пост в блоге.</a></li>
+      <li class="blog-sidebar__item"><a href="../project-info/opisanie-moego-lichnogo-portfolio.html" class="blog-sidebar__link">Техническое описание архитектуры и компонентной базы проекта Radik.Dev.</a></li>
+      <li class="blog-sidebar__item"><a href="../project-info/why-gulp-ts.html" class="blog-sidebar__link">Почему Gulp + TypeScript — это идеальный стек для статических сайтов в</a></li>
+      <li class="blog-sidebar__item"><a href="../project-info/архитектурный-чертеж-проекта-radik-dev.html" class="blog-sidebar__link">Архитектурный чертеж проекта Radik.Dev</a></li>
+    </ul>
+  </details>
+  <details class="blog-sidebar__category">
+    <summary class="blog-sidebar__category-btn">Работа и Карьера (6 статей)</summary>
+    <ul class="blog-sidebar__sublist">
+      <li class="blog-sidebar__item"><a href="../work/kompleksnoe-rukovodstvo-po-komandam-sistemy-klub-u-dlya-lokomotivnyh-brigad.html" class="blog-sidebar__link">Комплексное локомотивное устройство безопасности</a></li>
+      <li class="blog-sidebar__item"><a href="../work/reglament-peregovorov-minuta-gotovnosti-dlya-lokomotivnoj-brigady-gruzovogo-poezda.html" class="blog-sidebar__link">Минута готовности: Полное руководство по регламенту переговоров</a></li>
+      <li class="blog-sidebar__item"><a href="../work/Полное опробование автотормозов в грузовых поездах.html" class="blog-sidebar__link">Полное опробование тормозов в грузовых поездах</a></li>
+      <li class="blog-sidebar__item"><a href="../work/Светофоры на жд транспорте.html" class="blog-sidebar__link">Типы железнодорожных светофоров</a></li>
+      <li class="blog-sidebar__item"><a href="../work/Сигналы светофоров.html" class="blog-sidebar__link">Сигналы железнодорожных светофоров</a></li>
+      <li class="blog-sidebar__item"><a href="../work/Сокращенное опробование тормозов в грузовых поездах.html" class="blog-sidebar__link">Сокращенное опробование тормозов в грузовых поездах</a></li>
+    </ul>
+  </details>
+
+  </div>
+</aside>
+</div>
+        </div>
+      </div>
+    </article>
+
+    <footer class="footer">
+  <div class="container">
+    <div class="footer__wrapper">
+      <!-- Левая часть: Копирайт -->
+      <div class="footer__left">
+        <span class="footer__copy"
+          >&copy; 2026 Radik.Dev — Портфолио. Все права защищены.</span
+        >
+        <p class="footer__subtitle">
+          Создано с душой на Gulp 5, TypeScript и БЭМ.
+        </p>
+      </div>
+
+      <!-- Правая часть: Ссылки на соцсети -->
+      <div class="footer__social social-links">
+        <ul class="social-links__list">
+          <li class="social-links__item">
+            <!-- 🔥 ИСПРАВЛЕНО: Укажите вашу точную ссылку на Telegram-аккаунт или канал -->
+            <a
+              href="https://t.me/Radik2707"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-links__link"
+              >Telegram</a
+            >
+          </li>
+          <li class="social-links__item">
+            <!-- Ссылка на профиль GitHub -->
+            <a
+              href="https://github.com/Radikz2707"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-links__link"
+              >GitHub</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="../../js/vendor.min.js?v=1"></script>
+    <script src="../../js/app.min.js?v=1" defer></script>
+  </body>
+</html>

@@ -1,0 +1,163 @@
+backend:
+  name: proxy
+  proxy_url: http://localhost:8082/api/v1
+  repo: 'Radik/portfolio'
+  branch: 'main'
+
+local_backend: true
+
+media_folder: 'src/images/blog'
+public_folder: '/images/blog'
+
+collections:
+  - name: 'settings'
+    label: '⚙️ Настройки Системы'
+    delete: false
+    files:
+      - name: 'gulp_config'
+        label: 'Конфигурация сборщика'
+        file: 'src/content/system-settings.json'
+        format: 'json'
+        fields:
+          - {
+              label: '📁 Папка исходников (Source)',
+              name: 'srcFolder',
+              widget: 'string',
+              default: 'src',
+            }
+          - {
+              label: '📦 Папка сборки (Build/Dist)',
+              name: 'buildFolder',
+              widget: 'string',
+              default: 'dist',
+            }
+          - {
+              label: '🌐 URL Сайта (для Sitemap)',
+              name: 'siteUrl',
+              widget: 'string',
+              default: 'https://radik.dev',
+            }
+
+      - name: 'blog_categories'
+        label: '🗂️ Управление категориями'
+        file: 'src/content/categories.json'
+        format: 'json'
+        fields:
+          - label: 'Список всех категорий сайта'
+            name: 'categories_list'
+            widget: 'list'
+            summary: '{{fields.title}} ({{fields.id}})'
+            fields:
+              - { label: 'Системный ID', name: 'id', widget: 'string' }
+              - { label: 'Название на сайте', name: 'title', widget: 'string' }
+
+  - name: "games"
+    label: "🎮 Игры и развлечения"
+    folder: "src/content/games"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "project-info"
+    label: "ℹ️ О проекте"
+    folder: "src/content/project-info"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "blog"
+    label: "📰 Общий блог"
+    folder: "src/content/blog"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "space"
+    label: "🚀 Космос"
+    folder: "src/content/space"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "psychology"
+    label: "🧠 Психология"
+    folder: "src/content/psychology"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "books"
+    label: "📚 Книги"
+    folder: "src/content/books"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "poems"
+    label: "✍️ Мои стихи"
+    folder: "src/content/poems"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "programming"
+    label: "💻 Программирование"
+    folder: "src/content/programming"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "travel"
+    label: "✈️ Путешествия"
+    folder: "src/content/travel"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "finance"
+    label: "📝 Финансы и инвестиции"
+    folder: "src/content/finance"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
+  - name: "work"
+    label: "💼 Работа и Карьера"
+    folder: "src/content/work"
+    create: true
+    slug: "{{title}}"
+    identifier_field: "title"
+    fields:
+      - { label: "Заголовок статьи", name: "title", widget: "string" }
+      - { label: "Контент статьи (Markdown)", name: "body", widget: "markdown" }
+
