@@ -1,4 +1,3 @@
-// gulp/system/gulp.cache.js
 import { execSync } from 'child_process';
 
 let currentSig = '';
@@ -14,8 +13,9 @@ export function getBuildSignature() {
     try {
       currentSig = execSync('git rev-parse --short HEAD').toString().trim();
       return currentSig;
-    } catch (e) {
-      // Если Git не инициализирован, падаем в фолбэк-таймстамп
+    } catch {
+      // ИСПРАВЛЕНО: Убран неиспользуемый аргумент (e) из блока catch.
+      // Если Git не инициализирован, падаем в фолбэк-таймстамп ниже
     }
   }
 

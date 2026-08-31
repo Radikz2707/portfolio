@@ -1,25 +1,26 @@
-// gulp/lint.js — Абсолютная безопасность статического анализа кодовой базы
+import path from 'path';
 import { config } from '../gulp.config.js';
 import { execFile } from 'child_process';
+import { createRequire } from 'module';
+
+// Создаем безопасный контекст require для динамических пакетов
+const require = createRequire(import.meta.url);
+
+// Мягко импортируем нотификатор. Если пакета нет на диске, проект НЕ упадет
+let notifier = null;
+try {
+  notifier = require('node-notifier');
+} catch {
+  // Пакет не установлен, пропускаем отправку пушей
+}
 
 const isProdBuild = process.argv.includes('build');
-
-// 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ СРЕДЫ WINDOWS:
-// Параметр shell: true гарантирует запуск npx.cmd без вызова системного сбоя EINVAL
 const execOptions = {
   env: { ...process.env, FORCE_COLOR: '1' },
   windowsHide: true,
   shell: true,
 };
-
-/**
- * Функция безопасного экранирования путей для Windows-сред (cmd/powershell)
- */
-const sanitizePath = (p) => {
-  if (!p) return '';
-  // Удаляем любые попытки инъекции символов конвейеризации команд (&, |, ;, $, `)
-  return p.replace(/[&|;$`]/g, '');
-};
+const sanitizePath = (p) => (p ? p.replace(/[&|;`]/g, '') : '');
 
 // === БЕЗОПАСНЫЙ ТАСК STYLELINT ===
 export const lintCss = (arg = null) => {
@@ -39,11 +40,36 @@ export const lintCss = (arg = null) => {
       '--custom-formatter=stylelint-formatter-pretty',
     );
 
-    // На Windows вызываем npx.cmd, на Unix-системах — чистый npx
     const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
     execFile(cmd, args, execOptions, (err, stdout, stderr) => {
-      if (stdout) process.stdout.write(stdout);
+      if (stdout) {
+        process.stdout.write(stdout);
+
+        // Парсим вывод консоли только если пакет node-notifier успешно загружен
+        if (
+          notifier &&
+          (stdout.includes('warning') || stdout.includes('error') || err)
+        ) {
+          const filePaths = stdout.match(/(src\/[^\s\n]+)/g) || [];
+          const uniqueFiles = [...new Set(filePaths)].map((p) =>
+            path.basename(p),
+          );
+
+          const filesChunk =
+            uniqueFiles.length > 0
+              ? `Файлы: ${uniqueFiles.slice(0, 3).join(', ')}`
+              : 'Обнаружены ошибки в стилях';
+
+          notifier.notify({
+            title: '⚠️ [Stylelint Control] SCSS Defects!',
+            message: `${filesChunk}. Проверьте терминал VS Code для исправления.`,
+            sound: true,
+            wait: false,
+          });
+        }
+      }
+
       if (stderr) process.stderr.write(stderr);
 
       if (err && isProdBuild) {
@@ -75,7 +101,35 @@ export const lintJs = (arg = null) => {
     const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
     execFile(cmd, args, execOptions, (err, stdout, stderr) => {
-      if (stdout) process.stdout.write(stdout);
+      if (stdout) {
+        process.stdout.write(stdout);
+
+        if (
+          notifier &&
+          (stdout.includes('warning') ||
+            stdout.includes('error') ||
+            stdout.includes('no-unused-vars'))
+        ) {
+          const filePaths =
+            stdout.match(/(src\/[^\s\n]+|gulpfile\.js|gulp\/[^\s\n]+)/g) || [];
+          const uniqueFiles = [...new Set(filePaths)].map((p) =>
+            path.basename(p),
+          );
+
+          const filesChunk =
+            uniqueFiles.length > 0
+              ? `Файлы: ${uniqueFiles.slice(0, 3).join(', ')}${uniqueFiles.length > 3 ? '...' : ''}`
+              : 'Обнаружены неиспользуемые переменные';
+
+          notifier.notify({
+            title: '⚠️ [ESLint Control] Unused Variables!',
+            message: `${filesChunk}. Проверьте терминал VS Code для очистки кода.`,
+            sound: true,
+            wait: false,
+          });
+        }
+      }
+
       if (stderr) process.stderr.write(stderr);
 
       if (err && isProdBuild) {

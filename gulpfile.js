@@ -1,33 +1,21 @@
 import { config } from './gulp.config.js';
-import crypto from 'crypto';
 import gulp from 'gulp';
 import fs from 'fs';
 import path from 'path';
 import plumber from 'gulp-plumber';
-import fileInclude from 'gulp-file-include';
-import htmlhint from 'gulp-htmlhint';
-import htmlBeautify from 'gulp-html-beautify';
-import rename from 'gulp-rename';
 import newer from 'gulp-newer';
-import dotenv from 'dotenv';
 import through2 from 'through2';
 import matter from 'gray-matter';
+import mammoth from 'mammoth'; // Автоматическая поддержка DOCX файлов
 
 // =========================================================================
 // ДИРЕКТИВНЫЕ ИМПОРТЫ СИСТЕМНЫХ МОДУЛЕЙ И ИНФРАСТРУКТУРЫ
 // =========================================================================
-
-// Процессоры статического контента (Markdown / Разметка)
 import {
-  generateSidebarLinks,
-  processHtmlContent,
-  parsePlainText,
   compileContentStream,
   wrapInMasterLayout,
 } from './gulp/utils/content-processor.js';
-
-// Серверное ядро и утилиты отладки
-import { browsersync, startwatch, onError, isProd, bs } from './gulp/server.js';
+import { onError, isProd } from './gulp/server.js';
 import { lintCss, lintJs } from './gulp/lint.js';
 import { cleandist, zipFiles, deployLocal } from './gulp/utils.js';
 import { getBuildSignature } from './gulp/system/gulp.cache.js';
@@ -50,12 +38,29 @@ console.log(`📦 [CONTROL]: Сборка выполняется под сигн
 const { parallel, series, src, dest } = gulp;
 const loadedModules = {};
 
+// Карта декларативного маппинга задач для Lazy Loading
+const TASK_FILE_MAP = {
+  styles: 'styles',
+  scripts: 'scripts',
+  html: 'html',
+  blogIndex: 'html',
+  fonts: 'fonts',
+  fontsStyle: 'fonts',
+  images: 'images',
+  imagesDev: 'images',
+  createWebp: 'images',
+  sprite: 'images',
+  favs: 'images',
+  browsersync: 'server',
+  startwatch: 'server',
+};
+
 // =========================================================================
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ДИНАМИЧЕСКИЕ СТРИМЫ (CORE UTILS)
 // =========================================================================
 
 /**
- * Автоматически генерирует файл конфигурации среды `env-config.js` из .env
+ * Автоматически генерирует файл конфигурации среды env-config.js из .env
  */
 export const createEnvConfig = (done) => {
   const envPath = path.resolve('.env');
@@ -64,12 +69,17 @@ export const createEnvConfig = (done) => {
 
   if (fs.existsSync(envPath)) {
     const envFileContent = fs.readFileSync(envPath, 'utf8');
+
     const tokenMatch = envFileContent.match(/TELEGRAM_TOKEN\s*=\s*(.*)/);
     const chatIdMatch = envFileContent.match(/TELEGRAM_CHAT_ID\s*=\s*(.*)/);
 
-    if (tokenMatch) token = tokenMatch[1].trim();
-    if (chatIdMatch) chatId = chatIdMatch[1].trim();
+    // 🎯 Берем именно первую группу [1] из массива совпадений, а не сам массив
+    if (tokenMatch && tokenMatch[1]) token = tokenMatch[1].trim();
+    if (chatIdMatch && chatIdMatch[1]) chatId = chatIdMatch[1].trim();
   }
+
+  token = token.replace(/["']/g, '');
+  chatId = chatId.replace(/["']/g, '');
 
   const envContent = `export const env = { TELEGRAM_TOKEN: '${token}', TELEGRAM_CHAT_ID: '${chatId}' };`;
   const jsDir = path.join(config.srcFolder, 'js');
@@ -85,26 +95,11 @@ export const createEnvConfig = (done) => {
 
 /**
  * Динамический загрузчик изолированных Gulp-модулей (Lazy Loading)
- * @param {string} taskName - Имя запрашиваемой задачи
  */
 const runTask = (taskName) => {
   const gulpTaskWrapper = async (done) => {
     try {
-      let fileName = taskName;
-
-      if (taskName === 'fontsStyle') {
-        fileName = 'fonts';
-      } else if (taskName === 'blogIndex') {
-        fileName = 'html';
-      } else if (taskName === 'server') {
-        fileName = 'server';
-      } else if (
-        ['imagesDev', 'createWebp', 'sprite', 'favs', 'faviconsDev'].includes(
-          taskName,
-        )
-      ) {
-        fileName = 'images';
-      }
+      const fileName = TASK_FILE_MAP[taskName] || taskName;
 
       if (!loadedModules[fileName]) {
         loadedModules[fileName] = await import(`./gulp/${fileName}.js`);
@@ -114,7 +109,10 @@ const runTask = (taskName) => {
       const task = taskModule[taskName] || taskModule.default;
 
       if (typeof task === 'function') return task(done);
-      done();
+
+      throw new Error(
+        `Экспортируемая функция "${taskName}" не найдена в файле "./gulp/${fileName}.js"`,
+      );
     } catch (err) {
       console.error(`\x1b[31m[Task Error] ${taskName}: ${err.message}\x1b[0m`);
       done(err);
@@ -126,10 +124,11 @@ const runTask = (taskName) => {
 };
 
 /**
- * Фабрика динамических задач для генерации контента блога из Markdown
- * @param {string} folderName - Имя целевой контентной папки
+ * Фабрика динамических задач для генерации контента блога из Markdown и Word DOCX
+ * 🎯 ИСПРАВЛЕНО ДЛЯ GULP 5: Убрано дублирование асинхронных сигналов
  */
 const createDynamicContentTask = (folderName) => {
+  // Убрано 'async' перед (done) — теперь функция возвращает только чистый Node-стрим
   const task = (done) => {
     const sourcePath = [
       path.join(
@@ -171,8 +170,33 @@ const createDynamicContentTask = (folderName) => {
             cb();
           }),
         )
-
-        // 🔥 МАКСИМАЛЬНЫЙ КОНТРОЛЬ ПОТОКА: Вырезаем frontmatter из текста ДО компиляции Markdown
+        // Конвертация .docx -> Markdown/HTML текст через классические Promise-цепочки
+        .pipe(
+          through2.obj(function (file, enc, cb) {
+            if (file.isBuffer() && file.extname === '.docx') {
+              mammoth
+                .extractRawText({ buffer: file.contents })
+                .then((result) => {
+                  file.contents = Buffer.from(result.value);
+                  file.extname = '.md';
+                  this.push(file);
+                  cb();
+                })
+                .catch((err) => {
+                  console.error(
+                    `❌ [DOCX CONTROL ERROR] Сбой конвертации Word в ${file.relative}:`,
+                    err.message,
+                  );
+                  this.push(file);
+                  cb();
+                });
+            } else {
+              this.push(file);
+              cb();
+            }
+          }),
+        )
+        // Разбор Frontmatter метаданных
         .pipe(
           through2.obj(function (file, enc, cb) {
             if (
@@ -181,14 +205,8 @@ const createDynamicContentTask = (folderName) => {
             ) {
               try {
                 const fileContent = file.contents.toString('utf8');
-
-                // Парсим файл: matter Парсер разделит метаданные и чистый текст
                 const parsed = matter(fileContent);
-
-                // Передаем вашему компилятору ИСКЛЮЧИТЕЛЬНО чистый текст без "title: ..."
                 file.contents = Buffer.from(parsed.content);
-
-                // Сохраняем заголовок в свойства файла (если вашей системе это понадобится)
                 file.frontMatter = parsed.data;
               } catch (err) {
                 console.error(
@@ -201,8 +219,7 @@ const createDynamicContentTask = (folderName) => {
             cb();
           }),
         )
-
-        .pipe(compileContentStream()) // Ваш компилятор получает кристально чистый контент статьи
+        .pipe(compileContentStream())
         .pipe(dest(tempDestPath))
         .on('end', () => {
           if (hasChanges) {
@@ -259,7 +276,6 @@ const blogContent = createDynamicContentTask('blog');
 // ПОЛНЫЕ РЕЖИМЫ СБОРКИ ПРОЕКТА (BUILD & DEVELOPMENT PRODUCTION)
 // =========================================================================
 
-// Продакшен-сборка со сквозной валидацией, архивацией и оптимизацией
 export const build = series(
   createEnvConfig,
   cleandist,
@@ -272,9 +288,7 @@ export const build = series(
   ),
   parallel(runTask('html')),
   runTask('blogIndex'),
-
   parallel(generateSitemap, generateContentMap),
-
   zipFiles,
   (done) => {
     console.log('>>> 🚀 [Gulp 5] Project successfully assembled! <<<');
@@ -283,7 +297,6 @@ export const build = series(
   deployLocal,
 );
 
-// Сценарий локальной разработки по умолчанию (Команда: npx gulp)
 export default series(
   createEnvConfig,
   parallel(runTask('fonts'), runTask('fontsStyle'), runTask('favs')),
@@ -302,15 +315,12 @@ export default series(
     ),
     runTask('blogIndex'),
   ),
-  browsersync,
-  startwatch,
+  runTask('browsersync'),
+  runTask('startwatch'),
 );
 
-// =========================================================================
 // ЕДИНЫЙ ИЗОЛИРОВАННЫЙ БЛОК СИСТЕМНОГО ЭКСПОРТА (GULP CLI REGISTRATION)
-// =========================================================================
 export {
-  // Системные хелперы и CLI CRUD
   create,
   remove,
   module,
@@ -323,27 +333,17 @@ export {
   lintCss,
   generateSitemap,
   generateContentMap,
-
-  // Изолированные задачи для точечного вызова в тестах
-  favs,
-  styles,
-  scripts,
-  html,
-  images,
-  createWebp,
-  sprite,
-  fonts,
-  fontsStyle,
-  deployLocal,
+  blogContent,
 };
 
-// Явная ленивая регистрация деструктурированных ссылок задач
-const favs = runTask('favs');
-const styles = runTask('styles');
-const scripts = runTask('scripts');
-const html = runTask('html');
-const images = runTask('images');
-const createWebp = runTask('createWebp');
-const sprite = runTask('sprite');
-const fonts = runTask('fonts');
-const fontsStyle = runTask('fontsStyle');
+export const favs = runTask('favs');
+export const styles = runTask('styles');
+export const scripts = runTask('scripts');
+export const html = runTask('html');
+export const images = runTask('images');
+export const createWebp = runTask('createWebp');
+export const sprite = runTask('sprite');
+export const fonts = runTask('fonts');
+export const fontsStyle = runTask('fontsStyle');
+export const browsersync = runTask('browsersync');
+export const startwatch = runTask('startwatch');

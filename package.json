@@ -82,6 +82,7 @@
     "jsdom": "^30.0.1",
     "lint-staged": "^17.4.1",
     "mammoth": "^1.12.2",
+    "node-notifier": "^10.0.1",
     "postcss": "^8.5.26",
     "postcss-sort-media-queries": "^6.7.1",
     "prettier": "^3.9.6",
